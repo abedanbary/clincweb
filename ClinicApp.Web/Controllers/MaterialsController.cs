@@ -5,6 +5,7 @@ using ClinicApp.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ClinicApp.Web.Services;
 
 namespace ClinicApp.Web.Controllers
 {
@@ -12,10 +13,12 @@ namespace ClinicApp.Web.Controllers
     public class MaterialsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IExportService _exportService;
 
-        public MaterialsController(ApplicationDbContext context)
+        public MaterialsController(ApplicationDbContext context, IExportService exportService)
         {
             _context = context;
+            _exportService = exportService;
         }
 
         private int GetCurrentClinicId()
@@ -226,5 +229,26 @@ namespace ClinicApp.Web.Controllers
 
         return RedirectToAction(nameof(Index));
         }
+        // 🟣 GET: /Materials/Exporvt
+        // 📊 Export to Excel
+[HttpGet]
+public async Task<IActionResult> ExportExcel()
+{
+    var clinicId = GetCurrentClinicId();
+    
+    var materials = await _context.Materials
+        .Where(m => m.ClinicId == clinicId)
+        .OrderBy(m => m.Name)
+        .ToListAsync();
+    
+    var clinic = await _context.Clinics.FindAsync(clinicId);
+    var clinicName = clinic?.Name ?? "Clinic";
+    
+    var fileBytes = _exportService.ExportInventoryToExcel(materials, clinicName);
+    
+    return File(fileBytes, 
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        $"Inventory_Report_{DateTime.Now:yyyyMMdd}.xlsx");
+}
     }
 }

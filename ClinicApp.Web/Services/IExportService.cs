@@ -8,5 +8,7 @@ namespace ClinicApp.Web.Services
         /// Export week schedule to Excel
         /// </summary>
         byte[] ExportWeekScheduleToExcel(DateTime weekStart, List<Appointment> appointments, string clinicName);
+        byte[] ExportInventoryToExcel(List<Material> materials, string clinicName);
+
     }
 }
