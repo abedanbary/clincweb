@@ -154,3 +154,4 @@
 /Users/farsnbary/Development/ClinicApp/ClinicApp.Web/obj/Debug/net8.0/ClinicApp.Web.pdb
 /Users/farsnbary/Development/ClinicApp/ClinicApp.Web/obj/Debug/net8.0/ClinicApp.Web.genruntimeconfig.cache
 /Users/farsnbary/Development/ClinicApp/ClinicApp.Web/obj/Debug/net8.0/ref/ClinicApp.Web.dll
+/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/obj/Debug/net8.0/ClinicApp.Web.sourcelink.json

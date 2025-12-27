@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = ["dotnet-sdk_8"]
+
+[phases.build]
+cmds = [
+  "dotnet clean",
+  "dotnet restore --force",
+  "dotnet publish -c Release -o /app/out --no-cache"
+]
+
+[start]
+cmd = "dotnet /app/out/ClinicApp.Web.dll"
