@@ -1,0 +1,171 @@
+@{
+    Layout = "_ManagerLayout";
+    ViewData["Title"] = "Materials";
+}
+
+<div class="materials-page">
+
+    <!-- Header -->
+    <header class="materials-header">
+        <div class="materials-header-text">
+            <h1 class="materials-title">Materials</h1>
+            <p class="materials-subtitle">
+                Manage clinic supplies such as gloves, masks, disinfectants and other consumables.
+            </p>
+        </div>
+
+        <div class="materials-header-actions">
+            <button class="btn-primary">
+                Add Material
+            </button>
+        </div>
+    </header>
+
+    <!-- Main grid: table + form -->
+    <section class="materials-grid">
+
+        <!-- Left side: table -->
+        <div class="materials-card materials-table-card">
+            <div class="materials-card-header">
+                <div>
+                    <h2 class="materials-card-title">Current Stock</h2>
+                    <p class="materials-card-caption">Sample data only – no backend logic yet.</p>
+                </div>
+                <div class="materials-card-extra">
+                    <select class="materials-filter">
+                        <option>All status</option>
+                        <option>OK</option>
+                        <option>Low</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="materials-table-wrapper">
+                <table class="materials-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Unit</th>
+                            <th>Quantity</th>
+                            <th>Minimum limit</th>
+                            <th>Status</th>
+                            <th style="width: 140px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Gloves (Latex)</td>
+                            <td>Standard examination gloves for daily use.</td>
+                            <td>Box</td>
+                            <td>24</td>
+                            <td>10</td>
+                            <td><span class="badge badge-ok">OK</span></td>
+                            <td>
+                                <button class="btn-ghost">Edit</button>
+                                <button class="btn-ghost btn-danger">Remove</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Surgical Masks</td>
+                            <td>Disposable masks for staff and patients.</td>
+                            <td>Box</td>
+                            <td>8</td>
+                            <td>12</td>
+                            <td><span class="badge badge-warning">Low</span></td>
+                            <td>
+                                <button class="btn-ghost">Edit</button>
+                                <button class="btn-ghost btn-danger">Remove</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Surface Disinfectant</td>
+                            <td>Disinfection for chairs and working surfaces.</td>
+                            <td>Liter</td>
+                            <td>3</td>
+                            <td>5</td>
+                            <td><span class="badge badge-warning">Low</span></td>
+                            <td>
+                                <button class="btn-ghost">Edit</button>
+                                <button class="btn-ghost btn-danger">Remove</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Composite Filling Material</td>
+                            <td>Filling material for restorative procedures.</td>
+                            <td>Unit</td>
+                            <td>15</td>
+                            <td>8</td>
+                            <td><span class="badge badge-ok">OK</span></td>
+                            <td>
+                                <button class="btn-ghost">Edit</button>
+                                <button class="btn-ghost btn-danger">Remove</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right side: form (uses all Material fields) -->
+        <div class="materials-card materials-form-card">
+            <div class="materials-card-header">
+                <div>
+                    <h2 class="materials-card-title">Material details</h2>
+                    <p class="materials-card-caption">Static form only – wiring to backend comes later.</p>
+                </div>
+            </div>
+
+            <form class="materials-form">
+                <!-- Name -->
+                <div class="materials-field">
+                    <label class="materials-label">Name</label>
+                    <input class="materials-input" placeholder="e.g. Gloves (Latex)" />
+                </div>
+
+                <!-- Description -->
+                <div class="materials-field">
+                    <label class="materials-label">Description</label>
+                    <textarea class="materials-textarea" rows="3" placeholder="Short description of the material, usage or notes."></textarea>
+                </div>
+
+                <!-- Unit + Quantity -->
+                <div class="materials-field-row">
+                    <div class="materials-field">
+                        <label class="materials-label">Unit</label>
+                        <select class="materials-select">
+                            <option value="">Select unit</option>
+                            <option>Box</option>
+                            <option>Unit</option>
+                            <option>Liter</option>
+                            <option>ml</option>
+                            <option>Pack</option>
+                        </select>
+                    </div>
+
+                    <div class="materials-field">
+                        <label class="materials-label">Quantity</label>
+                        <input class="materials-input" type="number" min="0" placeholder="0" />
+                    </div>
+                </div>
+
+                <!-- MinimumLimit -->
+                <div class="materials-field">
+                    <label class="materials-label">Minimum limit</label>
+                    <input class="materials-input" type="number" min="0" placeholder="Minimum stock before warning" />
+                </div>
+
+                <!-- Actions -->
+                <div class="materials-form-actions">
+                    <button type="button" class="btn-primary">
+                        Save
+                    </button>
+                    <button type="button" class="btn-ghost">
+                        Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </section>
+</div>

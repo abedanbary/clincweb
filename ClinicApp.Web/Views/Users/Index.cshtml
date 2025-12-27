@@ -1,0 +1,268 @@
+@using ClinicApp.Web.ViewModels
+@using ClinicApp.Web.Models
+@model UsersPageViewModel
+
+@{
+    Layout = "_ManagerLayout";
+    ViewData["Title"] = "Users";
+}
+
+<link rel="stylesheet" href="~/css/users.css" />
+
+<div class="users-page">
+
+    <!-- Header -->
+    <header class="users-header">
+        <div class="users-header-text">
+            <h1 class="users-title">Users</h1>
+            <p class="users-subtitle">
+                Manage clinic staff including managers, doctors, and assistants.
+            </p>
+        </div>
+
+        <div class="users-header-actions">
+            <button class="btn-primary">
+                Add User
+            </button>
+        </div>
+    </header>
+
+    <!-- Main grid: table + form -->
+    <section class="users-grid">
+
+        <!-- Left side: table -->
+        <div class="users-card users-table-card">
+            <div class="users-card-header">
+                <div>
+                    <h2 class="users-card-title">Staff Members</h2>
+                    <p class="users-card-caption">Manage clinic staff and their roles.</p>
+                </div>
+                <div class="users-card-extra">
+                    <select class="users-filter">
+                        <option>All roles</option>
+                        <option>Manager</option>
+                        <option>Doctor</option>
+                        <option>Assistant</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="users-table-wrapper">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th style="width: 140px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.AppUsers.Any())
+                        {
+                            foreach (var user in Model.AppUsers)
+                            {
+                                var roleClass = user.Role switch
+                                {
+                                    UserRole.Manager => "badge-manager",
+                                    UserRole.Doctor => "badge-doctor",
+                                    UserRole.Assistant => "badge-assistant",
+                                    _ => "badge-ok"
+                                };
+
+                                <tr>
+                                    <td>@user.FirstName @user.LastName</td>
+                                    <td>@user.Email</td>
+                                    <td>@user.Phone</td>
+                                    <td>
+                                        <span class="badge @roleClass">@user.Role</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn-ghost" onclick="editUser(@user.Id)">Edit</button>
+                                        <form asp-action="Delete" asp-route-id="@user.Id" method="post" style="display: inline;" onsubmit="return confirm('Delete this user?')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-ghost btn-danger">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5">No users found for this clinic yet.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right side: form -->
+        <div class="users-card users-form-card">
+            <div class="users-card-header">
+                <div>
+                    <h2 class="users-card-title">User details</h2>
+                    <p class="users-card-caption">Add new staff member to your clinic.</p>
+                </div>
+            </div>
+
+            <form asp-action="Add" asp-controller="Users" method="post" class="users-form">
+                @Html.AntiForgeryToken()
+
+                <div class="users-field-row">
+                    <div class="users-field">
+                        <label class="users-label" asp-for="NewUser.FirstName"></label>
+                        <input class="users-input" asp-for="NewUser.FirstName" />
+                        <span class="users-error" asp-validation-for="NewUser.FirstName"></span>
+                    </div>
+
+                    <div class="users-field">
+                        <label class="users-label" asp-for="NewUser.LastName"></label>
+                        <input class="users-input" asp-for="NewUser.LastName" />
+                        <span class="users-error" asp-validation-for="NewUser.LastName"></span>
+                    </div>
+                </div>
+
+                <div class="users-field">
+                    <label class="users-label" asp-for="NewUser.Email"></label>
+                    <input class="users-input" asp-for="NewUser.Email" type="email" />
+                    <span class="users-error" asp-validation-for="NewUser.Email"></span>
+                </div>
+
+                <div class="users-field">
+                    <label class="users-label" asp-for="NewUser.Phone"></label>
+                    <input class="users-input" asp-for="NewUser.Phone" type="tel" />
+                    <span class="users-error" asp-validation-for="NewUser.Phone"></span>
+                </div>
+
+                <div class="users-field">
+                    <label class="users-label" asp-for="NewUser.Role"></label>
+                    <select class="users-select" asp-for="NewUser.Role">
+                        <option value="">Select role</option>
+                        <option value="1">Manager</option>
+                        <option value="2">Doctor</option>
+                        <option value="3">Assistant</option>
+                    </select>
+                    <span class="users-error" asp-validation-for="NewUser.Role"></span>
+                </div>
+
+                <div class="users-form-actions">
+                    <button type="submit" class="btn-primary">
+                        Save
+                    </button>
+                    <button type="reset" class="btn-ghost">
+                        Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </section>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-overlay hidden" onclick="closeModalOnOverlay(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit User</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            
+            <form id="editForm" asp-action="Edit" asp-controller="Users" method="post" class="modal-body">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="edit-id" name="id" />
+                
+                <div class="users-field-row">
+                    <div class="users-field">
+                        <label class="users-label">First Name</label>
+                        <input class="users-input" id="edit-firstName" name="firstName" required />
+                    </div>
+                    
+                    <div class="users-field">
+                        <label class="users-label">Last Name</label>
+                        <input class="users-input" id="edit-lastName" name="lastName" required />
+                    </div>
+                </div>
+                
+                <div class="users-field">
+                    <label class="users-label">Email</label>
+                    <input class="users-input" id="edit-email" name="email" type="email" required />
+                </div>
+                
+                <div class="users-field">
+                    <label class="users-label">Phone</label>
+                    <input class="users-input" id="edit-phone" name="phone" type="tel" required />
+                </div>
+                
+                <div class="users-field">
+                    <label class="users-label">Role</label>
+                    <select class="users-select" id="edit-role" name="role" required>
+                        <option value="1">Manager</option>
+                        <option value="2">Doctor</option>
+                        <option value="3">Assistant</option>
+                    </select>
+                </div>
+                
+                <div class="users-form-actions">
+                    <button type="submit" class="btn-primary">
+                        Update
+                    </button>
+                    <button type="button" class="btn-ghost" onclick="closeEditModal()">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        // Store users data
+        const usersData = @Html.Raw(Json.Serialize(Model.AppUsers.Select(u => new {
+            id = u.Id,
+            firstName = u.FirstName,
+            lastName = u.LastName,
+            email = u.Email,
+            phone = u.Phone,
+            role = (int)u.Role
+        })));
+
+        function editUser(id) {
+            const user = usersData.find(u => u.id === id);
+            if (!user) return;
+            
+            // Fill modal fields
+            document.getElementById('edit-id').value = user.id;
+            document.getElementById('edit-firstName').value = user.firstName;
+            document.getElementById('edit-lastName').value = user.lastName;
+            document.getElementById('edit-email').value = user.email;
+            document.getElementById('edit-phone').value = user.phone;
+            document.getElementById('edit-role').value = user.role;
+            
+            // Show modal
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        function closeModalOnOverlay(event) {
+            if (event.target === event.currentTarget) {
+                closeEditModal();
+            }
+        }
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeEditModal();
+            }
+        });
+    </script>
+}

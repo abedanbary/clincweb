@@ -1,0 +1,160 @@
+@using ClinicApp.Web.ViewModels
+@using ClinicApp.Web.Models
+@model TreatmentPlanIndexViewModel
+
+@{
+    Layout = "_ManagerLayout";
+    ViewData["Title"] = "Treatment Plans";
+}
+
+<link rel="stylesheet" href="~/css/treatment-plan.css" />
+
+<div class="treatment-plan-page">
+
+    <!-- Header -->
+    <header class="treatment-plan-header">
+        <div class="treatment-plan-header-left">
+            <a asp-controller="Patients" asp-action="Profile" asp-route-id="@Model.PatientId" class="btn-back">
+                ← Back to Patient
+            </a>
+            <div class="treatment-plan-header-text">
+                <h1 class="treatment-plan-title">Treatment Plans</h1>
+                <p class="treatment-plan-subtitle">@Model.PatientName</p>
+            </div>
+        </div>
+        
+        <button class="btn-primary" onclick="openCreatePlanModal()">
+            + New Plan
+        </button>
+    </header>
+
+    <!-- Plans Grid -->
+    <section class="plans-grid">
+        @if (Model.Plans.Any())
+        {
+            foreach (var plan in Model.Plans)
+            {
+                var statusClass = plan.Status switch
+                {
+                    PlanStatus.Draft => "status-draft",
+                    PlanStatus.Active => "status-active",
+                    PlanStatus.Completed => "status-completed",
+                    PlanStatus.Cancelled => "status-cancelled",
+                    _ => "status-draft"
+                };
+
+                var statusText = plan.Status switch
+                {
+                    PlanStatus.Draft => "Draft",
+                    PlanStatus.Active => "Active",
+                    PlanStatus.Completed => "Completed",
+                    PlanStatus.Cancelled => "Cancelled",
+                    _ => "Draft"
+                };
+
+                <div class="plan-card" onclick="window.location.href='@Url.Action("Details", new { id = plan.Id })'">
+                    <div class="plan-card-header">
+                        <h3 class="plan-card-title">@plan.Title</h3>
+                        <span class="plan-status @statusClass">@statusText</span>
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(plan.Description))
+                    {
+                        <p class="plan-description">@plan.Description</p>
+                    }
+                    
+                    <div class="plan-stats">
+                        <div class="plan-stat">
+                            <span class="plan-stat-label">Treatments</span>
+                            <span class="plan-stat-value">@plan.Treatments.Count</span>
+                        </div>
+                        <div class="plan-stat">
+                            <span class="plan-stat-label">Estimated Cost</span>
+                            <span class="plan-stat-value">$@plan.TotalEstimatedCost.ToString("N2")</span>
+                        </div>
+                        <div class="plan-stat">
+                            <span class="plan-stat-label">Doctor</span>
+                            <span class="plan-stat-value">Dr. @plan.Doctor.FirstName @plan.Doctor.LastName</span>
+                        </div>
+                    </div>
+                    
+                    <div class="plan-card-footer">
+                        <span class="plan-date">Created @plan.CreatedAt.ToString("MMM dd, yyyy")</span>
+                        <span class="plan-arrow">→</span>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <h3 class="empty-state-title">No Treatment Plans Yet</h3>
+                <p class="empty-state-text">Create a treatment plan to start organizing patient care.</p>
+                <button class="btn-primary" onclick="openCreatePlanModal()">
+                    + Create First Plan
+                </button>
+            </div>
+        }
+    </section>
+
+    <!-- Create Plan Modal -->
+    <div id="createPlanModal" class="modal-overlay hidden" onclick="closeModalOnOverlay(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Create Treatment Plan</h3>
+                <button class="modal-close" onclick="closeCreatePlanModal()">&times;</button>
+            </div>
+            
+            <form asp-action="CreatePlan" asp-controller="TreatmentPlan" method="post" class="modal-body">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="patientId" value="@Model.PatientId" />
+                
+                <div class="form-field">
+                    <label class="form-label">Plan Title *</label>
+                    <input class="form-input" name="title" required placeholder="e.g., Comprehensive Treatment 2024" />
+                </div>
+                
+                <div class="form-field">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" name="description" rows="3" placeholder="Brief description of the treatment plan..."></textarea>
+                </div>
+                
+                <div class="form-field">
+                    <label class="form-label">Start Date</label>
+                    <input class="form-input" name="startDate" type="date" />
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Create Plan</button>
+                    <button type="button" class="btn-ghost" onclick="closeCreatePlanModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        function openCreatePlanModal() {
+            document.getElementById('createPlanModal').classList.remove('hidden');
+        }
+
+        function closeCreatePlanModal() {
+            document.getElementById('createPlanModal').classList.add('hidden');
+        }
+
+        function closeModalOnOverlay(event) {
+            if (event.target === event.currentTarget) {
+                closeCreatePlanModal();
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeCreatePlanModal();
+            }
+        });
+    </script>
+}

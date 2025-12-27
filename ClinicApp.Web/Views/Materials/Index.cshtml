@@ -1,0 +1,252 @@
+@using ClinicApp.Web.ViewModels
+@using ClinicApp.Web.Models
+@model MaterialsPageViewModel
+
+@{
+    Layout = "_ManagerLayout";
+    ViewData["Title"] = "Materials";
+}
+
+<div class="materials-page">
+
+    <!-- Header -->
+    <header class="materials-header">
+        <div class="materials-header-text">
+            <h1 class="materials-title">Materials</h1>
+            <p class="materials-subtitle">
+                Manage clinic supplies such as gloves, masks, disinfectants and other consumables.
+            </p>
+        </div>
+
+        <div class="materials-header-actions">
+            <button class="btn-primary">
+                Add Material
+            </button>
+        </div>
+    </header>
+
+    <!-- Main grid: table + form -->
+    <section class="materials-grid">
+
+        <!-- Left side: table -->
+        <div class="materials-card materials-table-card">
+            <div class="materials-card-header">
+                <div>
+                    <h2 class="materials-card-title">Current Stock</h2>
+                    <p class="materials-card-caption">Sample data only – no backend logic yet.</p>
+                </div>
+                <div class="materials-card-extra">
+                    <select class="materials-filter">
+                        <option>All status</option>
+                        <option>OK</option>
+                        <option>Low</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="materials-table-wrapper">
+                <table class="materials-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"></th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Unit</th>
+                            <th>Quantity</th>
+                            <th>Minimum limit</th>
+                            <th>Status</th>
+                            <th style="width: 140px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Materials.Any())
+                        {
+                            foreach (var item in Model.Materials)
+                            {
+                                var isLow = item.Quantity <= item.MinimumLimit;
+                                <tr>
+                                    <td>
+                                       <button class="btn-history" type="button" onclick="toggleHistory(@item.Id, this)" aria-expanded="false">
+                                       <span class="btn-history-icon">▶</span>
+                                       </button>
+
+                                    </td>
+                                    <td>@item.Name</td>
+                                    <td>@item.Description</td>
+                                    <td>@item.Unit</td>
+                                    <td>@item.Quantity</td>
+                                    <td>@item.MinimumLimit</td>
+                                    <td>
+                                        @if (isLow)
+                                        {
+                                            <span class="badge badge-warning">Low</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-ok">OK</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn-ghost" onclick="editMaterial(@item.Id)">Edit</button>
+                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display: inline;" onsubmit="return confirm('Delete this material?')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-ghost btn-danger">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                 <tr id="history-@item.Id" class="materials-history-row" style="display: none;">
+                                    <td colspan="8">
+                                      <div class="history-inner">
+                                       <div class="history-loading">Loading history...</div>
+                                       <div class="history-content" style="display: none;"></div>
+                                      </div>
+                                     </td>
+                                 </tr>
+
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8">No materials found for this clinic yet.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right side: form -->
+        <div class="materials-card materials-form-card">
+            <div class="materials-card-header">
+                <div>
+                    <h2 class="materials-card-title">Material details</h2>
+                    <p class="materials-card-caption">Static form only – wiring to backend comes later.</p>
+                </div>
+            </div>
+
+            <form asp-action="Add" asp-controller="Materials" method="post" class="materials-form">
+                @Html.AntiForgeryToken()
+
+                <div class="materials-field">
+                    <label class="materials-label" asp-for="NewMaterial.Name"></label>
+                    <input class="materials-input" asp-for="NewMaterial.Name" />
+                    <span class="materials-error" asp-validation-for="NewMaterial.Name"></span>
+                </div>
+
+                <div class="materials-field">
+                    <label class="materials-label" asp-for="NewMaterial.Description"></label>
+                    <textarea class="materials-textarea" asp-for="NewMaterial.Description" rows="3"></textarea>
+                    <span class="materials-error" asp-validation-for="NewMaterial.Description"></span>
+                </div>
+
+                <div class="materials-field-row">
+                    <div class="materials-field">
+                        <label class="materials-label" asp-for="NewMaterial.Unit"></label>
+                        <select class="materials-select" asp-for="NewMaterial.Unit">
+                            <option value="">Select unit</option>
+                            <option>Box</option>
+                            <option>Unit</option>
+                            <option>Liter</option>
+                            <option>ml</option>
+                            <option>Pack</option>
+                        </select>
+                        <span class="materials-error" asp-validation-for="NewMaterial.Unit"></span>
+                    </div>
+
+                    <div class="materials-field">
+                        <label class="materials-label" asp-for="NewMaterial.Quantity"></label>
+                        <input class="materials-input" asp-for="NewMaterial.Quantity" type="number" min="0" />
+                        <span class="materials-error" asp-validation-for="NewMaterial.Quantity"></span>
+                    </div>
+                </div>
+
+                <div class="materials-field">
+                    <label class="materials-label" asp-for="NewMaterial.MinimumLimit"></label>
+                    <input class="materials-input" asp-for="NewMaterial.MinimumLimit" type="number" min="0" />
+                    <span class="materials-error" asp-validation-for="NewMaterial.MinimumLimit"></span>
+                </div>
+
+                <div class="materials-field">
+                    <label class="materials-label" asp-for="NewMaterial.Supplier">Supplier</label>
+                    <input class="materials-input" asp-for="NewMaterial.Supplier" placeholder="Supplier name" />
+                    <span class="materials-error" asp-validation-for="NewMaterial.Supplier"></span>
+                </div>
+
+                <div class="materials-form-actions">
+                    <button type="submit" class="btn-primary">
+                        Save
+                    </button>
+                    <button type="reset" class="btn-ghost">
+                        Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+    async function toggleHistory(materialId, buttonEl) {
+        const historyRow = document.getElementById('history-' + materialId);
+        const isHidden = historyRow.style.display === 'none' || historyRow.style.display === '';
+
+        if (isHidden) {
+            // Show history row
+            historyRow.style.display = 'table-row';
+            buttonEl.setAttribute('aria-expanded', 'true');
+
+            const loadingDiv = historyRow.querySelector('.history-loading');
+            const contentDiv = historyRow.querySelector('.history-content');
+
+            if (contentDiv.innerHTML.trim() === '') {
+                try {
+                    const response = await fetch('/Materials/History/' + materialId);
+                    const history = await response.json();
+
+                    loadingDiv.style.display = 'none';
+                    contentDiv.style.display = 'block';
+
+                    if (history.length === 0) {
+                        contentDiv.innerHTML = '<p>No history found.</p>';
+                    } else {
+                        let html = '<table>';
+                        html += '<thead><tr><th>Date</th><th>Change</th><th>New Quantity</th><th>Supplier</th><th>Note</th></tr></thead><tbody>';
+
+                        history.forEach(h => {
+                            const date = new Date(h.createdAt || h.CreatedAt).toLocaleString();
+                            html += `<tr>
+                                <td>${date}</td>
+                                <td>${h.quantityChange > 0 ? '+' : ''}${h.quantityChange}</td>
+                                <td>${h.newQuantity}</td>
+                                <td>${h.supplier || '-'}</td>
+                                <td>${h.note || '-'}</td>
+                            </tr>`;
+                        });
+
+                        html += '</tbody></table>';
+                        contentDiv.innerHTML = html;
+                    }
+                } catch (error) {
+                    loadingDiv.style.display = 'none';
+                    contentDiv.style.display = 'block';
+                    contentDiv.innerHTML = '<p style="color: #fca5a5;">Error loading history.</p>';
+                }
+            }
+        } else {
+            // Hide history row
+            historyRow.style.display = 'none';
+            buttonEl.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    function editMaterial(id) {
+        alert('Edit functionality coming soon for material ID: ' + id);
+    }
+</script>
+
+}

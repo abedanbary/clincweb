@@ -1,0 +1,489 @@
+:root {
+    --profile-gap: 18px;
+}
+
+/* Page wrapper */
+.profile-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--profile-gap);
+}
+
+/* Header */
+.profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.profile-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.btn-back {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 13px;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-back:hover {
+    background-color: var(--color-surface-alt);
+    transform: translateX(-2px);
+}
+
+.profile-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.profile-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.profile-subtitle {
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+/* Main Grid */
+.profile-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: var(--profile-gap);
+}
+
+/* Sidebar */
+.profile-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--profile-gap);
+}
+
+/* Card */
+.profile-card {
+    background: var(--color-surface);
+    border-radius: 14px;
+    border: 1px solid var(--color-border);
+    padding: 16px 18px 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.profile-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.profile-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+/* Info List */
+.profile-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.profile-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.profile-info-label {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.profile-info-value {
+    font-size: 14px;
+    color: var(--color-text);
+}
+
+/* Medical List */
+.profile-medical-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.profile-medical-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    background: var(--color-surface-alt);
+    border-radius: 8px;
+}
+
+.profile-medical-label {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.profile-medical-value {
+    font-size: 13px;
+    color: var(--color-text);
+    line-height: 1.5;
+}
+
+.profile-empty {
+    text-align: center;
+    padding: 20px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+/* Dental Chart Card */
+.dental-chart-card {
+    min-height: 600px;
+}
+
+.dental-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid var(--color-border);
+}
+
+.legend-color.healthy {
+    background-color: #10b981;
+}
+
+.legend-color.caries {
+    background-color: #ef4444;
+}
+
+.legend-color.filled {
+    background-color: #3b82f6;
+}
+
+.legend-color.crown {
+    background-color: #f59e0b;
+}
+
+.legend-color.root-canal {
+    background-color: #8b5cf6;
+}
+
+.legend-color.missing {
+    background-color: #6b7280;
+}
+
+/* Dental Chart */
+.dental-chart-container {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    margin-top: 20px;
+}
+
+.dental-jaw {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.jaw-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+    text-align: center;
+}
+
+.teeth-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.jaw-separator {
+    width: 2px;
+    height: 60px;
+    background: var(--color-border);
+    margin: 0 12px;
+}
+
+/* Tooth */
+.tooth {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.tooth-visual {
+    width: 36px;
+    height: 50px;
+    border-radius: 6px 6px 12px 12px;
+    border: 2px solid var(--color-border);
+    background: #ffffff;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.tooth:hover .tooth-visual {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.tooth-number {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+/* Tooth Status Colors */
+.tooth-visual.healthy {
+    background: #10b981;
+    border-color: #059669;
+}
+
+.tooth-visual.caries {
+    background: #ef4444;
+    border-color: #dc2626;
+}
+
+.tooth-visual.filled {
+    background: #3b82f6;
+    border-color: #2563eb;
+}
+
+.tooth-visual.crown {
+    background: #f59e0b;
+    border-color: #d97706;
+}
+
+.tooth-visual.root-canal {
+    background: #8b5cf6;
+    border-color: #7c3aed;
+}
+
+.tooth-visual.missing {
+    background: #6b7280;
+    border-color: #4b5563;
+    opacity: 0.5;
+}
+
+.tooth-visual.extraction {
+    background: #f97316;
+    border-color: #ea580c;
+}
+
+.tooth-visual.other {
+    background: #64748b;
+    border-color: #475569;
+}
+
+/* Modal (reuse from patients.css) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-card {
+    background: var(--color-surface);
+    border-radius: 14px;
+    border: 1px solid var(--color-border);
+    padding: 20px 24px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+    max-width: 500px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.modal-close:hover {
+    background-color: var(--color-surface-alt);
+    color: var(--color-text);
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Form Fields (reuse from patients.css) */
+.patients-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.patients-label {
+    font-size: 12px;
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.patients-select,
+.patients-textarea {
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    padding: 8px 10px;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+}
+
+.patients-select:focus,
+.patients-textarea:focus {
+    border-color: var(--color-sky);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+.patients-textarea {
+    resize: vertical;
+}
+
+.patients-form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+
+.btn-primary {
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(90deg, var(--color-sky), var(--color-sky-soft));
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-ghost {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+}
+
+.btn-ghost:hover {
+    background-color: var(--color-surface-alt);
+    border-color: var(--color-text-muted);
+    transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-sidebar {
+        order: 2;
+    }
+    
+    .profile-main {
+        order: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .teeth-row {
+        flex-wrap: wrap;
+    }
+    
+    .jaw-separator {
+        display: none;
+    }
+    
+    .dental-legend {
+        font-size: 11px;
+    }
+
+}

@@ -1,0 +1,279 @@
+/* Calendar Custom Styles */
+.fc {
+    font-family: inherit;
+}
+
+.fc .fc-toolbar-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.fc .fc-button {
+    background: #10b981;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    text-transform: capitalize;
+    transition: all 0.2s ease;
+}
+
+.fc .fc-button:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.fc .fc-button-primary:not(:disabled):active,
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+    background: #047857;
+}
+
+.fc .fc-button-group {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.fc-theme-standard .fc-scrollgrid {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+    border-color: #e2e8f0;
+}
+
+.fc .fc-daygrid-day-number {
+    color: #1e293b;
+    font-weight: 500;
+    padding: 8px;
+}
+
+.fc .fc-col-header-cell {
+    background: #f8fafc;
+    padding: 12px 0;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    background: #10b981;
+    color: white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fc-event {
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.fc-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.fc-event-title {
+    font-weight: 600;
+}
+
+.fc-event-time {
+    font-weight: 500;
+}
+
+/* Details Modal */
+.appointment-details-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(4px);
+}
+
+.appointment-details-modal.active {
+    display: flex;
+}
+
+.appointment-details-card {
+    background: #ffffff;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.appointment-details-header {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.appointment-details-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.appointment-details-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 24px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.appointment-details-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.appointment-details-body {
+    padding: 24px;
+}
+
+.appointment-detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.appointment-detail-row:last-child {
+    border-bottom: none;
+}
+
+.appointment-detail-icon {
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.appointment-detail-content {
+    flex: 1;
+}
+
+.appointment-detail-label {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.appointment-detail-value {
+    font-size: 15px;
+    color: #1e293b;
+    font-weight: 500;
+}
+
+.appointment-status-badge {
+    display: inline-flex;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-scheduled {
+    background: rgba(59, 130, 246, 0.15);
+    color: #2563eb;
+}
+
+.status-completed {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+}
+
+.status-cancelled {
+    background: rgba(239, 68, 68, 0.15);
+    color: #dc2626;
+}
+
+.status-noshow {
+    background: rgba(245, 158, 11, 0.15);
+    color: #d97706;
+}
+
+.appointment-details-actions {
+    padding: 16px 24px;
+    background: #f8fafc;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.btn-edit {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid #10b981;
+    background: white;
+    color: #10b981;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-edit:hover {
+    background: #10b981;
+    color: white;
+}
+
+.btn-delete {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid #ef4444;
+    background: white;
+    color: #ef4444;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+    background: #ef4444;
+    color: white;
+}

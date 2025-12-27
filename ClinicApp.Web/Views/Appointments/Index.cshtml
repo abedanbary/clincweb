@@ -1,0 +1,371 @@
+@model ClinicApp.Web.ViewModels.AppointmentsPageViewModel
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = "Appointments";
+    Layout = "_ManagerLayout";
+    var userRole = User.FindFirstValue(ClaimTypes.Role);
+}
+
+<link rel="stylesheet" href="~/css/Appointments.css" />
+
+<div class="appointments-page">
+
+    <!-- Header -->
+    <header class="appointments-header">
+        <div class="appointments-header-text">
+            <h1 class="appointments-title">Appointments</h1>
+            <p class="appointments-subtitle">
+                @if (userRole == "Doctor")
+                {
+                    <text>Manage your appointments schedule</text>
+                }
+                else
+                {
+                    <text>Manage clinic appointments and patient scheduling</text>
+                }
+            </p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a asp-action="Calendar" class="btn-ghost">📅 Calendar View</a>
+            <button type="button" class="btn-primary" id="openModalBtn">+ New Appointment</button>
+        </div>
+    </header>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-error">
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- Search & Filters -->
+    <div class="appointments-filters-section">
+        <div class="appointments-search-box">
+            <input type="text" 
+                   id="searchInput" 
+                   class="appointments-search-input" 
+                   placeholder="Search by patient name, doctor, or date..." />
+        </div>
+        <div class="appointments-filters-group">
+            <select class="appointments-filter" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="1">Scheduled</option>
+                <option value="2">Completed</option>
+                <option value="3">Cancelled</option>
+                <option value="4">No Show</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Appointments Table (Full Width) -->
+    <section class="appointments-card">
+        <div class="appointments-card-header">
+            <div>
+                <h2 class="appointments-card-title">Appointments Schedule</h2>
+                <p class="appointments-card-caption">
+                    Showing <span id="visibleCount">@Model.Appointments.Count()</span> of @Model.Appointments.Count() appointment(s)
+                </p>
+            </div>
+        </div>
+
+        <div class="appointments-table-wrapper">
+            <table class="appointments-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th style="width: 140px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Appointments.Any())
+                    {
+                        @foreach (var appointment in Model.Appointments)
+                        {
+                            var statusClass = appointment.Status switch
+                            {
+                                AppointmentStatus.Scheduled => "badge-scheduled",
+                                AppointmentStatus.Completed => "badge-completed",
+                                AppointmentStatus.Cancelled => "badge-cancelled",
+                                AppointmentStatus.NoShow => "badge-noshow",
+                                _ => "badge-scheduled"
+                            };
+
+                            <tr data-status="@((int)appointment.Status)">
+                                <td>
+                                    <div>@appointment.StartTime.ToLocalTime().ToString("MMM dd, yyyy")</div>
+                                    <div style="font-size: 11px; color: #64748b;">
+                                        @appointment.StartTime.ToLocalTime().ToString("HH:mm") - @appointment.EndTime.ToLocalTime().ToString("HH:mm")
+                                    </div>
+                                </td>
+                                <td>
+                                    @appointment.Patient.FirstName @appointment.Patient.LastName
+                                    <div style="font-size: 11px; color: #64748b;">
+                                        @appointment.Patient.Phone
+                                    </div>
+                                </td>
+                                <td>Dr. @appointment.Doctor.FirstName @appointment.Doctor.LastName</td>
+                                <td>@(appointment.ReasonForVisit ?? "-")</td>
+                                <td>
+                                    <span class="badge @statusClass">@appointment.Status</span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn-ghost" onclick="alert('Edit coming soon')">Edit</button>
+                                    @if (userRole == "Manager")
+                                    {
+                                        <form asp-action="Delete" asp-route-id="@appointment.Id" method="post" style="display: inline;" onsubmit="return confirm('Delete this appointment?')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-ghost btn-danger">Delete</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 24px; color: #64748b;">
+                                No appointments found. Click "New Appointment" to create one.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+
+<!-- Modal Overlay -->
+<div class="modal-overlay" id="appointmentModal" style="display: none;">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title">New Appointment</h2>
+            <button type="button" class="modal-close" id="closeModalBtn">&times;</button>
+        </div>
+
+        <form asp-action="Create" method="post" class="appointments-form">
+            @Html.AntiForgeryToken()
+
+            <!-- Patient Selection Toggle -->
+            <div class="patient-toggle">
+                <label>
+                    <input type="radio" asp-for="NewAppointment.IsNewPatient" value="false" checked id="existingPatientRadio" />
+                    <span>Existing Patient</span>
+                </label>
+                <label>
+                    <input type="radio" asp-for="NewAppointment.IsNewPatient" value="true" id="newPatientRadio" />
+                    <span>New Patient</span>
+                </label>
+            </div>
+
+            <!-- Existing Patient Section -->
+            <div id="existing-patient-section">
+                <div class="appointments-field">
+                    <label class="appointments-label" asp-for="NewAppointment.ExistingPatientId">Patient</label>
+                    <select asp-for="NewAppointment.ExistingPatientId" asp-items="Model.Patients" class="appointments-select">
+                        <option value="">-- Select Patient --</option>
+                    </select>
+                    <span asp-validation-for="NewAppointment.ExistingPatientId" class="appointments-error"></span>
+                </div>
+            </div>
+
+            <!-- New Patient Section -->
+            <div id="new-patient-section" style="display: none;">
+                <h3>Patient Details</h3>
+                
+                <div class="appointments-field-row">
+                    <div class="appointments-field">
+                        <label class="appointments-label">First Name *</label>
+                        <input asp-for="NewAppointment.NewPatientFirstName" class="appointments-input" />
+                    </div>
+                    <div class="appointments-field">
+                        <label class="appointments-label">Last Name *</label>
+                        <input asp-for="NewAppointment.NewPatientLastName" class="appointments-input" />
+                    </div>
+                </div>
+
+                <div class="appointments-field-row">
+                    <div class="appointments-field">
+                        <label class="appointments-label">Phone *</label>
+                        <input asp-for="NewAppointment.NewPatientPhone" class="appointments-input" />
+                    </div>
+                    <div class="appointments-field">
+                        <label class="appointments-label">Gender</label>
+                        <select asp-for="NewAppointment.NewPatientGender" class="appointments-select">
+                            <option value="">-- Select --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="appointments-field">
+                    <label class="appointments-label">Date of Birth</label>
+                    <input asp-for="NewAppointment.NewPatientDateOfBirth" type="date" class="appointments-input" />
+                </div>
+            </div>
+
+            <!-- Appointment Details -->
+            <div class="appointments-field">
+                <label class="appointments-label" asp-for="NewAppointment.DoctorId">Doctor</label>
+                <select asp-for="NewAppointment.DoctorId" asp-items="Model.Doctors" class="appointments-select">
+                    <option value="">-- Select Doctor --</option>
+                </select>
+                <span asp-validation-for="NewAppointment.DoctorId" class="appointments-error"></span>
+            </div>
+
+            <div class="appointments-field-row">
+                <div class="appointments-field">
+                    <label class="appointments-label" asp-for="NewAppointment.StartTime">Start Time</label>
+                    <input asp-for="NewAppointment.StartTime" type="datetime-local" class="appointments-input" id="StartTime" />
+                    <span asp-validation-for="NewAppointment.StartTime" class="appointments-error"></span>
+                </div>
+                <div class="appointments-field">
+                    <label class="appointments-label" asp-for="NewAppointment.EndTime">End Time</label>
+                    <input asp-for="NewAppointment.EndTime" type="datetime-local" class="appointments-input" id="EndTime" />
+                    <span asp-validation-for="NewAppointment.EndTime" class="appointments-error"></span>
+                </div>
+            </div>
+
+            <div class="appointments-field">
+                <label class="appointments-label" asp-for="NewAppointment.ReasonForVisit">Reason for Visit</label>
+                <textarea asp-for="NewAppointment.ReasonForVisit" class="appointments-textarea" rows="2"></textarea>
+            </div>
+
+            <div class="appointments-field">
+                <label class="appointments-label" asp-for="NewAppointment.Notes">Notes</label>
+                <textarea asp-for="NewAppointment.Notes" class="appointments-textarea" rows="2"></textarea>
+            </div>
+
+            <div class="appointments-form-actions">
+                <button type="submit" class="btn-primary">Save Appointment</button>
+                <button type="button" class="btn-ghost" id="cancelModalBtn">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        // Get elements
+        const modal = document.getElementById('appointmentModal');
+        const openBtn = document.getElementById('openModalBtn');
+        const closeBtn = document.getElementById('closeModalBtn');
+        const cancelBtn = document.getElementById('cancelModalBtn');
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const visibleCount = document.getElementById('visibleCount');
+
+        // Open modal
+        openBtn.addEventListener('click', function() {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        });
+
+        // Close modal function
+        function closeModal() {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Close button
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+
+        // Click outside to close
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // ESC key to close
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.style.display === 'flex') {
+                closeModal();
+            }
+        });
+
+        // Search & Filter Function
+        function filterAppointments() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const statusValue = statusFilter.value;
+            const rows = document.querySelectorAll('.appointments-table tbody tr[data-status]');
+            let visibleRows = 0;
+
+            rows.forEach(row => {
+                const rowText = row.textContent.toLowerCase();
+                const rowStatus = row.dataset.status;
+                const matchesSearch = searchTerm === '' || rowText.includes(searchTerm);
+                const matchesStatus = statusValue === '' || rowStatus === statusValue;
+
+                if (matchesSearch && matchesStatus) {
+                    row.style.display = '';
+                    visibleRows++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            visibleCount.textContent = visibleRows;
+        }
+
+        searchInput.addEventListener('input', filterAppointments);
+        statusFilter.addEventListener('change', filterAppointments);
+
+        // Patient toggle
+        const existingRadio = document.getElementById('existingPatientRadio');
+        const newRadio = document.getElementById('newPatientRadio');
+        const existingSection = document.getElementById('existing-patient-section');
+        const newSection = document.getElementById('new-patient-section');
+
+        existingRadio.addEventListener('change', function() {
+            if (this.checked) {
+                existingSection.style.display = 'block';
+                newSection.style.display = 'none';
+            }
+        });
+
+        newRadio.addEventListener('change', function() {
+            if (this.checked) {
+                existingSection.style.display = 'none';
+                newSection.style.display = 'block';
+            }
+        });
+
+        // Auto-calculate end time
+        const startTimeInput = document.getElementById('StartTime');
+        const endTimeInput = document.getElementById('EndTime');
+
+        startTimeInput.addEventListener('change', function() {
+            if (this.value) {
+                const startDate = new Date(this.value);
+                startDate.setMinutes(startDate.getMinutes() + 30);
+        
+                const year = startDate.getFullYear();
+                const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                const day = String(startDate.getDate()).padStart(2, '0');
+                const hours = String(startDate.getHours()).padStart(2, '0');
+                const minutes = String(startDate.getMinutes()).padStart(2, '0');
+        
+                endTimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+        });
+    </script>
+}

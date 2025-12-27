@@ -1,0 +1,362 @@
+@using ClinicApp.Web.ViewModels
+@using ClinicApp.Web.Models
+@model PatientProfileViewModel
+
+@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = $"{Model.FirstName} {Model.LastName}";
+}
+
+<link rel="stylesheet" href="~/css/patient-profile.css" />
+
+<div class="profile-page">
+
+    <!-- Header -->
+    <header class="profile-header">
+        <div class="profile-header-left">
+            <a asp-action="Index" class="btn-back">← Back to Patients</a>
+            <div class="profile-header-text">
+                <h1 class="profile-title">@Model.FirstName @Model.LastName</h1>
+                <p class="profile-subtitle">
+                    @Model.Age years old • @Model.Gender
+                    @if (!string.IsNullOrEmpty(Model.IdNumber))
+                    {
+                        <span> • ID: @Model.IdNumber</span>
+                    }
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <section class="profile-grid">
+
+        <!-- Left Column: Patient Info -->
+        <div class="profile-sidebar">
+            
+            <!-- Contact Info Card -->
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <h2 class="profile-card-title">Contact Information</h2>
+                </div>
+                <div class="profile-info-list">
+                    <div class="profile-info-item">
+                        <span class="profile-info-label">📞 Phone</span>
+                        <span class="profile-info-value">@Model.Phone</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Email))
+                    {
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">📧 Email</span>
+                            <span class="profile-info-value">@Model.Email</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Address))
+                    {
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">📍 Address</span>
+                            <span class="profile-info-value">@Model.Address</span>
+                        </div>
+                    }
+                    <div class="profile-info-item">
+                        <span class="profile-info-label">🎂 Date of Birth</span>
+                        <span class="profile-info-value">@Model.DateOfBirth.ToString("MMMM dd, yyyy")</span>
+                    </div>
+                </div>
+            </div>
+            <div class="profile-card">
+            <div class="profile-card-header">
+             <h2 class="profile-card-title">Quick Actions</h2>
+            </div>
+            <div class="quick-actions">
+        <a asp-controller="TreatmentPlan" asp-action="Index" asp-route-id="@Model.PatientId" class="quick-action-btn">
+            <span class="quick-action-icon">📋</span>
+            <span class="quick-action-text">Treatment Plans</span>
+        </a>
+        <a asp-controller="Appointments" asp-action="Index" asp-route-patientId="@Model.PatientId" class="quick-action-btn">
+            <span class="quick-action-icon">📅</span>
+            <span class="quick-action-text">Appointments</span>
+        </a>
+        <a href="#" class="quick-action-btn" onclick="alert('Coming soon!'); return false;">
+            <span class="quick-action-icon">💰</span>
+            <span class="quick-action-text">Payments</span>
+        </a>
+    </div>
+</div>
+
+            <!-- Medical Info Card -->
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <h2 class="profile-card-title">Medical Information</h2>
+                </div>
+                <div class="profile-medical-list">
+                    @if (!string.IsNullOrEmpty(Model.Allergies))
+                    {
+                        <div class="profile-medical-item">
+                            <span class="profile-medical-label">⚠️ Allergies</span>
+                            <span class="profile-medical-value">@Model.Allergies</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ChronicDiseases))
+                    {
+                        <div class="profile-medical-item">
+                            <span class="profile-medical-label">🩺 Chronic Diseases</span>
+                            <span class="profile-medical-value">@Model.ChronicDiseases</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.MedicalNotes))
+                    {
+                        <div class="profile-medical-item">
+                            <span class="profile-medical-label">📝 Medical Notes</span>
+                            <span class="profile-medical-value">@Model.MedicalNotes</span>
+                        </div>
+                    }
+                    @if (string.IsNullOrEmpty(Model.Allergies) && string.IsNullOrEmpty(Model.ChronicDiseases) && string.IsNullOrEmpty(Model.MedicalNotes))
+                    {
+                        <div class="profile-empty">No medical information recorded</div>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Dental Chart -->
+        <div class="profile-main">
+            <div class="profile-card dental-chart-card">
+                <div class="profile-card-header">
+                    <h2 class="profile-card-title">Dental Chart</h2>
+                    <div class="dental-legend">
+                        <span class="legend-item"><span class="legend-color healthy"></span> Healthy</span>
+                        <span class="legend-item"><span class="legend-color caries"></span> Caries</span>
+                        <span class="legend-item"><span class="legend-color filled"></span> Filled</span>
+                        <span class="legend-item"><span class="legend-color crown"></span> Crown</span>
+                        <span class="legend-item"><span class="legend-color root-canal"></span> Root Canal</span>
+                        <span class="legend-item"><span class="legend-color missing"></span> Missing</span>
+                    </div>
+                </div>
+
+                <!-- Dental Chart SVG -->
+                <div class="dental-chart-container">
+                    <!-- Upper Jaw -->
+                    <div class="dental-jaw upper-jaw">
+                        <h3 class="jaw-title">Upper Jaw</h3>
+                        <div class="teeth-row">
+                            @* Right side: 11-18 *@
+                            @for (int i = 18; i >= 11; i--)
+                            {
+                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)">
+                                    <div class="tooth-visual" id="tooth-@i"></div>
+                                    <div class="tooth-number">@i</div>
+                                </div>
+                            }
+                            <div class="jaw-separator"></div>
+                            @* Left side: 21-28 *@
+                            @for (int i = 21; i <= 28; i++)
+                            {
+                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)">
+                                    <div class="tooth-visual" id="tooth-@i"></div>
+                                    <div class="tooth-number">@i</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Lower Jaw -->
+                    <div class="dental-jaw lower-jaw">
+                        <h3 class="jaw-title">Lower Jaw</h3>
+                        <div class="teeth-row">
+                            @* Right side: 41-48 *@
+                            @for (int i = 48; i >= 41; i--)
+                            {
+                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)">
+                                    <div class="tooth-visual" id="tooth-@i"></div>
+                                    <div class="tooth-number">@i</div>
+                                </div>
+                            }
+                            <div class="jaw-separator"></div>
+                            @* Left side: 31-38 *@
+                            @for (int i = 31; i <= 38; i++)
+                            {
+                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)">
+                                    <div class="tooth-visual" id="tooth-@i"></div>
+                                    <div class="tooth-number">@i</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </section>
+
+    <!-- Edit Tooth Modal -->
+    <div id="toothModal" class="modal-overlay hidden" onclick="closeModalOnOverlay(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Tooth <span id="modal-tooth-number"></span></h3>
+                <button class="modal-close" onclick="closeToothModal()">&times;</button>
+            </div>
+            
+            <form id="toothForm" class="modal-body">
+                <input type="hidden" id="tooth-number-input" name="toothNumber" />
+                
+                <div class="patients-field">
+                    <label class="patients-label">Status</label>
+                    <select class="patients-select" id="tooth-status" name="status" required>
+                        <option value="1">Healthy</option>
+                        <option value="2">Caries</option>
+                        <option value="3">Filled</option>
+                        <option value="4">Crown</option>
+                        <option value="5">Root Canal</option>
+                        <option value="6">Missing</option>
+                        <option value="7">Extraction Needed</option>
+                        <option value="8">Other</option>
+                    </select>
+                </div>
+                
+                <div class="patients-field">
+                    <label class="patients-label">Notes (Optional)</label>
+                    <textarea class="patients-textarea" id="tooth-notes" name="notes" rows="3" placeholder="Add treatment notes..."></textarea>
+                </div>
+                
+                <div class="patients-form-actions">
+                    <button type="submit" class="btn-primary">
+                        Save
+                    </button>
+                    <button type="button" class="btn-ghost" onclick="closeToothModal()">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        // Tooth data from server
+        const patientId = @Model.PatientId;
+        const teethData = @Html.Raw(Json.Serialize(Model.Teeth.Select(t => new {
+            toothNumber = t.ToothNumber,
+            status = (int)t.Status,
+            notes = t.Notes
+        })));
+
+        // Initialize tooth colors on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            teethData.forEach(tooth => {
+                updateToothVisual(tooth.toothNumber, tooth.status);
+            });
+        });
+
+        // Select tooth for editing
+        function selectTooth(toothNumber) {
+            document.getElementById('modal-tooth-number').textContent = toothNumber;
+            document.getElementById('tooth-number-input').value = toothNumber;
+            
+            // Find existing tooth data
+            const existingTooth = teethData.find(t => t.toothNumber === toothNumber);
+            if (existingTooth) {
+                document.getElementById('tooth-status').value = existingTooth.status;
+                document.getElementById('tooth-notes').value = existingTooth.notes || '';
+            } else {
+                document.getElementById('tooth-status').value = '1'; // Healthy
+                document.getElementById('tooth-notes').value = '';
+            }
+            
+            document.getElementById('toothModal').classList.remove('hidden');
+        }
+
+        // Close modal
+        function closeToothModal() {
+            document.getElementById('toothModal').classList.add('hidden');
+        }
+
+        function closeModalOnOverlay(event) {
+            if (event.target === event.currentTarget) {
+                closeToothModal();
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('toothForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const toothNumber = parseInt(document.getElementById('tooth-number-input').value);
+            const status = parseInt(document.getElementById('tooth-status').value);
+            const notes = document.getElementById('tooth-notes').value;
+            
+            try {
+                const response = await fetch('@Url.Action("UpdateTooth", "Patients")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: new URLSearchParams({
+                        patientId: patientId,
+                        toothNumber: toothNumber,
+                        status: status,
+                        notes: notes,
+                        __RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]').value
+                    })
+                });
+                
+                if (response.ok) {
+                    // Update visual
+                    updateToothVisual(toothNumber, status);
+                    
+                    // Update local data
+                    const existingIndex = teethData.findIndex(t => t.toothNumber === toothNumber);
+                    if (existingIndex >= 0) {
+                        teethData[existingIndex] = { toothNumber, status, notes };
+                    } else {
+                        teethData.push({ toothNumber, status, notes });
+                    }
+                    
+                    closeToothModal();
+                } else {
+                    alert('Error updating tooth. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error updating tooth. Please try again.');
+            }
+        });
+
+        // Update tooth visual based on status
+        function updateToothVisual(toothNumber, status) {
+            const toothElement = document.getElementById(`tooth-${toothNumber}`);
+            if (!toothElement) return;
+            
+            // Remove all status classes
+            toothElement.className = 'tooth-visual';
+            
+            // Add status class
+            const statusClass = {
+                1: 'healthy',
+                2: 'caries',
+                3: 'filled',
+                4: 'crown',
+                5: 'root-canal',
+                6: 'missing',
+                7: 'extraction',
+                8: 'other'
+            }[status] || 'healthy';
+            
+            toothElement.classList.add(statusClass);
+        }
+
+        // ESC to close
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeToothModal();
+            }
+        });
+    </script>
+    
+    @Html.AntiForgeryToken()
+}

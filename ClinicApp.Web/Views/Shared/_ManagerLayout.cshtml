@@ -1,0 +1,112 @@
+@{
+    Layout = null;
+    var title = ViewData["Title"] ?? "Manager Panel";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@title - Clinic Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="~/css/manager.css" />
+    <link rel="stylesheet" href="~/css/materials.css" />
+    <link rel="stylesheet" href="~/css/users.css" />
+     <link rel="stylesheet" href="~/css/patients.css" />
+     <link rel="stylesheet" href="~/css/patient-profile.css" />
+     <link rel="stylesheet" href="~/css/doctor-dashboard.css" />
+     <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+</head>
+<body>
+    <div class="manager-shell">
+        <!-- Sidebar -->
+        <aside class="manager-sidebar">
+            <div class="sidebar-header">
+                <div class="brand-logo">
+                    CM
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">Clinic Manager</span>
+                    <span class="brand-subtitle">Admin Dashboard</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Overview</div>
+                    <a class="sidebar-link is-active" href="#">
+                        <span class="sidebar-link-text">Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Management</div>
+                   <a class="sidebar-link" asp-controller="Users" asp-action="Index">
+                        <span class="sidebar-link-text">Users</span>
+                    </a>
+                    <a class="sidebar-link" asp-controller="Patients" asp-action="Index">
+                        <span class="sidebar-link-text">Patients</span>
+                    </a>
+                   <a class="sidebar-link" asp-controller="Appointments" asp-action="Index">
+                        <span class="sidebar-link-text">Appointments</span>
+                    </a>
+                   
+                    <a class="sidebar-link" asp-controller="Materials" asp-action="Index">
+                        <span class="sidebar-link-text">Materials</span>
+                    </a>
+                    <a class="sidebar-link" href="#">
+                        <span class="sidebar-link-text">Payments</span>
+                    </a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Settings</div>
+                    <a class="sidebar-link" href="#">
+                        <span class="sidebar-link-text">Clinic Settings</span>
+                    </a>
+                    <a class="sidebar-link" href="#">
+                        <span class="sidebar-link-text">Reports</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main area -->
+        <div class="manager-main">
+            <!-- Top bar -->
+            <header class="manager-topbar">
+                <div class="topbar-left">
+                    <span class="topbar-page-title">@title</span>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="topbar-user">
+                        <div class="user-avatar">
+                            M
+                        </div>
+                        <div class="user-info">
+                            <span class="user-name">Manager Name</span>
+                            <span class="user-role">Clinic Manager</span>
+                        </div>
+                    </div>
+                    <form asp-controller="Auth" asp-action="Logout" method="post" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                      <button type="submit" class="topbar-button">
+                       Logout
+                      </button>
+                    </form>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <main class="manager-content">
+                @RenderBody()
+            </main>
+
+            @RenderSection("Scripts", required: false)
+        </div>
+    </div>
+</body>
+</html>

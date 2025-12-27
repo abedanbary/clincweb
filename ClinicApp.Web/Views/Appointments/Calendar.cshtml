@@ -1,0 +1,234 @@
+@model ClinicApp.Web.ViewModels.AppointmentsPageViewModel
+@{
+    ViewData["Title"] = "Appointments Calendar";
+    Layout = "_ManagerLayout";
+}
+
+<link rel="stylesheet" href="~/css/Appointments.css" />
+<link rel="stylesheet" href="~/css/Calendar.css" />
+
+<div class="appointments-page">
+    <!-- Header -->
+    <header class="appointments-header">
+        <div class="appointments-header-text">
+            <h1 class="appointments-title">Appointments Calendar</h1>
+            <p class="appointments-subtitle">Visual calendar view of all appointments</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button type="button" class="btn-ghost" onclick="printWeekPdf()">🖨️ Print PDF</button>
+            <button type="button" class="btn-ghost" onclick="exportWeekExcel()">📊 Export Excel</button>
+            <a asp-action="Index" class="btn-ghost">📋 Table View</a>
+            <button type="button" class="btn-primary" id="openModalBtn">+ New Appointment</button>
+        </div>
+    </header>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-error">
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- Calendar -->
+    <section class="appointments-card" style="padding: 24px;">
+        <div id="calendar"></div>
+    </section>
+</div>
+
+<!-- Appointment Details/Edit Modal -->
+<div class="appointment-details-modal" id="detailsModal">
+    <div class="appointment-details-card">
+        <div class="appointment-details-header">
+            <h2 class="appointment-details-title" id="modalTitle">Appointment Details</h2>
+            <button type="button" class="appointment-details-close" id="closeDetailsBtn">&times;</button>
+        </div>
+        
+        <!-- View Mode -->
+        <div class="appointment-details-body" id="viewMode">
+            <!-- Content will be dynamically inserted -->
+        </div>
+
+        <!-- Edit Mode (Hidden by default) -->
+        <div class="appointment-details-body" id="editMode" style="display: none;">
+            <form asp-action="Edit" method="post" id="editForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="EditId" name="Id" />
+
+                <!-- Patient Info (Read-only) -->
+                <div class="appointments-field" style="margin-bottom: 16px;">
+                    <label class="appointments-label">Patient</label>
+                    <input type="text" id="EditPatientName" class="appointments-input" readonly style="background: #f1f5f9; cursor: not-allowed;" />
+                </div>
+
+                <div class="appointments-field" style="margin-bottom: 16px;">
+                 <label class="appointments-label">Doctor</label>
+                  <select id="EditDoctorId" name="DoctorId" asp-items="Model.Doctors" class="appointments-select" required>
+                     <option value="">-- Select Doctor --</option>
+                  </select>
+                </div>
+                <!-- Date & Time -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div class="appointments-field">
+                        <label class="appointments-label">Start Time</label>
+                        <input id="EditStartTime" name="StartTime" type="datetime-local" class="appointments-input" required />
+                    </div>
+                    <div class="appointments-field">
+                        <label class="appointments-label">End Time</label>
+                        <input id="EditEndTime" name="EndTime" type="datetime-local" class="appointments-input" required />
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="appointments-field" style="margin-bottom: 16px;">
+                    <label class="appointments-label">Status</label>
+                    <select id="EditStatus" name="Status" class="appointments-select" required>
+                        <option value="1">Scheduled</option>
+                        <option value="2">Completed</option>
+                        <option value="3">Cancelled</option>
+                        <option value="4">No Show</option>
+                    </select>
+                </div>
+
+                <!-- Reason -->
+                <div class="appointments-field" style="margin-bottom: 16px;">
+                    <label class="appointments-label">Reason for Visit</label>
+                    <textarea id="EditReasonForVisit" name="ReasonForVisit" class="appointments-textarea" rows="2"></textarea>
+                </div>
+
+                <!-- Notes -->
+                <div class="appointments-field" style="margin-bottom: 16px;">
+                    <label class="appointments-label">Notes</label>
+                    <textarea id="EditNotes" name="Notes" class="appointments-textarea" rows="2"></textarea>
+                </div>
+            </form>
+        </div>
+
+        <!-- Actions -->
+        <div class="appointment-details-actions" id="detailsActions">
+            <!-- Buttons will be dynamically inserted -->
+        </div>
+    </div>
+</div>
+
+<!-- Create Appointment Modal -->
+<div class="modal-overlay" id="appointmentModal" style="display: none;">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title">New Appointment</h2>
+            <button type="button" class="modal-close" id="closeModalBtn">&times;</button>
+        </div>
+
+        <form asp-action="Create" method="post" class="appointments-form">
+            @Html.AntiForgeryToken()
+
+            <div class="patient-toggle">
+                <label>
+                    <input type="radio" name="NewAppointment.IsNewPatient" value="false" checked id="existingPatientRadio" />
+                    <span>Existing Patient</span>
+                </label>
+                <label>
+                    <input type="radio" name="NewAppointment.IsNewPatient" value="true" id="newPatientRadio" />
+                    <span>New Patient</span>
+                </label>
+            </div>
+
+            <div id="existing-patient-section">
+                <div class="appointments-field">
+                    <label class="appointments-label">Patient</label>
+                    <select asp-for="NewAppointment.ExistingPatientId" asp-items="Model.Patients" class="appointments-select" id="ExistingPatientId">
+                        <option value="">-- Select Patient --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="new-patient-section" style="display: none;">
+                <h3>Patient Details</h3>
+                
+                <div class="appointments-field-row">
+                    <div class="appointments-field">
+                        <label class="appointments-label">First Name *</label>
+                        <input name="NewAppointment.NewPatientFirstName" class="appointments-input" />
+                    </div>
+                    <div class="appointments-field">
+                        <label class="appointments-label">Last Name *</label>
+                        <input name="NewAppointment.NewPatientLastName" class="appointments-input" />
+                    </div>
+                </div>
+
+                <div class="appointments-field-row">
+                    <div class="appointments-field">
+                        <label class="appointments-label">Phone *</label>
+                        <input name="NewAppointment.NewPatientPhone" class="appointments-input" />
+                    </div>
+                    <div class="appointments-field">
+                        <label class="appointments-label">Gender</label>
+                        <select name="NewAppointment.NewPatientGender" class="appointments-select">
+                            <option value="">-- Select --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="appointments-field">
+                    <label class="appointments-label">Date of Birth</label>
+                    <input name="NewAppointment.NewPatientDateOfBirth" type="date" class="appointments-input" />
+                </div>
+            </div>
+
+            <div class="appointments-field">
+                <label class="appointments-label">Doctor</label>
+                <select asp-for="NewAppointment.DoctorId" asp-items="Model.Doctors" class="appointments-select" id="DoctorId">
+                    <option value="">-- Select Doctor --</option>
+                </select>
+            </div>
+
+            <div class="appointments-field-row">
+                <div class="appointments-field">
+                    <label class="appointments-label">Start Time</label>
+                    <input name="NewAppointment.StartTime" type="datetime-local" class="appointments-input" id="StartTime" />
+                </div>
+                <div class="appointments-field">
+                    <label class="appointments-label">End Time</label>
+                    <input name="NewAppointment.EndTime" type="datetime-local" class="appointments-input" id="EndTime" />
+                </div>
+            </div>
+
+            <div class="appointments-field">
+                <label class="appointments-label">Reason for Visit</label>
+                <textarea name="NewAppointment.ReasonForVisit" class="appointments-textarea" rows="2"></textarea>
+            </div>
+
+            <div class="appointments-field">
+                <label class="appointments-label">Notes</label>
+                <textarea name="NewAppointment.Notes" class="appointments-textarea" rows="2"></textarea>
+            </div>
+
+            <div class="appointments-form-actions">
+                <button type="submit" class="btn-primary">Save Appointment</button>
+                <button type="button" class="btn-ghost" id="cancelModalBtn">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    
+    <script>
+        window.appEndpoints = {
+            getDoctors: '@Url.Action("GetDoctorsListAsync", "Appointments")',
+            getAppointment: '@Url.Action("GetAppointment", "Appointments")'
+        };
+    </script>
+
+    <script src="~/js/calendar.js"></script>
+}
