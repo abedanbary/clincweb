@@ -9,3 +9,5 @@ cmds = [
 
 [start]
 cmd = "dotnet /app/out/ClinicApp.Web.dll"
+
+# Updated to force rebuild
