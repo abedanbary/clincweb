@@ -246,6 +246,9 @@ namespace ClinicApp.Web.Controllers
         .Where(h => materialIds.Contains(h.MaterialId))
         .ToListAsync();
     
+    Console.WriteLine($"Materials count: {materials.Count}");
+    Console.WriteLine($"History count: {allHistory.Count}");
+    
     var clinic = await _context.Clinics.FindAsync(clinicId);
     var clinicName = clinic?.Name ?? "Clinic";
     
