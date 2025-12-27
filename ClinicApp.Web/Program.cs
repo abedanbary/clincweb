@@ -15,9 +15,31 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
-// ✅ Railway: Database Configuration
+// Railway: Database Configuration
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
-if (string.IsNullOrEmpty(connectionString))
+if (!string.IsNullOrEmpty(connectionString))
+{
+    // Convert Railway DATABASE_URL to PostgreSQL connection string
+    try
+    {
+        var databaseUri = new Uri(connectionString);
+        var userInfo = databaseUri.UserInfo.Split(':');
+        
+        connectionString = $"Host={databaseUri.Host};" +
+                          $"Port={databaseUri.Port};" +
+                          $"Database={databaseUri.AbsolutePath.TrimStart('/')};" +
+                          $"Username={userInfo[0]};" +
+                          $"Password={userInfo[1]};" +
+                          $"SSL Mode=Require;" +
+                          $"Trust Server Certificate=true";
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Failed to parse DATABASE_URL: {ex.Message}");
+        connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    }
+}
+else
 {
     // Local development
     connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
