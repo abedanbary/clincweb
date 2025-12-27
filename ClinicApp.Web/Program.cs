@@ -8,39 +8,85 @@ using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ✅ Railway: Configure PORT
+// Enable detailed logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
+
+// Railway: Configure PORT
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+Console.WriteLine($"=== Application Starting ===");
+Console.WriteLine($"Port: {port}");
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
-var pgHost = Environment.GetEnvironmentVariable("PGHOST");
-string connectionString;
-
-if (!string.IsNullOrEmpty(pgHost))
+// Railway: Database Configuration with detailed logging
+try
 {
-    // Railway PostgreSQL using individual variables
-    connectionString = $"Host={pgHost};" +
-                      $"Port={Environment.GetEnvironmentVariable("PGPORT") ?? "5432"};" +
-                      $"Database={Environment.GetEnvironmentVariable("PGDATABASE")};" +
-                      $"Username={Environment.GetEnvironmentVariable("PGUSER")};" +
-                      $"Password={Environment.GetEnvironmentVariable("PGPASSWORD")};" +
-                      $"SSL Mode=Require;" +
-                      $"Trust Server Certificate=true";
+    string connectionString;
+    var pgHost = Environment.GetEnvironmentVariable("PGHOST");
+    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
     
-    Console.WriteLine($"Using Railway PostgreSQL: {pgHost}");
-}
-else
-{
-    // Local development
-    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    Console.WriteLine("Using local connection string");
-}
+    Console.WriteLine($"PGHOST: {pgHost ?? "not set"}");
+    Console.WriteLine($"DATABASE_URL: {(string.IsNullOrEmpty(databaseUrl) ? "not set" : "set")}");
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString)
-);
+    if (!string.IsNullOrEmpty(pgHost))
+    {
+        // Railway PostgreSQL using individual variables
+        var pgPort = Environment.GetEnvironmentVariable("PGPORT") ?? "5432";
+        var pgDatabase = Environment.GetEnvironmentVariable("PGDATABASE");
+        var pgUser = Environment.GetEnvironmentVariable("PGUSER");
+        var pgPassword = Environment.GetEnvironmentVariable("PGPASSWORD");
+        
+        Console.WriteLine($"PostgreSQL Config - Host: {pgHost}, Port: {pgPort}, Database: {pgDatabase}, User: {pgUser}");
+        
+        connectionString = $"Host={pgHost};" +
+                          $"Port={pgPort};" +
+                          $"Database={pgDatabase};" +
+                          $"Username={pgUser};" +
+                          $"Password={pgPassword};" +
+                          $"SSL Mode=Require;" +
+                          $"Trust Server Certificate=true";
+    }
+    else if (!string.IsNullOrEmpty(databaseUrl))
+    {
+        // Parse DATABASE_URL format: postgres://user:password@host:port/database
+        Console.WriteLine("Parsing DATABASE_URL...");
+        var databaseUri = new Uri(databaseUrl);
+        var userInfo = databaseUri.UserInfo.Split(':');
+        
+        connectionString = $"Host={databaseUri.Host};" +
+                          $"Port={databaseUri.Port};" +
+                          $"Database={databaseUri.AbsolutePath.TrimStart('/')};" +
+                          $"Username={userInfo[0]};" +
+                          $"Password={userInfo[1]};" +
+                          $"SSL Mode=Require;" +
+                          $"Trust Server Certificate=true";
+        
+        Console.WriteLine($"Parsed connection to host: {databaseUri.Host}");
+    }
+    else
+    {
+        // Local development
+        connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        Console.WriteLine("Using local connection string");
+    }
+
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseNpgsql(connectionString)
+    );
+    
+    Console.WriteLine("DbContext configured successfully");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR configuring database: {ex.Message}");
+    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    throw;
+}
 
 // hash password
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
@@ -56,27 +102,32 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
-ExcelPackage.License.SetNonCommercialOrganization("ClinicApp");
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 builder.Services.AddScoped<IPrintService, PrintService>();
 builder.Services.AddScoped<IExportService, ExportService>();
 
 var app = builder.Build();
 
-// ✅ Auto-migration & Seed Data
-using (var scope = app.Services.CreateScope())
+Console.WriteLine("=== Running Migrations ===");
+
+// Auto-migration & Seed Data
+try
 {
-    var services = scope.ServiceProvider;
-    try
+    using (var scope = app.Services.CreateScope())
     {
+        var services = scope.ServiceProvider;
         var context = services.GetRequiredService<ApplicationDbContext>();
         var hasher = services.GetRequiredService<IPasswordHasher<AppUser>>();
 
-        // Apply migrations
+        Console.WriteLine("Applying migrations...");
         context.Database.Migrate();
+        Console.WriteLine("Migrations applied successfully");
 
         // Seed default data
         if (!context.AppUsers.Any())
         {
+            Console.WriteLine("Seeding initial data...");
+            
             var clinic = new Clinic
             {
                 Name = "Main Clinic",
@@ -98,23 +149,34 @@ using (var scope = app.Services.CreateScope())
 
             context.AppUsers.Add(manager);
             context.SaveChanges();
+            
+            Console.WriteLine("Initial data seeded successfully");
+        }
+        else
+        {
+            Console.WriteLine("Data already exists, skipping seed");
         }
     }
-    catch (Exception ex)
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR during migration/seeding: {ex.Message}");
+    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    if (ex.InnerException != null)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+        Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
     }
+    throw;
 }
 
-// Configure the HTTP request pipeline.
+Console.WriteLine("=== Configuring HTTP Pipeline ===");
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 
-// ✅ Railway: Remove HTTPS redirect in production (Railway handles this)
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -128,5 +190,7 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}");
+
+Console.WriteLine($"=== Application Ready - Listening on port {port} ===");
 
 app.Run();
