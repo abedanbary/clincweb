@@ -231,24 +231,30 @@ namespace ClinicApp.Web.Controllers
         }
         // 🟣 GET: /Materials/Exporvt
         // 📊 Export to Excel
-[HttpGet]
-public async Task<IActionResult> ExportExcel()
-{
-    var clinicId = GetCurrentClinicId();
+        [HttpGet]
+         public async Task<IActionResult> ExportExcel()
+         {  var clinicId = GetCurrentClinicId();
     
     var materials = await _context.Materials
         .Where(m => m.ClinicId == clinicId)
         .OrderBy(m => m.Name)
         .ToListAsync();
     
+    var materialIds = materials.Select(m => m.Id).ToList();
+    
+    var allHistory = await _context.MaterialHistories
+        .Where(h => materialIds.Contains(h.MaterialId))
+        .ToListAsync();
+    
     var clinic = await _context.Clinics.FindAsync(clinicId);
     var clinicName = clinic?.Name ?? "Clinic";
     
-    var fileBytes = _exportService.ExportInventoryToExcel(materials, clinicName);
+    var fileBytes = _exportService.ExportInventoryToExcel(materials, clinicName, allHistory);
     
     return File(fileBytes, 
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         $"Inventory_Report_{DateTime.Now:yyyyMMdd}.xlsx");
-}
+   
+         }
     }
 }

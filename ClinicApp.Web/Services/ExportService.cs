@@ -173,40 +173,40 @@ namespace ClinicApp.Web.Services
 
             return package.GetAsByteArray();
         }
-
-
-        public byte[] ExportInventoryToExcel(List<Material> materials, string clinicName)
+public byte[] ExportInventoryToExcel(List<Material> materials, string clinicName, List<MaterialHistory> allHistory)
 {
     using var package = new ExcelPackage();
-    var worksheet = package.Workbook.Worksheets.Add("Inventory Report");
+    
+    // ===== SHEET 1: Inventory Overview =====
+    var overviewSheet = package.Workbook.Worksheets.Add("Inventory Overview");
 
-    // ===== HEADER =====
-    worksheet.Cells["A1:F1"].Merge = true;
-    worksheet.Cells["A1"].Value = clinicName;
-    worksheet.Cells["A1"].Style.Font.Size = 18;
-    worksheet.Cells["A1"].Style.Font.Bold = true;
-    worksheet.Cells["A1"].Style.Font.Color.SetColor(Color.FromArgb(16, 185, 129));
-    worksheet.Cells["A1"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+    // HEADER
+    overviewSheet.Cells["A1:H1"].Merge = true;
+    overviewSheet.Cells["A1"].Value = clinicName;
+    overviewSheet.Cells["A1"].Style.Font.Size = 18;
+    overviewSheet.Cells["A1"].Style.Font.Bold = true;
+    overviewSheet.Cells["A1"].Style.Font.Color.SetColor(Color.FromArgb(16, 185, 129));
+    overviewSheet.Cells["A1"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
 
-    worksheet.Cells["A2:F2"].Merge = true;
-    worksheet.Cells["A2"].Value = "Inventory Report";
-    worksheet.Cells["A2"].Style.Font.Size = 14;
-    worksheet.Cells["A2"].Style.Font.Bold = true;
-    worksheet.Cells["A2"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+    overviewSheet.Cells["A2:H2"].Merge = true;
+    overviewSheet.Cells["A2"].Value = "Inventory Report";
+    overviewSheet.Cells["A2"].Style.Font.Size = 14;
+    overviewSheet.Cells["A2"].Style.Font.Bold = true;
+    overviewSheet.Cells["A2"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
 
-    worksheet.Cells["A3:F3"].Merge = true;
-    worksheet.Cells["A3"].Value = $"Generated on: {DateTime.Now:MMMM dd, yyyy 'at' HH:mm}";
-    worksheet.Cells["A3"].Style.Font.Size = 11;
-    worksheet.Cells["A3"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-    worksheet.Cells["A3"].Style.Font.Color.SetColor(Color.Gray);
+    overviewSheet.Cells["A3:H3"].Merge = true;
+    overviewSheet.Cells["A3"].Value = $"Generated on: {DateTime.Now:MMMM dd, yyyy 'at' HH:mm}";
+    overviewSheet.Cells["A3"].Style.Font.Size = 11;
+    overviewSheet.Cells["A3"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+    overviewSheet.Cells["A3"].Style.Font.Color.SetColor(Color.Gray);
 
-    // ===== COLUMN HEADERS =====
+    // COLUMN HEADERS
     int currentRow = 5;
-    var headers = new[] { "Material Name", "Description", "Quantity", "Unit", "Min. Limit", "Status" };
+    var headers = new[] { "Material Name", "Description", "Quantity", "Unit", "Min. Limit", "Supplier", "Last Updated", "Status" };
     
     for (int i = 0; i < headers.Length; i++)
     {
-        var cell = worksheet.Cells[currentRow, i + 1];
+        var cell = overviewSheet.Cells[currentRow, i + 1];
         cell.Value = headers[i];
         cell.Style.Font.Bold = true;
         cell.Style.Fill.PatternType = ExcelFillStyle.Solid;
@@ -218,19 +218,29 @@ namespace ClinicApp.Web.Services
 
     currentRow++;
 
-    // ===== DATA ROWS =====
+    // DATA ROWS
     if (materials.Any())
     {
         foreach (var material in materials.OrderBy(m => m.Name))
         {
-            worksheet.Cells[currentRow, 1].Value = material.Name;
-            worksheet.Cells[currentRow, 2].Value = material.Description ?? "-";
-            worksheet.Cells[currentRow, 3].Value = material.Quantity;
-            worksheet.Cells[currentRow, 4].Value = material.Unit;
-            worksheet.Cells[currentRow, 5].Value = material.MinimumLimit;
+            // Get last history entry for this material
+            var lastHistory = allHistory
+                .Where(h => h.MaterialId == material.Id)
+                .OrderByDescending(h => h.CreatedAt)
+                .FirstOrDefault();
+
+            overviewSheet.Cells[currentRow, 1].Value = material.Name;
+            overviewSheet.Cells[currentRow, 2].Value = material.Description ?? "-";
+            overviewSheet.Cells[currentRow, 3].Value = material.Quantity;
+            overviewSheet.Cells[currentRow, 4].Value = material.Unit;
+            overviewSheet.Cells[currentRow, 5].Value = material.MinimumLimit;
+            overviewSheet.Cells[currentRow, 6].Value = material.Supplier ?? "-";
+            overviewSheet.Cells[currentRow, 7].Value = lastHistory != null 
+                ? lastHistory.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                : "-";
 
             // Status
-            var statusCell = worksheet.Cells[currentRow, 6];
+            var statusCell = overviewSheet.Cells[currentRow, 8];
             var isLow = material.Quantity <= material.MinimumLimit;
             statusCell.Value = isLow ? "Low Stock" : "OK";
             statusCell.Style.Font.Bold = true;
@@ -239,10 +249,10 @@ namespace ClinicApp.Web.Services
             // Alternating row colors
             if (currentRow % 2 == 0)
             {
-                for (int col = 1; col <= 6; col++)
+                for (int col = 1; col <= 8; col++)
                 {
-                    worksheet.Cells[currentRow, col].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    worksheet.Cells[currentRow, col].Style.Fill.BackgroundColor.SetColor(Color.FromArgb(248, 250, 252));
+                    overviewSheet.Cells[currentRow, col].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    overviewSheet.Cells[currentRow, col].Style.Fill.BackgroundColor.SetColor(Color.FromArgb(248, 250, 252));
                 }
             }
 
@@ -251,48 +261,137 @@ namespace ClinicApp.Web.Services
     }
     else
     {
-        worksheet.Cells[currentRow, 1, currentRow, 6].Merge = true;
-        worksheet.Cells[currentRow, 1].Value = "No materials in inventory";
-        worksheet.Cells[currentRow, 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-        worksheet.Cells[currentRow, 1].Style.Font.Italic = true;
-        worksheet.Cells[currentRow, 1].Style.Font.Color.SetColor(Color.Gray);
+        overviewSheet.Cells[currentRow, 1, currentRow, 8].Merge = true;
+        overviewSheet.Cells[currentRow, 1].Value = "No materials in inventory";
+        overviewSheet.Cells[currentRow, 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+        overviewSheet.Cells[currentRow, 1].Style.Font.Italic = true;
+        overviewSheet.Cells[currentRow, 1].Style.Font.Color.SetColor(Color.Gray);
     }
 
-    // ===== SUMMARY =====
+    // SUMMARY
     currentRow += 2;
-    worksheet.Cells[currentRow, 1].Value = "Summary:";
-    worksheet.Cells[currentRow, 1].Style.Font.Bold = true;
+    overviewSheet.Cells[currentRow, 1].Value = "Summary:";
+    overviewSheet.Cells[currentRow, 1].Style.Font.Bold = true;
     currentRow++;
 
     var totalItems = materials.Count;
     var lowStockItems = materials.Count(m => m.Quantity <= m.MinimumLimit);
     var okItems = totalItems - lowStockItems;
 
-    worksheet.Cells[currentRow, 1].Value = $"Total Materials: {totalItems}";
+    overviewSheet.Cells[currentRow, 1].Value = $"Total Materials: {totalItems}";
     currentRow++;
-    worksheet.Cells[currentRow, 1].Value = $"Low Stock: {lowStockItems}";
-    worksheet.Cells[currentRow, 1].Style.Font.Color.SetColor(Color.Red);
+    overviewSheet.Cells[currentRow, 1].Value = $"Low Stock: {lowStockItems}";
+    overviewSheet.Cells[currentRow, 1].Style.Font.Color.SetColor(Color.Red);
     currentRow++;
-    worksheet.Cells[currentRow, 1].Value = $"OK Stock: {okItems}";
-    worksheet.Cells[currentRow, 1].Style.Font.Color.SetColor(Color.Green);
+    overviewSheet.Cells[currentRow, 1].Value = $"OK Stock: {okItems}";
+    overviewSheet.Cells[currentRow, 1].Style.Font.Color.SetColor(Color.Green);
 
-    // ===== FORMATTING =====
-    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
-    worksheet.Column(1).Width = 25; // Name
-    worksheet.Column(2).Width = 35; // Description
-    worksheet.Column(3).Width = 12; // Quantity
-    worksheet.Column(4).Width = 10; // Unit
-    worksheet.Column(5).Width = 12; // Min Limit
-    worksheet.Column(6).Width = 12; // Status
+    // FORMATTING
+    overviewSheet.Cells[overviewSheet.Dimension.Address].AutoFitColumns();
+    overviewSheet.Column(1).Width = 25; // Name
+    overviewSheet.Column(2).Width = 35; // Description
+    overviewSheet.Column(3).Width = 12; // Quantity
+    overviewSheet.Column(4).Width = 10; // Unit
+    overviewSheet.Column(5).Width = 12; // Min Limit
+    overviewSheet.Column(6).Width = 20; // Supplier
+    overviewSheet.Column(7).Width = 18; // Last Updated
+    overviewSheet.Column(8).Width = 12; // Status
 
     // Borders
-    var dataRange = worksheet.Cells[5, 1, currentRow - 4, 6];
+    var dataRange = overviewSheet.Cells[5, 1, currentRow - 4, 8];
     dataRange.Style.Border.Top.Style = ExcelBorderStyle.Thin;
     dataRange.Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
     dataRange.Style.Border.Left.Style = ExcelBorderStyle.Thin;
     dataRange.Style.Border.Right.Style = ExcelBorderStyle.Thin;
 
+    // ===== SHEET 2: Full History =====
+    var historySheet = package.Workbook.Worksheets.Add("Full History");
+
+    // HEADER
+    historySheet.Cells["A1:F1"].Merge = true;
+    historySheet.Cells["A1"].Value = "Material History - All Transactions";
+    historySheet.Cells["A1"].Style.Font.Size = 16;
+    historySheet.Cells["A1"].Style.Font.Bold = true;
+    historySheet.Cells["A1"].Style.Font.Color.SetColor(Color.FromArgb(16, 185, 129));
+    historySheet.Cells["A1"].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+    // COLUMN HEADERS
+    var historyHeaders = new[] { "Material Name", "Date & Time", "Change", "New Quantity", "Supplier", "Note" };
+    int historyRow = 3;
+    
+    for (int i = 0; i < historyHeaders.Length; i++)
+    {
+        var cell = historySheet.Cells[historyRow, i + 1];
+        cell.Value = historyHeaders[i];
+        cell.Style.Font.Bold = true;
+        cell.Style.Fill.PatternType = ExcelFillStyle.Solid;
+        cell.Style.Fill.BackgroundColor.SetColor(Color.FromArgb(16, 185, 129));
+        cell.Style.Font.Color.SetColor(Color.White);
+        cell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+    }
+
+    historyRow++;
+
+    // DATA ROWS
+    if (allHistory.Any())
+    {
+        foreach (var history in allHistory.OrderByDescending(h => h.CreatedAt))
+        {
+            var material = materials.FirstOrDefault(m => m.Id == history.MaterialId);
+            
+            historySheet.Cells[historyRow, 1].Value = material?.Name ?? "Unknown";
+            historySheet.Cells[historyRow, 2].Value = history.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+            
+            // Change (with color)
+            var changeCell = historySheet.Cells[historyRow, 3];
+            changeCell.Value = history.QuantityChange > 0 ? $"+{history.QuantityChange}" : history.QuantityChange.ToString();
+            changeCell.Style.Font.Bold = true;
+            changeCell.Style.Font.Color.SetColor(history.QuantityChange > 0 ? Color.Green : Color.Red);
+            
+            historySheet.Cells[historyRow, 4].Value = history.NewQuantity;
+            historySheet.Cells[historyRow, 5].Value = history.Supplier ?? "-";
+            historySheet.Cells[historyRow, 6].Value = history.Note ?? "-";
+
+            // Alternating colors
+            if (historyRow % 2 == 0)
+            {
+                for (int col = 1; col <= 6; col++)
+                {
+                    historySheet.Cells[historyRow, col].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    historySheet.Cells[historyRow, col].Style.Fill.BackgroundColor.SetColor(Color.FromArgb(248, 250, 252));
+                }
+            }
+
+            historyRow++;
+        }
+    }
+    else
+    {
+        historySheet.Cells[historyRow, 1, historyRow, 6].Merge = true;
+        historySheet.Cells[historyRow, 1].Value = "No history available";
+        historySheet.Cells[historyRow, 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+        historySheet.Cells[historyRow, 1].Style.Font.Italic = true;
+    }
+
+    // FORMATTING
+    historySheet.Cells[historySheet.Dimension.Address].AutoFitColumns();
+    historySheet.Column(1).Width = 25;
+    historySheet.Column(2).Width = 20;
+    historySheet.Column(3).Width = 12;
+    historySheet.Column(4).Width = 15;
+    historySheet.Column(5).Width = 20;
+    historySheet.Column(6).Width = 40;
+
+    // Borders
+    var historyDataRange = historySheet.Cells[3, 1, historyRow - 1, 6];
+    historyDataRange.Style.Border.Top.Style = ExcelBorderStyle.Thin;
+    historyDataRange.Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+    historyDataRange.Style.Border.Left.Style = ExcelBorderStyle.Thin;
+    historyDataRange.Style.Border.Right.Style = ExcelBorderStyle.Thin;
+
     return package.GetAsByteArray();
 }
+
+       
     }
 }
