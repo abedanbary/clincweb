@@ -4,8 +4,9 @@ nixPkgs = ["dotnet-sdk_8"]
 [phases.build]
 cmds = [
   "cd ClinicApp.Web",
-  "dotnet restore",
-  "dotnet publish -c Release -o out"
+  "dotnet clean",
+  "dotnet restore --force",
+  "dotnet publish -c Release -o out --no-cache"
 ]
 
 [start]
