@@ -102,7 +102,7 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
-ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 builder.Services.AddScoped<IPrintService, PrintService>();
 builder.Services.AddScoped<IExportService, ExportService>();
 
