@@ -102,7 +102,7 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
-OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+ExcelPackage.License.SetNonCommercialOrganization("Sami Shamoon College of Engineering");
 builder.Services.AddScoped<IPrintService, PrintService>();
 builder.Services.AddScoped<IExportService, ExportService>();
 
