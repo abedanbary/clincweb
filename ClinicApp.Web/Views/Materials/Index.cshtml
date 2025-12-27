@@ -19,21 +19,19 @@
         </div>
 
         <div class="materials-header-actions">
-            <button class="btn-primary">
+            <button class="btn-primary" onclick="openAddMaterialModal()">
                 Add Material
             </button>
         </div>
     </header>
 
-    <!-- Main grid: table + form -->
+    <!-- Main: table only -->
     <section class="materials-grid">
-
-        <!-- Left side: table -->
-        <div class="materials-card materials-table-card">
+        <div class="materials-card materials-table-card" style="grid-column: 1 / -1;">
             <div class="materials-card-header">
                 <div>
                     <h2 class="materials-card-title">Current Stock</h2>
-                    <p class="materials-card-caption">Sample data only – no backend logic yet.</p>
+                    <p class="materials-card-caption">All materials in your clinic</p>
                 </div>
                 <div class="materials-card-extra">
                     <select class="materials-filter">
@@ -55,7 +53,7 @@
                             <th>Quantity</th>
                             <th>Minimum limit</th>
                             <th>Status</th>
-                            <th style="width: 140px;">Actions</th>
+                            <th style="width: 200px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -69,12 +67,13 @@
                                        <button class="btn-history" type="button" onclick="toggleHistory(@item.Id, this)" aria-expanded="false">
                                        <span class="btn-history-icon">▶</span>
                                        </button>
-
                                     </td>
                                     <td>@item.Name</td>
                                     <td>@item.Description</td>
                                     <td>@item.Unit</td>
-                                    <td>@item.Quantity</td>
+                                    <td>
+                                        <strong>@item.Quantity</strong>
+                                    </td>
                                     <td>@item.MinimumLimit</td>
                                     <td>
                                         @if (isLow)
@@ -87,10 +86,11 @@
                                         }
                                     </td>
                                     <td>
-                                        <button class="btn-ghost" onclick="editMaterial(@item.Id)">Edit</button>
+                                        <button class="btn-ghost btn-sm" onclick="openEditQuantityModal(@item.Id, '@item.Name', @item.Quantity)">+/-</button>
+                                        <button class="btn-ghost btn-sm" onclick="editMaterial(@item.Id)">Edit</button>
                                         <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display: inline;" onsubmit="return confirm('Delete this material?')">
                                             @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn-ghost btn-danger">Remove</button>
+                                            <button type="submit" class="btn-ghost btn-danger btn-sm">Remove</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -102,7 +102,6 @@
                                       </div>
                                      </td>
                                  </tr>
-
                             }
                         }
                         else
@@ -115,88 +114,153 @@
                 </table>
             </div>
         </div>
+    </section>
+</div>
 
-        <!-- Right side: form -->
-        <div class="materials-card materials-form-card">
-            <div class="materials-card-header">
-                <div>
-                    <h2 class="materials-card-title">Material details</h2>
-                    <p class="materials-card-caption">Static form only – wiring to backend comes later.</p>
+<!-- ✅ Modal: Add Material -->
+<div id="addMaterialModal" class="modal" style="display: none;">
+    <div class="modal-overlay" onclick="closeAddMaterialModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add New Material</h2>
+            <button class="modal-close" onclick="closeAddMaterialModal()">&times;</button>
+        </div>
+        
+        <form asp-action="Add" asp-controller="Materials" method="post" class="materials-form">
+            @Html.AntiForgeryToken()
+
+            <div class="materials-field">
+                <label class="materials-label" asp-for="NewMaterial.Name"></label>
+                <input class="materials-input" asp-for="NewMaterial.Name" required />
+                <span class="materials-error" asp-validation-for="NewMaterial.Name"></span>
+            </div>
+
+            <div class="materials-field">
+                <label class="materials-label" asp-for="NewMaterial.Description"></label>
+                <textarea class="materials-textarea" asp-for="NewMaterial.Description" rows="3"></textarea>
+            </div>
+
+            <div class="materials-field-row">
+                <div class="materials-field">
+                    <label class="materials-label" asp-for="NewMaterial.Unit"></label>
+                    <select class="materials-select" asp-for="NewMaterial.Unit" required>
+                        <option value="">Select unit</option>
+                        <option>Box</option>
+                        <option>Unit</option>
+                        <option>Liter</option>
+                        <option>ml</option>
+                        <option>Pack</option>
+                    </select>
+                </div>
+
+                <div class="materials-field">
+                    <label class="materials-label" asp-for="NewMaterial.Quantity"></label>
+                    <input class="materials-input" asp-for="NewMaterial.Quantity" type="number" min="0" required />
                 </div>
             </div>
 
-            <form asp-action="Add" asp-controller="Materials" method="post" class="materials-form">
-                @Html.AntiForgeryToken()
+            <div class="materials-field">
+                <label class="materials-label" asp-for="NewMaterial.MinimumLimit"></label>
+                <input class="materials-input" asp-for="NewMaterial.MinimumLimit" type="number" min="0" required />
+            </div>
 
-                <div class="materials-field">
-                    <label class="materials-label" asp-for="NewMaterial.Name"></label>
-                    <input class="materials-input" asp-for="NewMaterial.Name" />
-                    <span class="materials-error" asp-validation-for="NewMaterial.Name"></span>
-                </div>
+            <div class="materials-field">
+                <label class="materials-label" asp-for="NewMaterial.Supplier">Supplier</label>
+                <input class="materials-input" asp-for="NewMaterial.Supplier" placeholder="Supplier name" />
+            </div>
 
-                <div class="materials-field">
-                    <label class="materials-label" asp-for="NewMaterial.Description"></label>
-                    <textarea class="materials-textarea" asp-for="NewMaterial.Description" rows="3"></textarea>
-                    <span class="materials-error" asp-validation-for="NewMaterial.Description"></span>
-                </div>
+            <div class="materials-form-actions">
+                <button type="submit" class="btn-primary">Save Material</button>
+                <button type="button" class="btn-ghost" onclick="closeAddMaterialModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-                <div class="materials-field-row">
-                    <div class="materials-field">
-                        <label class="materials-label" asp-for="NewMaterial.Unit"></label>
-                        <select class="materials-select" asp-for="NewMaterial.Unit">
-                            <option value="">Select unit</option>
-                            <option>Box</option>
-                            <option>Unit</option>
-                            <option>Liter</option>
-                            <option>ml</option>
-                            <option>Pack</option>
-                        </select>
-                        <span class="materials-error" asp-validation-for="NewMaterial.Unit"></span>
-                    </div>
-
-                    <div class="materials-field">
-                        <label class="materials-label" asp-for="NewMaterial.Quantity"></label>
-                        <input class="materials-input" asp-for="NewMaterial.Quantity" type="number" min="0" />
-                        <span class="materials-error" asp-validation-for="NewMaterial.Quantity"></span>
-                    </div>
-                </div>
-
-                <div class="materials-field">
-                    <label class="materials-label" asp-for="NewMaterial.MinimumLimit"></label>
-                    <input class="materials-input" asp-for="NewMaterial.MinimumLimit" type="number" min="0" />
-                    <span class="materials-error" asp-validation-for="NewMaterial.MinimumLimit"></span>
-                </div>
-
-                <div class="materials-field">
-                    <label class="materials-label" asp-for="NewMaterial.Supplier">Supplier</label>
-                    <input class="materials-input" asp-for="NewMaterial.Supplier" placeholder="Supplier name" />
-                    <span class="materials-error" asp-validation-for="NewMaterial.Supplier"></span>
-                </div>
-
-                <div class="materials-form-actions">
-                    <button type="submit" class="btn-primary">
-                        Save
-                    </button>
-                    <button type="reset" class="btn-ghost">
-                        Reset
-                    </button>
-                </div>
-            </form>
+<!-- ✅ Modal: Edit Quantity -->
+<div id="editQuantityModal" class="modal" style="display: none;">
+    <div class="modal-overlay" onclick="closeEditQuantityModal()"></div>
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h2>Update Quantity</h2>
+            <button class="modal-close" onclick="closeEditQuantityModal()">&times;</button>
         </div>
+        
+        <form asp-action="UpdateQuantity" method="post" id="updateQuantityForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="editMaterialId" />
+            
+            <div class="materials-field">
+                <label class="materials-label">Material</label>
+                <input type="text" class="materials-input" id="editMaterialName" readonly />
+            </div>
 
-    </section>
+            <div class="materials-field">
+                <label class="materials-label">Current Quantity</label>
+                <input type="text" class="materials-input" id="editCurrentQuantity" readonly />
+            </div>
+
+            <div class="materials-field">
+                <label class="materials-label">Change (+/-)</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button type="button" class="btn-ghost" onclick="adjustQuantityChange(-10)">-10</button>
+                    <button type="button" class="btn-ghost" onclick="adjustQuantityChange(-1)">-1</button>
+                    <input type="number" class="materials-input" name="change" id="quantityChange" value="0" style="text-align: center; flex: 1;" />
+                    <button type="button" class="btn-ghost" onclick="adjustQuantityChange(1)">+1</button>
+                    <button type="button" class="btn-ghost" onclick="adjustQuantityChange(10)">+10</button>
+                </div>
+            </div>
+
+            <div class="materials-field">
+                <label class="materials-label">Note (optional)</label>
+                <input type="text" class="materials-input" name="note" placeholder="e.g., Received shipment" />
+            </div>
+
+            <div class="materials-form-actions">
+                <button type="submit" class="btn-primary">Save Change</button>
+                <button type="button" class="btn-ghost" onclick="closeEditQuantityModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     
     <script>
+    // ===== Add Material Modal =====
+    function openAddMaterialModal() {
+        document.getElementById('addMaterialModal').style.display = 'flex';
+    }
+
+    function closeAddMaterialModal() {
+        document.getElementById('addMaterialModal').style.display = 'none';
+    }
+
+    // ===== Edit Quantity Modal =====
+    function openEditQuantityModal(id, name, currentQty) {
+        document.getElementById('editMaterialId').value = id;
+        document.getElementById('editMaterialName').value = name;
+        document.getElementById('editCurrentQuantity').value = currentQty;
+        document.getElementById('quantityChange').value = 0;
+        document.getElementById('editQuantityModal').style.display = 'flex';
+    }
+
+    function closeEditQuantityModal() {
+        document.getElementById('editQuantityModal').style.display = 'none';
+    }
+
+    function adjustQuantityChange(amount) {
+        const input = document.getElementById('quantityChange');
+        input.value = parseInt(input.value || 0) + amount;
+    }
+
+    // ===== History Toggle =====
     async function toggleHistory(materialId, buttonEl) {
         const historyRow = document.getElementById('history-' + materialId);
         const isHidden = historyRow.style.display === 'none' || historyRow.style.display === '';
 
         if (isHidden) {
-            // Show history row
             historyRow.style.display = 'table-row';
             buttonEl.setAttribute('aria-expanded', 'true');
 
@@ -215,15 +279,14 @@
                         contentDiv.innerHTML = '<p>No history found.</p>';
                     } else {
                         let html = '<table>';
-                        html += '<thead><tr><th>Date</th><th>Change</th><th>New Quantity</th><th>Supplier</th><th>Note</th></tr></thead><tbody>';
+                        html += '<thead><tr><th>Date</th><th>Change</th><th>New Quantity</th><th>Note</th></tr></thead><tbody>';
 
                         history.forEach(h => {
                             const date = new Date(h.createdAt || h.CreatedAt).toLocaleString();
                             html += `<tr>
                                 <td>${date}</td>
-                                <td>${h.quantityChange > 0 ? '+' : ''}${h.quantityChange}</td>
-                                <td>${h.newQuantity}</td>
-                                <td>${h.supplier || '-'}</td>
+                                <td style="color: ${h.quantityChange > 0 ? 'green' : 'red'};">${h.quantityChange > 0 ? '+' : ''}${h.quantityChange}</td>
+                                <td><strong>${h.newQuantity}</strong></td>
                                 <td>${h.note || '-'}</td>
                             </tr>`;
                         });
@@ -238,7 +301,6 @@
                 }
             }
         } else {
-            // Hide history row
             historyRow.style.display = 'none';
             buttonEl.setAttribute('aria-expanded', 'false');
         }
@@ -247,6 +309,14 @@
     function editMaterial(id) {
         alert('Edit functionality coming soon for material ID: ' + id);
     }
+
+    // Close modals on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAddMaterialModal();
+            closeEditQuantityModal();
+        }
+    });
 </script>
 
 }

@@ -189,5 +189,42 @@ namespace ClinicApp.Web.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+
+
+        // 🟢 POST: /Materials/UpdateQuantity
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateQuantity(int id, int change, string? note)
+        {
+             var clinicId = GetCurrentClinicId();
+
+             var material = await _context.Materials
+             .FirstOrDefaultAsync(m => m.Id == id && m.ClinicId == clinicId);
+
+             if (material == null)
+               return NotFound();
+
+             // Update quantity
+             material.Quantity += change;
+
+             // Prevent negative quantity
+             if (material.Quantity < 0)
+             material.Quantity = 0;
+
+              // Save history
+              _context.MaterialHistories.Add(new MaterialHistory
+             {
+                MaterialId = material.Id,
+                QuantityChange = change,
+                NewQuantity = material.Quantity,
+                Supplier = null,
+                Note = note ?? (change > 0 ? "Quantity increased" : "Quantity decreased")
+                });
+
+         await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
+        }
     }
 }
