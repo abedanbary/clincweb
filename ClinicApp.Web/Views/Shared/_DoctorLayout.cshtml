@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="~/css/patients.css" />
 </head>
 
-<script src="~/js/simple-image-viewer.js"></script>
+
 <body>
     <div class="manager-shell">
         <!-- Sidebar -->
@@ -91,8 +91,10 @@
                 @RenderBody()
             </main>
 
-            @RenderSection("Scripts", required: false)
+           
         </div>
     </div>
+    <script src="~/js/simple-image-viewer.js"></script>
+    @RenderSection("Scripts", required: false)
 </body>
 </html>
