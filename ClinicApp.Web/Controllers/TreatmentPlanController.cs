@@ -291,7 +291,7 @@ namespace ClinicApp.Web.Controllers
         // 🔴 POST: /TreatmentPlan/DeletePlan
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Manager")]
+        [Authorize(Roles ="Doctor")]
         public async Task<IActionResult> DeletePlan(int planId)
         {
             var clinicId = GetCurrentClinicId();
