@@ -13,49 +13,34 @@ namespace ClinicApp.Web.Services
     {
         private readonly Cloudinary? _cloudinary;
         private readonly bool _isConfigured;
+public CloudinaryService(IConfiguration configuration)
+{
+  
+    // جرّب الطريقتين
+    var cloudName1 = configuration["Cloudinary:CloudName"];
+    var cloudName2 = configuration["CLOUDINARY__CLOUDNAME"];
+    
+    // استخدم اللي موجود
+    var cloudName = cloudName1 ?? cloudName2;
+    var apiKey = configuration["Cloudinary:ApiKey"] ?? configuration["CLOUDINARY__APIKEY"];
+    var apiSecret = configuration["Cloudinary:ApiSecret"] ?? configuration["CLOUDINARY__APISECRET"];
 
-        public CloudinaryService(IConfiguration configuration)
-        {
-            Console.WriteLine("=== Cloudinary Configuration Check ===");
-            
-            var cloudName = configuration["Cloudinary:CloudName"] 
-                           ?? configuration["CLOUDINARY__CLOUDNAME"];
-            var apiKey = configuration["Cloudinary:ApiKey"] 
-                        ?? configuration["CLOUDINARY__APIKEY"];
-            var apiSecret = configuration["Cloudinary:ApiSecret"] 
-                           ?? configuration["CLOUDINARY__APISECRET"];
+  
 
-            // 🔹 طباعة تفصيلية للقيم
-            Console.WriteLine($"CloudName from config: {(string.IsNullOrEmpty(cloudName) ? "❌ MISSING" : $"✅ {cloudName}")}");
-            Console.WriteLine($"ApiKey from config: {(string.IsNullOrEmpty(apiKey) ? "❌ MISSING" : "✅ Found (hidden)")}");
-            Console.WriteLine($"ApiSecret from config: {(string.IsNullOrEmpty(apiSecret) ? "❌ MISSING" : "✅ Found (hidden)")}");
-
-            if (string.IsNullOrEmpty(cloudName) ||
-                string.IsNullOrEmpty(apiKey) ||
-                string.IsNullOrEmpty(apiSecret))
-            {
-                Console.WriteLine("⚠️ Warning: Cloudinary not configured, image uploads disabled");
-                _cloudinary = null;
-                _isConfigured = false;
-                return;
-            }
-
-            try
-            {
-                var account = new Account(cloudName, apiKey, apiSecret);
-                _cloudinary = new Cloudinary(account);
-                _isConfigured = true;
-                Console.WriteLine("✅ Cloudinary configured successfully");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Error initializing Cloudinary: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                _cloudinary = null;
-                _isConfigured = false;
-            }
-        }
-
+    try
+    {
+        var account = new Account(cloudName, apiKey, apiSecret);
+        _cloudinary = new Cloudinary(account);
+        _isConfigured = true;
+        Console.WriteLine("✅ Cloudinary configured successfully");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Error initializing Cloudinary: {ex.Message}");
+        _cloudinary = null;
+        _isConfigured = false;
+    }
+}
         public async Task<string> UploadImageAsync(IFormFile file)
         {
             Console.WriteLine($"=== UploadImageAsync called ===");
