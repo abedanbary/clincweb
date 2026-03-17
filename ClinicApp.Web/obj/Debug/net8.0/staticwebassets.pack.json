@@ -53,6 +53,10 @@
       "PackagePath": "staticwebassets/js/calendar.js"
     },
     {
+      "Id": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/simple-image-viewer.js",
+      "PackagePath": "staticwebassets/js/simple-image-viewer.js"
+    },
+    {
       "Id": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/site.js",
       "PackagePath": "staticwebassets/js/site.js"
     },

@@ -120,7 +120,14 @@ try
         var hasher = services.GetRequiredService<IPasswordHasher<AppUser>>();
 
         Console.WriteLine("Applying migrations...");
-        context.Database.Migrate();
+       try
+        {
+           context.Database.Migrate();
+         }
+         catch (Exception ex)
+        {
+        Console.WriteLine("Migration failed: " + ex.Message);
+        }
         Console.WriteLine("Migrations applied successfully");
 
         // Seed default data

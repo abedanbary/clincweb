@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "1zq9gAbKHSyMb+313MebTBN4C1dAT/JGb1/iuevHLhs=",
+  "Hash": "f8edhavS0DjiF/6D0rzIxNIaNWpJf413HdhHGUbS/QI=",
   "Source": "ClinicApp.Web",
   "BasePath": "_content/ClinicApp.Web",
   "Mode": "Default",
@@ -281,6 +281,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/js/calendar.js"
+    },
+    {
+      "Identity": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/simple-image-viewer.js",
+      "SourceId": "ClinicApp.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/",
+      "BasePath": "_content/ClinicApp.Web",
+      "RelativePath": "js/simple-image-viewer.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/js/simple-image-viewer.js"
     },
     {
       "Identity": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/site.js",
