@@ -22,6 +22,7 @@ namespace ClinicApp.Web.Data
         public DbSet<MaterialHistory> MaterialHistories { get; set; }
         public DbSet<TreatmentPlan> TreatmentPlans { get; set; }
         public DbSet<PatientTooth> PatientTeeth { get; set; }
+        public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -83,6 +84,21 @@ namespace ClinicApp.Web.Data
                 entity.HasIndex(a => a.StartTime);
                 entity.HasIndex(a => a.Status);
                 entity.HasIndex(a => new { a.DoctorId, a.StartTime });
+            });
+
+            modelBuilder.Entity<DoctorSchedule>(entity =>
+            {
+                entity.HasOne(s => s.Doctor)
+                    .WithMany()
+                    .HasForeignKey(s => s.DoctorId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(s => s.Clinic)
+                    .WithMany()
+                    .HasForeignKey(s => s.ClinicId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(s => new { s.DoctorId, s.DayOfWeek }).IsUnique();
             });
         }
     }
