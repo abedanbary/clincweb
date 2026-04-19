@@ -36,7 +36,6 @@
         while ((n = walker.nextNode())) nodes.push(n);
 
         nodes.forEach(function (node) {
-            // Save original English text on first encounter
             if (!originalTexts.has(node)) {
                 originalTexts.set(node, node.textContent);
             }
@@ -54,37 +53,21 @@
             el.placeholder = dict[el._origPlaceholder] || el._origPlaceholder;
         });
 
-        // Update switcher button styles
-        document.querySelectorAll('.lang-btn').forEach(function (btn) {
-            const active = btn.dataset.lang === lang;
-            btn.style.fontWeight = active ? '700' : '400';
-            btn.style.background = active ? 'rgba(255,255,255,0.25)' : 'transparent';
-            btn.style.borderRadius = active ? '4px' : '4px';
+        // Sync the dropdown value
+        document.querySelectorAll('.lang-select').forEach(function (sel) {
+            sel.value = lang;
         });
 
-        injectRtlStyles(isRtl);
-    }
-
-    function injectRtlStyles(isRtl) {
-        let el = document.getElementById('__i18n_rtl_style__');
-        if (!el) {
-            el = document.createElement('style');
-            el.id = '__i18n_rtl_style__';
-            document.head.appendChild(el);
+        // Only fix what the flex layout cannot auto-handle: the sidebar border side
+        var styleEl = document.getElementById('__i18n_rtl_style__');
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = '__i18n_rtl_style__';
+            document.head.appendChild(styleEl);
         }
-        el.textContent = isRtl ? `
-            [dir="rtl"] .manager-sidebar { right: 0; left: auto; border-right: none; border-left: 1px solid #e2e8f0; }
-            [dir="rtl"] .manager-main   { margin-left: 0; margin-right: 240px; }
-            [dir="rtl"] .topbar-right   { flex-direction: row-reverse; }
-            [dir="rtl"] .sidebar-link   { text-align: right; }
-            [dir="rtl"] .sidebar-section-title { text-align: right; }
-            [dir="rtl"] .brand-text     { text-align: right; }
-            [dir="rtl"] table           { direction: rtl; }
-            [dir="rtl"] th, [dir="rtl"] td { text-align: right; }
-            [dir="rtl"] .appointments-filters-section { flex-direction: row-reverse; }
-            [dir="rtl"] .modal-header   { flex-direction: row-reverse; }
-            [dir="rtl"] .appointments-form-actions { flex-direction: row-reverse; }
-        ` : '';
+        styleEl.textContent = isRtl
+            ? '[dir="rtl"] .manager-sidebar { border-right: none; border-left: 1px solid #e2e8f0; }'
+            : '';
     }
 
     window.setLanguage = function (lang) {
@@ -97,15 +80,11 @@
         .then(function (r) { return r.json(); })
         .then(function (data) {
             translations = data;
-            document.addEventListener('DOMContentLoaded', function () {
-                applyLang(getLang());
-            });
-            // If DOM already ready
-            if (document.readyState !== 'loading') {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function () { applyLang(getLang()); });
+            } else {
                 applyLang(getLang());
             }
         })
-        .catch(function () {
-            // Translations failed to load — run in English silently
-        });
+        .catch(function () { /* translations unavailable, stay in English */ });
 })();
