@@ -94,6 +94,11 @@
                             <span class="user-role">Clinic Manager</span>
                         </div>
                     </div>
+                    <div style="display:flex;gap:4px;align-items:center;margin-right:8px;">
+                        <button class="lang-btn" data-lang="en" onclick="setLanguage('en')" style="border:1px solid rgba(255,255,255,0.4);background:transparent;color:inherit;padding:3px 7px;cursor:pointer;font-size:12px;border-radius:4px;">EN</button>
+                        <button class="lang-btn" data-lang="he" onclick="setLanguage('he')" style="border:1px solid rgba(255,255,255,0.4);background:transparent;color:inherit;padding:3px 7px;cursor:pointer;font-size:12px;border-radius:4px;">עב</button>
+                        <button class="lang-btn" data-lang="ar" onclick="setLanguage('ar')" style="border:1px solid rgba(255,255,255,0.4);background:transparent;color:inherit;padding:3px 7px;cursor:pointer;font-size:12px;border-radius:4px;">ع</button>
+                    </div>
                     <form asp-controller="Auth" asp-action="Logout" method="post" style="display: inline;">
                     @Html.AntiForgeryToken()
                       <button type="submit" class="topbar-button">
@@ -112,6 +117,7 @@
         </div>
     </div>
     <script src="~/js/simple-image-viewer.js"></script>
+    <script src="~/js/i18n.js"></script>
      @RenderSection("Scripts", required: false)
 </body>
 </html>
