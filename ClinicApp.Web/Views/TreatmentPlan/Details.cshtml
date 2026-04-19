@@ -2,8 +2,10 @@
 @using ClinicApp.Web.Models
 @model TreatmentPlanDetailsViewModel
 
+@using System.Security.Claims
 @{
-    Layout = "_ManagerLayout";
+    var userRole = User.FindFirstValue(ClaimTypes.Role);
+    Layout = userRole == "Doctor" ? "_DoctorLayout" : "_ManagerLayout";
     ViewData["Title"] = Model.Plan.Title;
 }
 

@@ -1,7 +1,9 @@
 @model ClinicApp.Web.ViewModels.AppointmentsPageViewModel
+@using System.Security.Claims
 @{
     ViewData["Title"] = "Appointments Calendar";
-    Layout = "_ManagerLayout";
+    var userRole = User.FindFirstValue(ClaimTypes.Role);
+    Layout = userRole == "Doctor" ? "_DoctorLayout" : "_ManagerLayout";
 }
 
 <link rel="stylesheet" href="~/css/Appointments.css" />

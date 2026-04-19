@@ -3,8 +3,8 @@
 
 @{
     ViewData["Title"] = "Appointments";
-    Layout = "_ManagerLayout";
     var userRole = User.FindFirstValue(ClaimTypes.Role);
+    Layout = userRole == "Doctor" ? "_DoctorLayout" : "_ManagerLayout";
 }
 
 <link rel="stylesheet" href="~/css/Appointments.css" />
