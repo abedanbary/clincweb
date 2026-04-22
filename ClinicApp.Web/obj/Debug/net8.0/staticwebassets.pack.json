@@ -53,12 +53,20 @@
       "PackagePath": "staticwebassets/js/calendar.js"
     },
     {
+      "Id": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/i18n.js",
+      "PackagePath": "staticwebassets/js/i18n.js"
+    },
+    {
       "Id": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/simple-image-viewer.js",
       "PackagePath": "staticwebassets/js/simple-image-viewer.js"
     },
     {
       "Id": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/site.js",
       "PackagePath": "staticwebassets/js/site.js"
+    },
+    {
+      "Id": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/translations.json",
+      "PackagePath": "staticwebassets/js/translations.json"
     },
     {
       "Id": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/lib/bootstrap/LICENSE",

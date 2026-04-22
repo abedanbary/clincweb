@@ -1,6 +1,19 @@
 @{
     Layout = null;
     var title = ViewData["Title"] ?? "Manager Panel";
+    var ctrl   = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    string Nav(string controller, string act = "Index")
+        => (ctrl.Equals(controller, StringComparison.OrdinalIgnoreCase) &&
+            action.Equals(act,       StringComparison.OrdinalIgnoreCase))
+           ? "sidebar-link is-active" : "sidebar-link";
+
+    string NavDash = (ctrl == "Manager" && action == "Index") ? "sidebar-link is-active" : "sidebar-link";
+
+    var managerFirst = User.FindFirst("FirstName")?.Value ?? "Manager";
+    var managerLast  = User.FindFirst("LastName")?.Value  ?? "";
+    var avatarChar   = managerFirst.Length > 0 ? managerFirst[0].ToString() : "M";
 }
 
 <!DOCTYPE html>
@@ -13,20 +26,18 @@
     <link rel="stylesheet" href="~/css/manager.css" />
     <link rel="stylesheet" href="~/css/materials.css" />
     <link rel="stylesheet" href="~/css/users.css" />
-     <link rel="stylesheet" href="~/css/patients.css" />
-     <link rel="stylesheet" href="~/css/patient-profile.css" />
-     <link rel="stylesheet" href="~/css/doctor-dashboard.css" />
-     <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
-     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <link rel="stylesheet" href="~/css/patients.css" />
+    <link rel="stylesheet" href="~/css/patient-profile.css" />
+    <link rel="stylesheet" href="~/css/doctor-dashboard.css" />
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 </head>
 <body>
     <div class="manager-shell">
         <!-- Sidebar -->
         <aside class="manager-sidebar">
             <div class="sidebar-header">
-                <div class="brand-logo">
-                    CM
-                </div>
+                <div class="brand-logo">CM</div>
                 <div class="brand-text">
                     <span class="brand-title">Clinic Manager</span>
                     <span class="brand-subtitle">Admin Dashboard</span>
@@ -36,41 +47,27 @@
             <nav class="sidebar-nav">
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Overview</div>
-                    <a class="sidebar-link is-active" href="#">
+                    <a class="@NavDash" asp-controller="Manager" asp-action="Index">
                         <span class="sidebar-link-text">Dashboard</span>
                     </a>
                 </div>
 
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Management</div>
-                   <a class="sidebar-link" asp-controller="Users" asp-action="Index">
+                    <a class="@Nav("Users")" asp-controller="Users" asp-action="Index">
                         <span class="sidebar-link-text">Users</span>
                     </a>
-                    <a class="sidebar-link" asp-controller="Patients" asp-action="Index">
+                    <a class="@Nav("Patients")" asp-controller="Patients" asp-action="Index">
                         <span class="sidebar-link-text">Patients</span>
                     </a>
-                   <a class="sidebar-link" asp-controller="Appointments" asp-action="Index">
+                    <a class="@Nav("Appointments")" asp-controller="Appointments" asp-action="Index">
                         <span class="sidebar-link-text">Appointments</span>
                     </a>
-                    <a class="sidebar-link" asp-controller="Manager" asp-action="DoctorSchedules">
+                    <a class="@Nav("Manager","DoctorSchedules")" asp-controller="Manager" asp-action="DoctorSchedules">
                         <span class="sidebar-link-text">Doctor Schedules</span>
                     </a>
-                   
-                    <a class="sidebar-link" asp-controller="Materials" asp-action="Index">
+                    <a class="@Nav("Materials")" asp-controller="Materials" asp-action="Index">
                         <span class="sidebar-link-text">Materials</span>
-                    </a>
-                    <a class="sidebar-link" href="#">
-                        <span class="sidebar-link-text">Payments</span>
-                    </a>
-                </div>
-
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">Settings</div>
-                    <a class="sidebar-link" href="#">
-                        <span class="sidebar-link-text">Clinic Settings</span>
-                    </a>
-                    <a class="sidebar-link" href="#">
-                        <span class="sidebar-link-text">Reports</span>
                     </a>
                 </div>
             </nav>
@@ -86,24 +83,20 @@
 
                 <div class="topbar-right">
                     <div class="topbar-user">
-                        <div class="user-avatar">
-                            M
-                        </div>
+                        <div class="user-avatar">@avatarChar</div>
                         <div class="user-info">
-                            <span class="user-name">Manager Name</span>
+                            <span class="user-name">@managerFirst @managerLast</span>
                             <span class="user-role">Clinic Manager</span>
                         </div>
                     </div>
-                    <select class="lang-select" onchange="setLanguage(this.value)" style="border:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.1);color:inherit;padding:4px 8px;border-radius:6px;font-size:13px;cursor:pointer;outline:none;">
+                    <select class="lang-select" onchange="setLanguage(this.value)" style="border:1px solid rgba(0,0,0,0.15);background:#fff;color:var(--color-text);padding:4px 8px;border-radius:6px;font-size:13px;cursor:pointer;outline:none;">
                         <option value="en">🌐 English</option>
                         <option value="he">🌐 עברית</option>
                         <option value="ar">🌐 العربية</option>
                     </select>
-                    <form asp-controller="Auth" asp-action="Logout" method="post" style="display: inline;">
-                    @Html.AntiForgeryToken()
-                      <button type="submit" class="topbar-button">
-                       Logout
-                      </button>
+                    <form asp-controller="Auth" asp-action="Logout" method="post" style="display:inline;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="topbar-button">Logout</button>
                     </form>
                 </div>
             </header>
@@ -112,12 +105,10 @@
             <main class="manager-content">
                 @RenderBody()
             </main>
-
-           
         </div>
     </div>
     <script src="~/js/simple-image-viewer.js"></script>
     <script src="~/js/i18n.js"></script>
-     @RenderSection("Scripts", required: false)
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

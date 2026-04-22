@@ -1,7 +1,302 @@
+@using ClinicApp.Web.Models
+@model ClinicApp.Web.ViewModels.ManagerDashboardViewModel
+
 @{
     Layout = "_ManagerLayout";
     ViewData["Title"] = "Dashboard";
 }
 
-<h1>Dashboard</h1>
-<p>Welcome to the manager dashboard. Here you will see overview cards and stats later.</p>
+<div class="db-page">
+
+    <!-- Page heading -->
+    <div class="db-heading">
+        <div>
+            <h1 class="db-heading-title">Welcome back, @Model.ManagerName</h1>
+            <p class="db-heading-sub">@Model.ClinicName &mdash; @DateTime.Now.ToString("dddd, MMMM dd, yyyy")</p>
+        </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="db-stats">
+        <div class="db-stat-card">
+            <div class="db-stat-icon db-icon-blue">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div class="db-stat-body">
+                <div class="db-stat-value">@Model.TodayAppointmentsCount</div>
+                <div class="db-stat-label">Today's Appointments</div>
+            </div>
+        </div>
+
+        <div class="db-stat-card">
+            <div class="db-stat-icon db-icon-green">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="db-stat-body">
+                <div class="db-stat-value">@Model.TotalPatients</div>
+                <div class="db-stat-label">Total Patients</div>
+            </div>
+        </div>
+
+        <div class="db-stat-card">
+            <div class="db-stat-icon db-icon-purple">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div class="db-stat-body">
+                <div class="db-stat-value">@Model.TotalDoctors</div>
+                <div class="db-stat-label">Active Doctors</div>
+            </div>
+        </div>
+
+        <div class="db-stat-card">
+            <div class="db-stat-icon db-icon-amber">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div class="db-stat-body">
+                <div class="db-stat-value">@Model.LowStockMaterialsCount</div>
+                <div class="db-stat-label">Low Stock Items</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content grid -->
+    <div class="db-grid">
+
+        <!-- Today's appointments -->
+        <div class="db-card db-card-wide">
+            <div class="db-card-head">
+                <div>
+                    <h2 class="db-card-title">Today's Schedule</h2>
+                    <p class="db-card-caption">@Model.TodayAppointmentsCount appointment(s) today</p>
+                </div>
+                <a class="db-link-btn" asp-controller="Appointments" asp-action="Index">View all</a>
+            </div>
+
+            @if (Model.TodayAppointments.Any())
+            {
+                <div class="db-list">
+                    @foreach (var apt in Model.TodayAppointments)
+                    {
+                        var cls = apt.Status switch
+                        {
+                            AppointmentStatus.Completed => "badge-green",
+                            AppointmentStatus.Cancelled => "badge-red",
+                            AppointmentStatus.NoShow    => "badge-gray",
+                            _                           => "badge-yellow"
+                        };
+                        <div class="db-list-row">
+                            <div class="db-avatar db-avatar-teal">
+                                @(apt.Patient.FirstName[0])@(apt.Patient.LastName[0])
+                            </div>
+                            <div class="db-list-info">
+                                <span class="db-list-primary">@apt.Patient.FirstName @apt.Patient.LastName</span>
+                                <span class="db-list-secondary">@apt.StartTime.ToString("HH:mm")</span>
+                            </div>
+                            <span class="db-badge @cls">@apt.Status</span>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="db-empty">No appointments scheduled for today</div>
+            }
+        </div>
+
+        <!-- Sidebar column -->
+        <div class="db-sidebar-col">
+
+            <!-- Recent patients -->
+            <div class="db-card">
+                <div class="db-card-head">
+                    <div>
+                        <h2 class="db-card-title">Recent Patients</h2>
+                        <p class="db-card-caption">Last registered</p>
+                    </div>
+                    <a class="db-link-btn" asp-controller="Patients" asp-action="Index">View all</a>
+                </div>
+                @if (Model.RecentPatients.Any())
+                {
+                    <div class="db-list">
+                        @foreach (var p in Model.RecentPatients)
+                        {
+                            <div class="db-list-row">
+                                <div class="db-avatar db-avatar-blue">
+                                    @(p.FirstName[0])@(p.LastName[0])
+                                </div>
+                                <div class="db-list-info">
+                                    <span class="db-list-primary">@p.FirstName @p.LastName</span>
+                                    <span class="db-list-secondary">@p.Phone</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="db-empty">No patients registered yet</div>
+                }
+            </div>
+
+            <!-- Low stock -->
+            <div class="db-card">
+                <div class="db-card-head">
+                    <div>
+                        <h2 class="db-card-title">Low Stock Alert</h2>
+                        <p class="db-card-caption">Materials running low</p>
+                    </div>
+                    <a class="db-link-btn" asp-controller="Materials" asp-action="Index">View all</a>
+                </div>
+                @if (Model.LowStockMaterials.Any())
+                {
+                    <div class="db-list">
+                        @foreach (var m in Model.LowStockMaterials)
+                        {
+                            <div class="db-list-row">
+                                <div class="db-stock-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                </div>
+                                <div class="db-list-info">
+                                    <span class="db-list-primary">@m.Name</span>
+                                    <span class="db-list-secondary db-text-red">@m.Quantity @m.Unit remaining</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="db-empty">All materials are fully stocked</div>
+                }
+            </div>
+
+            <!-- Doctors -->
+            <div class="db-card">
+                <div class="db-card-head">
+                    <div>
+                        <h2 class="db-card-title">Doctors</h2>
+                        <p class="db-card-caption">@Model.TotalDoctors active</p>
+                    </div>
+                    <a class="db-link-btn" asp-controller="Users" asp-action="Index">Manage</a>
+                </div>
+                @if (Model.Doctors.Any())
+                {
+                    <div class="db-list">
+                        @foreach (var doc in Model.Doctors.Take(4))
+                        {
+                            <div class="db-list-row">
+                                <div class="db-avatar db-avatar-purple">
+                                    @(doc.FirstName[0])@(doc.LastName[0])
+                                </div>
+                                <div class="db-list-info">
+                                    <span class="db-list-primary">Dr. @doc.FirstName @doc.LastName</span>
+                                    <span class="db-list-secondary">@doc.Email</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="db-empty">No doctors registered</div>
+                }
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .db-page { display: flex; flex-direction: column; gap: 20px; }
+
+    .db-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .db-heading-title { font-size: 22px; font-weight: 700; color: var(--color-text); }
+    .db-heading-sub { font-size: 13px; color: var(--color-text-muted); margin-top: 2px; }
+
+    /* Stats */
+    .db-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .db-stat-card {
+        background: #fff;
+        border: 1px solid var(--color-border);
+        border-radius: 14px;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        transition: box-shadow .2s ease, transform .2s ease;
+    }
+    .db-stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); transform: translateY(-2px); }
+    .db-stat-icon {
+        width: 44px; height: 44px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .db-stat-icon svg { width: 22px; height: 22px; }
+    .db-icon-blue  { background: #eff6ff; color: #3b82f6; }
+    .db-icon-green { background: #f0fdf4; color: #16a34a; }
+    .db-icon-purple{ background: #faf5ff; color: #9333ea; }
+    .db-icon-amber { background: #fffbeb; color: #d97706; }
+    .db-stat-value { font-size: 28px; font-weight: 700; color: var(--color-text); line-height: 1; }
+    .db-stat-label { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
+
+    /* Grid */
+    .db-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+    .db-sidebar-col { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Card */
+    .db-card {
+        background: #fff;
+        border: 1px solid var(--color-border);
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .db-card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+    .db-card-title { font-size: 15px; font-weight: 600; color: var(--color-text); }
+    .db-card-caption { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
+    .db-link-btn { font-size: 12px; color: var(--color-sky); text-decoration: none; white-space: nowrap; font-weight: 500; }
+    .db-link-btn:hover { text-decoration: underline; }
+
+    /* List */
+    .db-list { display: flex; flex-direction: column; gap: 8px; }
+    .db-list-row {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: var(--color-surface-alt);
+        transition: background .15s;
+    }
+    .db-list-row:hover { background: #e9f5ef; }
+    .db-list-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .db-list-primary { font-size: 13px; font-weight: 500; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .db-list-secondary { font-size: 12px; color: var(--color-text-muted); }
+    .db-text-red { color: #ef4444 !important; }
+
+    /* Avatar */
+    .db-avatar {
+        width: 34px; height: 34px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; font-weight: 700; flex-shrink: 0; color: #fff;
+    }
+    .db-avatar-teal   { background: linear-gradient(135deg, #10b981, #059669); }
+    .db-avatar-blue   { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .db-avatar-purple { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+
+    .db-stock-icon { width: 34px; height: 34px; border-radius: 10px; background: #fff7ed; color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    /* Badge */
+    .db-badge { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge-yellow { background: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+    .badge-green  { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .badge-red    { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+    .badge-gray   { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
+
+    /* Empty */
+    .db-empty { text-align: center; padding: 24px 16px; color: var(--color-text-muted); font-size: 13px; }
+
+    /* Responsive */
+    @@media (max-width: 1200px) { .db-stats { grid-template-columns: repeat(2, 1fr); } }
+    @@media (max-width: 900px)  { .db-grid  { grid-template-columns: 1fr; } }
+    @@media (max-width: 600px)  { .db-stats { grid-template-columns: 1fr; } }
+</style>

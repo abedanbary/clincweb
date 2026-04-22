@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "f8edhavS0DjiF/6D0rzIxNIaNWpJf413HdhHGUbS/QI=",
+  "Hash": "qvFfQAy9edq1PDVwUSwMoqMnene2lHoHfTxJImSP+Uw=",
   "Source": "ClinicApp.Web",
   "BasePath": "_content/ClinicApp.Web",
   "Mode": "Default",
@@ -283,6 +283,25 @@
       "OriginalItemSpec": "wwwroot/js/calendar.js"
     },
     {
+      "Identity": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/i18n.js",
+      "SourceId": "ClinicApp.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/",
+      "BasePath": "_content/ClinicApp.Web",
+      "RelativePath": "js/i18n.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/js/i18n.js"
+    },
+    {
       "Identity": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/simple-image-viewer.js",
       "SourceId": "ClinicApp.Web",
       "SourceType": "Discovered",
@@ -319,6 +338,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/js/site.js"
+    },
+    {
+      "Identity": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/js/translations.json",
+      "SourceId": "ClinicApp.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/",
+      "BasePath": "_content/ClinicApp.Web",
+      "RelativePath": "js/translations.json",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/js/translations.json"
     },
     {
       "Identity": "/Users/farsnbary/Development/ClinicApp/ClinicApp.Web/wwwroot/lib/bootstrap/dist/css/bootstrap-grid.css",

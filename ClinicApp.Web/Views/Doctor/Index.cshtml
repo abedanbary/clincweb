@@ -7,66 +7,63 @@
     ViewData["Title"] = "Dashboard";
 }
 
-<link rel="stylesheet" href="~/css/doctor-dashboard.css" />
-
 <div class="dashboard-page">
 
     <!-- Header -->
-    <header class="dashboard-header">
+    <div class="dashboard-header">
         <div class="dashboard-header-text">
             <h1 class="dashboard-title">Welcome back, Dr. @Model.DoctorName</h1>
             <p class="dashboard-subtitle">@Model.ClinicName</p>
         </div>
-        <div>
-            <p class="dashboard-date">@DateTime.Now.ToString("dddd, MMMM dd, yyyy")</p>
-        </div>
-    </header>
+        <p class="dashboard-date">@DateTime.Now.ToString("dddd, MMMM dd, yyyy")</p>
+    </div>
 
-    <!-- Statistics Cards -->
-    <section class="stats-grid">
+    <!-- Stats -->
+    <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-card-header">
-                <span class="stat-label">Today's Appointments</span>
-                <span class="stat-icon">📅</span>
+            <div class="stat-icon">📅</div>
+            <div>
+                <div class="stat-label">Today's Appointments</div>
+                <div class="stat-value">@Model.TodayAppointmentsCount</div>
             </div>
-            <div class="stat-value">@Model.TodayAppointmentsCount</div>
         </div>
 
         <div class="stat-card">
-            <div class="stat-card-header">
-                <span class="stat-label">Total Patients</span>
-                <span class="stat-icon">👥</span>
+            <div class="stat-icon">👥</div>
+            <div>
+                <div class="stat-label">Total Patients</div>
+                <div class="stat-value">@Model.TotalPatientsCount</div>
             </div>
-            <div class="stat-value">@Model.TotalPatientsCount</div>
         </div>
 
         <div class="stat-card">
-            <div class="stat-card-header">
-                <span class="stat-label">Pending Appointments</span>
-                <span class="stat-icon">⏰</span>
+            <div class="stat-icon">⏰</div>
+            <div>
+                <div class="stat-label">Pending Appointments</div>
+                <div class="stat-value">@Model.PendingAppointmentsCount</div>
             </div>
-            <div class="stat-value">@Model.PendingAppointmentsCount</div>
         </div>
 
         <div class="stat-card">
-            <div class="stat-card-header">
-                <span class="stat-label">Low Stock Items</span>
-                <span class="stat-icon">⚠️</span>
+            <div class="stat-icon">⚠️</div>
+            <div>
+                <div class="stat-label">Low Stock Items</div>
+                <div class="stat-value">@Model.LowStockMaterialsCount</div>
             </div>
-            <div class="stat-value">@Model.LowStockMaterialsCount</div>
         </div>
-    </section>
+    </div>
 
-    <!-- Content Grid -->
-    <section class="content-grid">
+    <!-- Content -->
+    <div class="content-grid">
 
-        <!-- Today's Appointments -->
+        <!-- Today's Schedule -->
         <div class="dashboard-card">
             <div class="dashboard-card-header">
                 <div>
                     <h2 class="dashboard-card-title">Today's Schedule</h2>
                     <p class="dashboard-card-caption">@Model.TodayAppointmentsCount appointment(s) today</p>
                 </div>
+                <a href="/Appointments" style="font-size:12px;color:var(--color-sky);text-decoration:none;font-weight:500;">View all</a>
             </div>
 
             <div class="appointments-list">
@@ -78,37 +75,30 @@
                         {
                             AppointmentStatus.Completed => "status-completed",
                             AppointmentStatus.Cancelled => "status-cancelled",
-                            AppointmentStatus.NoShow => "status-noshow",
-                            _ => "status-pending"
+                            AppointmentStatus.NoShow    => "status-noshow",
+                            _                           => "status-pending"
                         };
-
                         <div class="appointment-item">
                             <div class="appointment-info">
                                 <div class="appointment-patient">
                                     @appointment.Patient.FirstName @appointment.Patient.LastName
                                 </div>
-                                <div class="appointment-time">
-                                    🕐 @appointment.StartTime.ToString("HH:mm")
-                                </div>
+                                <div class="appointment-time">@appointment.StartTime.ToString("HH:mm")</div>
                             </div>
-                            <span class="appointment-status @statusClass">
-                                @appointment.Status
-                            </span>
+                            <span class="appointment-status @statusClass">@appointment.Status</span>
                         </div>
                     }
                 }
                 else
                 {
-                    <div class="empty-state">
-                        No appointments scheduled for today
-                    </div>
+                    <div class="empty-state">No appointments scheduled for today</div>
                 }
             </div>
         </div>
 
         <!-- Sidebar -->
-        <div style="display: flex; flex-direction: column; gap: 18px;">
-            
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
             <!-- Recent Patients -->
             <div class="dashboard-card">
                 <div class="dashboard-card-header">
@@ -116,8 +106,8 @@
                         <h2 class="dashboard-card-title">Recent Patients</h2>
                         <p class="dashboard-card-caption">Last registered</p>
                     </div>
+                    <a href="/Patients" style="font-size:12px;color:var(--color-sky);text-decoration:none;font-weight:500;">View all</a>
                 </div>
-
                 <div class="patient-list">
                     @if (Model.RecentPatients.Any())
                     {
@@ -127,10 +117,8 @@
                             <div class="patient-item">
                                 <div class="patient-avatar">@initials</div>
                                 <div class="patient-details">
-                                    <div class="patient-name">
-                                        @patient.FirstName @patient.LastName
-                                    </div>
-                                    <div class="patient-phone">📞 @patient.Phone</div>
+                                    <div class="patient-name">@patient.FirstName @patient.LastName</div>
+                                    <div class="patient-phone">@patient.Phone</div>
                                 </div>
                             </div>
                         }
@@ -142,15 +130,15 @@
                 </div>
             </div>
 
-            <!-- Low Stock Materials -->
+            <!-- Low Stock -->
             <div class="dashboard-card">
                 <div class="dashboard-card-header">
                     <div>
                         <h2 class="dashboard-card-title">Low Stock Alert</h2>
                         <p class="dashboard-card-caption">Materials running low</p>
                     </div>
+                    <a href="/Materials" style="font-size:12px;color:var(--color-sky);text-decoration:none;font-weight:500;">View all</a>
                 </div>
-
                 <div class="material-list">
                     @if (Model.LowStockMaterials.Any())
                     {
@@ -158,9 +146,7 @@
                         {
                             <div class="material-item">
                                 <span class="material-name">@material.Name</span>
-                                <span class="material-quantity">
-                                    @material.Quantity @material.Unit
-                                </span>
+                                <span class="material-quantity">@material.Quantity @material.Unit</span>
                             </div>
                         }
                     }
@@ -172,7 +158,6 @@
             </div>
 
         </div>
-
-    </section>
+    </div>
 
 </div>
