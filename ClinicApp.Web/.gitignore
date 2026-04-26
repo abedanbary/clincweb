@@ -2,3 +2,7 @@
 appsettings.json
 appsettings.Development.json
 
+# Build artifacts
+bin/
+obj/
+
