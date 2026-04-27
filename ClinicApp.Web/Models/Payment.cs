@@ -16,17 +16,14 @@ namespace ClinicApp.Web.Models
 
         public string? Notes { get; set; }                           // ملاحظات
 
-      
-        public int PatientId { get; set; }                          
+        public int PatientId { get; set; }
         public Patient Patient { get; set; } = null!;
 
-       
         public int DoctorId { get; set; }
         public AppUser Doctor { get; set; } = null!;
 
-      
-        public int TreatmentId { get; set; }
-        public Treatment Treatment { get; set; } = null!;
+        public int? TreatmentId { get; set; }
+        public Treatment? Treatment { get; set; }
 
         public int ClinicId { get; set; }
         public Clinic Clinic { get; set; } = null!;

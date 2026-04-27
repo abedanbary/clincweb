@@ -77,7 +77,7 @@
             <span class="quick-action-icon">📅</span>
             <span class="quick-action-text">Appointments</span>
         </a>
-        <a href="#" class="quick-action-btn" onclick="alert('Coming soon!'); return false;">
+        <a asp-controller="Payments" asp-action="Index" asp-route-patientId="@Model.PatientId" class="quick-action-btn">
             <span class="quick-action-icon">💰</span>
             <span class="quick-action-text">Payments</span>
         </a>

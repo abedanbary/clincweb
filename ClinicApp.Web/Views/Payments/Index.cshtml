@@ -1,0 +1,446 @@
+@using ClinicApp.Web.Models
+@using ClinicApp.Web.ViewModels
+@model PaymentsPageViewModel
+
+@{
+    Layout = User.IsInRole("Manager") ? "_ManagerLayout" : "_DoctorLayout";
+    ViewData["Title"] = "Payments";
+    var isManager = User.IsInRole("Manager");
+}
+
+<link rel="stylesheet" href="~/css/payments.css" />
+
+<div class="pay-page">
+
+    <!-- Page Header -->
+    <div class="pay-header">
+        <div>
+            <h1 class="pay-title">Payments</h1>
+            <p class="pay-subtitle">@(isManager ? "Manage all clinic payments and invoices" : "View patient payments for your practice")</p>
+        </div>
+        @if (isManager)
+        {
+            <button class="btn-primary" onclick="openCreateModal()">+ New Payment</button>
+        }
+    </div>
+
+    <!-- Toast notifications -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="pay-toast pay-toast-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="pay-toast pay-toast-error">@TempData["Error"]</div>
+    }
+
+    <!-- Stats Cards -->
+    <div class="pay-stats">
+        <div class="pay-stat-card pay-stat-green">
+            <div class="pay-stat-icon">$</div>
+            <div>
+                <div class="pay-stat-value">$@Model.TotalRevenue.ToString("N2")</div>
+                <div class="pay-stat-label">Total Revenue (@Model.PaidCount paid)</div>
+            </div>
+        </div>
+        <div class="pay-stat-card pay-stat-orange">
+            <div class="pay-stat-icon">⏳</div>
+            <div>
+                <div class="pay-stat-value">$@Model.PendingAmount.ToString("N2")</div>
+                <div class="pay-stat-label">Pending (@Model.PendingCount invoices)</div>
+            </div>
+        </div>
+        <div class="pay-stat-card pay-stat-red">
+            <div class="pay-stat-icon">↩</div>
+            <div>
+                <div class="pay-stat-value">$@Model.RefundedAmount.ToString("N2")</div>
+                <div class="pay-stat-label">Refunded</div>
+            </div>
+        </div>
+        <div class="pay-stat-card pay-stat-blue">
+            <div class="pay-stat-icon">#</div>
+            <div>
+                <div class="pay-stat-value">@Model.Payments.Count</div>
+                <div class="pay-stat-label">Filtered Results</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="pay-filters-card">
+        <form method="get" asp-action="Index" class="pay-filters-form">
+            <div class="pay-filter-group">
+                <label class="pay-filter-label">Patient</label>
+                <select name="patientId" class="pay-filter-select">
+                    <option value="">All Patients</option>
+                    @foreach (var p in Model.FilterPatients)
+                    {
+                        if (Model.FilterPatientId?.ToString() == p.Value)
+                        {
+                            <option value="@p.Value" selected>@p.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@p.Value">@p.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="pay-filter-group">
+                <label class="pay-filter-label">Status</label>
+                <select name="status" class="pay-filter-select">
+                    <option value="">All Statuses</option>
+                    @foreach (PaymentStatus s in Enum.GetValues(typeof(PaymentStatus)))
+                    {
+                        if (Model.FilterStatus == s)
+                        {
+                            <option value="@((int)s)" selected>@s</option>
+                        }
+                        else
+                        {
+                            <option value="@((int)s)">@s</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="pay-filter-group">
+                <label class="pay-filter-label">From</label>
+                <input type="date" name="from" class="pay-filter-input" value="@Model.FilterFrom?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="pay-filter-group">
+                <label class="pay-filter-label">To</label>
+                <input type="date" name="to" class="pay-filter-input" value="@Model.FilterTo?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="pay-filter-actions">
+                <button type="submit" class="btn-primary">Filter</button>
+                <a asp-action="Index" class="btn-ghost">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="pay-table-card">
+        @if (!Model.Payments.Any())
+        {
+            <div class="pay-empty">
+                <div class="pay-empty-icon">💳</div>
+                <p class="pay-empty-text">No payments found.</p>
+                @if (isManager)
+                {
+                    <button class="btn-primary" onclick="openCreateModal()">Create First Payment</button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="pay-table-wrapper">
+                <table class="pay-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Treatment</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            @if (isManager)
+                            {
+                                <th>Actions</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Payments)
+                        {
+                            <tr>
+                                <td><span class="pay-invoice">#@p.InvoiceNumber</span></td>
+                                <td>
+                                    <a asp-controller="Patients" asp-action="Profile" asp-route-id="@p.PatientId" class="pay-patient-link">
+                                        @p.Patient.FirstName @p.Patient.LastName
+                                    </a>
+                                </td>
+                                <td>Dr. @p.Doctor.FirstName @p.Doctor.LastName</td>
+                                <td>@(p.Treatment != null ? p.Treatment.Title : "—")</td>
+                                <td><strong>$@p.Amount.ToString("N2")</strong></td>
+                                <td>
+                                    <span class="pay-method pay-method-@p.Method.ToString().ToLower()">@p.Method</span>
+                                </td>
+                                <td>
+                                    <span class="pay-badge pay-badge-@p.Status.ToString().ToLower()">@p.Status</span>
+                                </td>
+                                <td>@p.PaymentDate.ToLocalTime().ToString("MMM dd, yyyy")</td>
+                                @if (isManager)
+                                {
+                                    <td class="pay-actions">
+                                        <button class="btn-ghost btn-sm"
+                                                onclick="openEditModal(@p.Id)">Edit</button>
+                                        <form asp-action="Delete" method="post" style="display:inline;"
+                                              onsubmit="return confirm('Delete payment #@p.InvoiceNumber?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@p.Id" />
+                                            <button type="submit" class="btn-ghost btn-sm btn-danger">Delete</button>
+                                        </form>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@if (isManager)
+{
+    <!-- Create Modal -->
+    <div id="createModal" class="pay-modal-overlay" style="display:none;">
+        <div class="pay-modal">
+            <div class="pay-modal-header">
+                <h2 class="pay-modal-title">New Payment</h2>
+                <button class="pay-modal-close" onclick="closeCreateModal()">&times;</button>
+            </div>
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="pay-modal-body">
+                    <div class="pay-form-row">
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Patient *</label>
+                            <select name="NewPayment.PatientId" id="createPatientId" class="pay-form-select" required onchange="loadTreatments(this.value, 'createTreatmentId', 'createDoctorId', 'createAmount')">
+                                <option value="">Select patient...</option>
+                                @foreach (var p in Model.Patients)
+                                {
+                                    <option value="@p.Value">@p.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Doctor *</label>
+                            <select name="NewPayment.DoctorId" id="createDoctorId" class="pay-form-select" required>
+                                <option value="">Select doctor...</option>
+                                @foreach (var d in Model.Doctors)
+                                {
+                                    <option value="@d.Value">@d.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pay-form-group">
+                        <label class="pay-form-label">Treatment (optional)</label>
+                        <select name="NewPayment.TreatmentId" id="createTreatmentId" class="pay-form-select" onchange="fillAmount(this, 'createAmount')">
+                            <option value="">No specific treatment</option>
+                        </select>
+                    </div>
+                    <div class="pay-form-row">
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Amount ($) *</label>
+                            <input type="number" name="NewPayment.Amount" id="createAmount" class="pay-form-input" step="0.01" min="0.01" required />
+                        </div>
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Payment Date *</label>
+                            <input type="date" name="NewPayment.PaymentDate" class="pay-form-input"
+                                   value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        </div>
+                    </div>
+                    <div class="pay-form-row">
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Method *</label>
+                            <select name="NewPayment.Method" class="pay-form-select" required>
+                                @foreach (PaymentMethod m in Enum.GetValues(typeof(PaymentMethod)))
+                                {
+                                    <option value="@((int)m)">@m</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Status *</label>
+                            <select name="NewPayment.Status" class="pay-form-select" required>
+                                @foreach (PaymentStatus s in Enum.GetValues(typeof(PaymentStatus)))
+                                {
+                                    if (s == PaymentStatus.Paid)
+                                    {
+                                        <option value="@((int)s)" selected>@s</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@((int)s)">@s</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pay-form-group">
+                        <label class="pay-form-label">Notes</label>
+                        <textarea name="NewPayment.Notes" class="pay-form-textarea" rows="2" placeholder="Optional notes..."></textarea>
+                    </div>
+                </div>
+                <div class="pay-modal-footer">
+                    <button type="button" class="btn-ghost" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="pay-modal-overlay" style="display:none;">
+        <div class="pay-modal">
+            <div class="pay-modal-header">
+                <h2 class="pay-modal-title">Edit Payment</h2>
+                <button class="pay-modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="editId" />
+                <div class="pay-modal-body">
+                    <div class="pay-form-row">
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Patient *</label>
+                            <select name="PatientId" id="editPatientId" class="pay-form-select" required onchange="loadTreatments(this.value, 'editTreatmentId', 'editDoctorId', 'editAmount')">
+                                <option value="">Select patient...</option>
+                                @foreach (var p in Model.Patients)
+                                {
+                                    <option value="@p.Value">@p.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Doctor *</label>
+                            <select name="DoctorId" id="editDoctorId" class="pay-form-select" required>
+                                <option value="">Select doctor...</option>
+                                @foreach (var d in Model.Doctors)
+                                {
+                                    <option value="@d.Value">@d.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pay-form-group">
+                        <label class="pay-form-label">Treatment (optional)</label>
+                        <select name="TreatmentId" id="editTreatmentId" class="pay-form-select">
+                            <option value="">No specific treatment</option>
+                        </select>
+                    </div>
+                    <div class="pay-form-row">
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Amount ($) *</label>
+                            <input type="number" name="Amount" id="editAmount" class="pay-form-input" step="0.01" min="0.01" required />
+                        </div>
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Payment Date *</label>
+                            <input type="date" name="PaymentDate" id="editPaymentDate" class="pay-form-input" required />
+                        </div>
+                    </div>
+                    <div class="pay-form-row">
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Method *</label>
+                            <select name="Method" id="editMethod" class="pay-form-select" required>
+                                @foreach (PaymentMethod m in Enum.GetValues(typeof(PaymentMethod)))
+                                {
+                                    <option value="@((int)m)">@m</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="pay-form-group">
+                            <label class="pay-form-label">Status *</label>
+                            <select name="Status" id="editStatus" class="pay-form-select" required>
+                                @foreach (PaymentStatus s in Enum.GetValues(typeof(PaymentStatus)))
+                                {
+                                    <option value="@((int)s)">@s</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pay-form-group">
+                        <label class="pay-form-label">Notes</label>
+                        <textarea name="Notes" id="editNotes" class="pay-form-textarea" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="pay-modal-footer">
+                    <button type="button" class="btn-ghost" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Auto-hide toasts
+        document.querySelectorAll('.pay-toast').forEach(t => {
+            setTimeout(() => t.style.opacity = '0', 3500);
+            setTimeout(() => t.remove(), 4000);
+        });
+
+        function openCreateModal() {
+            document.getElementById('createModal').style.display = 'flex';
+        }
+        function closeCreateModal() {
+            document.getElementById('createModal').style.display = 'none';
+        }
+        function openEditModal(id) {
+            fetch(`/Payments/GetPayment/${id}`)
+                .then(r => r.json())
+                .then(p => {
+                    document.getElementById('editId').value = p.id;
+                    document.getElementById('editAmount').value = p.amount;
+                    document.getElementById('editPaymentDate').value = p.paymentDate;
+                    document.getElementById('editMethod').value = p.method;
+                    document.getElementById('editStatus').value = p.status;
+                    document.getElementById('editNotes').value = p.notes || '';
+
+                    const patSel = document.getElementById('editPatientId');
+                    patSel.value = p.patientId;
+
+                    const docSel = document.getElementById('editDoctorId');
+                    docSel.value = p.doctorId;
+
+                    loadTreatments(p.patientId, 'editTreatmentId', null, null, () => {
+                        document.getElementById('editTreatmentId').value = p.treatmentId || '';
+                    });
+
+                    document.getElementById('editModal').style.display = 'flex';
+                });
+        }
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        function loadTreatments(patientId, treatmentSelectId, doctorSelectId, amountId, callback) {
+            const treatSel = document.getElementById(treatmentSelectId);
+            treatSel.innerHTML = '<option value="">No specific treatment</option>';
+
+            if (!patientId) return;
+
+            fetch(`/Payments/GetPatientTreatments?patientId=${patientId}`)
+                .then(r => r.json())
+                .then(treatments => {
+                    treatments.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t.value;
+                        opt.text = t.text;
+                        opt.dataset.cost = t.cost;
+                        opt.dataset.doctorId = t.doctorId;
+                        treatSel.appendChild(opt);
+                    });
+                    if (callback) callback();
+                });
+        }
+
+        function fillAmount(selectEl, amountId) {
+            const opt = selectEl.options[selectEl.selectedIndex];
+            if (opt && opt.dataset.cost) {
+                document.getElementById(amountId).value = opt.dataset.cost;
+            }
+        }
+
+        // Close modals on overlay click
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'createModal') closeCreateModal();
+            if (e.target.id === 'editModal') closeEditModal();
+        });
+    </script>
+}
