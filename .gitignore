@@ -1,0 +1,25 @@
+# Build output
+bin/
+obj/
+
+# .NET user files
+*.user
+*.suo
+.vs/
+
+# Environment / secrets
+.env
+appsettings.Development.json
+
+# macOS
+.DS_Store
+
+# Rider / JetBrains
+.idea/
+
+# VS Code
+.vscode/
+
+# NuGet
+*.nupkg
+packages/
