@@ -4,7 +4,7 @@
 const PX_PER_MIN = 1.5;
 const HOUR_START = 7;
 const HOUR_END   = 21;
-const DOC_PALETTE = ['#D96B4F', '#3DADA0', '#7C6FCD', '#F0A500', '#4A9B6F', '#E91E8C'];
+const DOC_PALETTE = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4'];
 
 // ── State ─────────────────────────────────────────────────────
 const CAL = {
@@ -31,6 +31,41 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDoctorAvailability();
     setupEditTimeCalc();
     startNowIndicatorRefresh();
+
+    document.getElementById('prevBtn')?.addEventListener('click', () => {
+        if (CAL.view === 'week') {
+            CAL.weekStart.setDate(CAL.weekStart.getDate() - 7);
+        } else {
+            CAL.focusDate.setDate(CAL.focusDate.getDate() - 1);
+        }
+        renderAll();
+    });
+
+    document.getElementById('nextBtn')?.addEventListener('click', () => {
+        if (CAL.view === 'week') {
+            CAL.weekStart.setDate(CAL.weekStart.getDate() + 7);
+        } else {
+            CAL.focusDate.setDate(CAL.focusDate.getDate() + 1);
+        }
+        renderAll();
+    });
+
+    document.getElementById('todayBtn')?.addEventListener('click', () => {
+        CAL.weekStart = getWeekStart(new Date());
+        CAL.focusDate = new Date();
+        renderAll();
+        scrollToNow();
+    });
+
+    document.getElementById('weekBtn')?.addEventListener('click', () => { CAL.view = 'week'; renderAll(); });
+    document.getElementById('dayBtn')?.addEventListener('click',  () => { CAL.view = 'day';  renderAll(); });
+
+    document.getElementById('calGrid')
+        ?.addEventListener('click', e => {
+            if (!e.target.closest('.cal-event') && !e.target.closest('.cal-detail-panel')) {
+                closeDetailPanel();
+            }
+        });
 });
 
 // ── Fetch events ──────────────────────────────────────────────
@@ -240,9 +275,9 @@ function buildEventBlock(ev) {
     const status = ev.extendedProps?.status || 'Scheduled';
 
     const isDone = status === 'Completed' || status === 'Cancelled';
-    const bg     = isDone ? '#F5F0EB' : `${color}22`;
-    const border = isDone ? '#BBA89E' : color;
-    const text   = isDone ? '#BBA89E' : color;
+    const bg     = isDone ? '#f1f5f9' : `${color}1a`;
+    const border = isDone ? '#94a3b8' : color;
+    const text   = isDone ? '#94a3b8' : color;
 
     const name   = escHtml(ev.extendedProps?.patientName || ev.title || '');
     const reason = escHtml(ev.extendedProps?.reason || '');
@@ -386,8 +421,7 @@ function openDetailPanel(apptId) {
 
     // Footer
     document.getElementById('detailFooter').innerHTML = `
-        <button class="cal-detail-btn-primary" id="panelEditBtn"
-                style="background:${color}">Edit Appointment</button>
+        <button class="cal-detail-btn-primary" id="panelEditBtn">Edit Appointment</button>
         <button class="cal-detail-btn-danger" id="panelDeleteBtn">Cancel Appointment</button>
     `;
 
@@ -469,7 +503,7 @@ function setupCreateModal() {
     modal?.addEventListener('click', e => { if (e.target === modal) close(); });
 }
 
-function openCreateModalWithDate(dateStr, dateObj) {
+function openCreateModalWithDate(_dateStr, dateObj) {
     resetCreateForm();
     const modal = document.getElementById('appointmentModal');
     if (!modal) return;
@@ -565,44 +599,6 @@ function setupEditTimeCalc() {
         });
 }
 
-// ── Navigation ────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('prevBtn')?.addEventListener('click', () => {
-        if (CAL.view === 'week') {
-            CAL.weekStart.setDate(CAL.weekStart.getDate() - 7);
-        } else {
-            CAL.focusDate.setDate(CAL.focusDate.getDate() - 1);
-        }
-        renderAll();
-    });
-
-    document.getElementById('nextBtn')?.addEventListener('click', () => {
-        if (CAL.view === 'week') {
-            CAL.weekStart.setDate(CAL.weekStart.getDate() + 7);
-        } else {
-            CAL.focusDate.setDate(CAL.focusDate.getDate() + 1);
-        }
-        renderAll();
-    });
-
-    document.getElementById('todayBtn')?.addEventListener('click', () => {
-        CAL.weekStart = getWeekStart(new Date());
-        CAL.focusDate = new Date();
-        renderAll();
-        scrollToNow();
-    });
-
-    document.getElementById('weekBtn')?.addEventListener('click', () => { CAL.view = 'week'; renderAll(); });
-    document.getElementById('dayBtn')?.addEventListener('click',  () => { CAL.view = 'day';  renderAll(); });
-
-    // Close detail panel when clicking outside
-    document.getElementById('calGrid')
-        ?.addEventListener('click', e => {
-            if (!e.target.closest('.cal-event') && !e.target.closest('.cal-detail-panel')) {
-                closeDetailPanel();
-            }
-        });
-});
 
 // ── PDF / Excel ────────────────────────────────────────────────
 function printWeekPdf() {
