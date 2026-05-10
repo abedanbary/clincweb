@@ -1,234 +1,418 @@
-// calendar.js — Modern Clinic Calendar
-let currentAppointmentId = null;
+// calendar.js — Custom clinic calendar (no external library)
 
-document.addEventListener('DOMContentLoaded', function () {
-    initializeCalendar();
+// ── Constants ─────────────────────────────────────────────────
+const PX_PER_MIN = 1.5;
+const HOUR_START = 7;
+const HOUR_END   = 21;
+const DOC_PALETTE = ['#D96B4F', '#3DADA0', '#7C6FCD', '#F0A500', '#4A9B6F', '#E91E8C'];
+
+// ── State ─────────────────────────────────────────────────────
+const CAL = {
+    view:       'week',
+    weekStart:  getWeekStart(new Date()),  // Monday of displayed week
+    focusDate:  new Date(),                // active day in Day view
+    filterDoc:  'all',
+    openApptId: null,
+    events:     [],
+    doctorColors: {},
+    colorIdx:   0,
+};
+
+// ── Bootstrap ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    fetchAllEvents().then(() => {
+        renderAll();
+        scrollToNow();
+    });
+
     setupCreateModal();
+    setupEditModal();
     setupPatientToggle();
-    setupDetailsModal();
     setupDoctorAvailability();
     setupEditTimeCalc();
+    startNowIndicatorRefresh();
 });
 
-// ── Initialize FullCalendar ────────────────────────────────────────────
-function initializeCalendar() {
-    const calendarEl = document.getElementById('calendar');
-    if (!calendarEl) return;
-
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-            left:   'prev,next today',
-            center: 'title',
-            right:  'dayGridMonth,timeGridWeek,timeGridDay'
-        },
-        buttonText: {
-            today: 'Today',
-            month: 'Month',
-            week:  'Week',
-            day:   'Day'
-        },
-        height:       'auto',
-        slotMinTime:  '07:00:00',
-        slotMaxTime:  '22:00:00',
-        slotDuration: '00:30:00',
-        selectable:   true,
-        nowIndicator: true,
-        dayMaxEvents: 3,
-
-        events: '/Appointments/GetCalendarEvents',
-
-        eventContent: renderEventContent,
-
-        eventClick: function (info) {
-            showAppointmentDetails(info.event);
-        },
-
-        dateClick: function (info) {
-            openCreateModalWithDate(info.dateStr, info.date);
-        },
-
-        select: function (info) {
-            openCreateModalWithDateRange(info.start, info.end);
-        },
-
-        loading: function (isLoading) {
-            const overlay = document.getElementById('calLoading');
-            if (overlay) overlay.classList.toggle('active', isLoading);
-        },
-
-        eventsSet: function (events) {
-            updateStats(events);
-        },
-
-        eventTimeFormat: {
-            hour:   '2-digit',
-            minute: '2-digit',
-            hour12: false
-        },
-        slotLabelFormat: {
-            hour:   '2-digit',
-            minute: '2-digit',
-            hour12: false
-        }
-    });
-
-    calendar.render();
-    window.calendarInstance = calendar;
+// ── Fetch events ──────────────────────────────────────────────
+async function fetchAllEvents() {
+    try {
+        const res = await fetch('/Appointments/GetCalendarEvents');
+        const raw = await res.json();
+        CAL.events = raw.map(e => ({
+            ...e,
+            startDate: new Date(e.start),
+            endDate:   new Date(e.end),
+        }));
+        CAL.events.forEach(e => {
+            const doc = e.extendedProps?.doctorName;
+            if (doc && !CAL.doctorColors[doc]) {
+                CAL.doctorColors[doc] = DOC_PALETTE[CAL.colorIdx % DOC_PALETTE.length];
+                CAL.colorIdx++;
+            }
+        });
+    } catch {
+        showToast('Could not load appointments.', 'error');
+    }
 }
 
-// ── Custom Event Rendering ─────────────────────────────────────────────
-function renderEventContent(arg) {
-    const props    = arg.event.extendedProps;
-    const isTimeGrid = arg.view.type.startsWith('timeGrid');
+async function refetchEvents() {
+    await fetchAllEvents();
+    renderAll();
+}
 
-    const pill = document.createElement('div');
-    pill.className = 'cal-event-pill';
+// ── Render all ────────────────────────────────────────────────
+function renderAll() {
+    renderToolbar();
+    renderDayHeader();
+    renderGrid();
+}
 
-    const dot = document.createElement('div');
-    dot.className = 'cal-event-dot';
+// ── Visible days ──────────────────────────────────────────────
+function getVisibleDays() {
+    if (CAL.view === 'day') {
+        return [new Date(CAL.focusDate)];
+    }
+    return Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(CAL.weekStart);
+        d.setDate(d.getDate() + i);
+        return d;
+    });
+}
 
-    const text = document.createElement('div');
-    text.className = 'cal-event-text';
-    text.textContent = props.patientName || arg.event.title;
+// ── Toolbar ───────────────────────────────────────────────────
+function renderToolbar() {
+    const days  = getVisibleDays();
+    const first = days[0];
+    const last  = days[days.length - 1];
+    const label = document.getElementById('periodLabel');
 
-    pill.appendChild(dot);
-    pill.appendChild(text);
-
-    if (isTimeGrid) {
-        // Show time range and doctor in week/day view
-        const timeEl = document.createElement('div');
-        timeEl.className = 'cal-event-time';
-        const start = arg.event.start;
-        const end   = arg.event.end;
-        if (start && end) {
-            const fmt = t => t.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-            timeEl.textContent = `${fmt(start)} – ${fmt(end)}`;
-        }
-        pill.appendChild(timeEl);
-
-        if (props.doctorName) {
-            const doctorEl = document.createElement('div');
-            doctorEl.className = 'cal-event-doctor';
-            doctorEl.textContent = props.doctorName;
-            pill.appendChild(doctorEl);
-        }
+    if (CAL.view === 'week') {
+        const sameMonth = first.getMonth() === last.getMonth();
+        label.textContent = sameMonth
+            ? first.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            : `${first.toLocaleDateString('en-US', { month: 'short' })} – ${last.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+    } else {
+        label.textContent = first.toLocaleDateString('en-US', {
+            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+        });
     }
 
-    return { domNodes: [pill] };
+    renderDoctorPills();
+
+    document.getElementById('weekBtn').classList.toggle('active', CAL.view === 'week');
+    document.getElementById('dayBtn').classList.toggle('active', CAL.view === 'day');
 }
 
-// ── Update Stats Bar ───────────────────────────────────────────────────
-function updateStats(events) {
-    const counts = { Scheduled: 0, Completed: 0, Cancelled: 0, NoShow: 0 };
-    events.forEach(ev => {
-        const s = ev.extendedProps?.status;
-        if (s && Object.prototype.hasOwnProperty.call(counts, s)) counts[s]++;
+function renderDoctorPills() {
+    const container = document.getElementById('doctorPills');
+    if (!container) return;
+
+    const docs = Object.keys(CAL.doctorColors);
+
+    let html = `<button class="cal-pill ${CAL.filterDoc === 'all' ? 'active-all' : ''}" data-doc="all">All Doctors</button>`;
+
+    docs.forEach(doc => {
+        const color    = CAL.doctorColors[doc];
+        const isActive = CAL.filterDoc === doc;
+        const style    = isActive ? `border-color:${color};background:${color}18;color:${color};` : '';
+        html += `<button class="cal-pill" data-doc="${escHtml(doc)}" style="${style}">
+            ${isActive ? `<span class="cal-pill-dot" style="background:${color};"></span>` : ''}
+            ${escHtml(doc)}
+        </button>`;
     });
-    const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
-    const set = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
-    };
+    container.innerHTML = html;
 
-    set('stat-scheduled', counts.Scheduled);
-    set('stat-completed',  counts.Completed);
-    set('stat-cancelled',  counts.Cancelled);
-    set('stat-noshow',     counts.NoShow);
-    set('stat-total',      total);
+    container.querySelectorAll('.cal-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            CAL.filterDoc = btn.dataset.doc;
+            renderAll();
+        });
+    });
 }
 
-// ── Appointment Details (View Mode) ───────────────────────────────────
-function showAppointmentDetails(event) {
-    currentAppointmentId = event.id;
+// ── Day header ────────────────────────────────────────────────
+function renderDayHeader() {
+    const header = document.getElementById('dayHeader');
+    const days   = getVisibleDays();
+    const today  = todayMidnight();
 
-    const props          = event.extendedProps;
-    const viewMode       = document.getElementById('viewMode');
-    const editMode       = document.getElementById('editMode');
-    const modalTitle     = document.getElementById('modalTitle');
-    const detailsActions = document.getElementById('detailsActions');
+    let html = `<div class="cal-gutter-space"></div>`;
+
+    days.forEach((day, i) => {
+        const isToday  = day.getTime() === today.getTime();
+        const dayName  = day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+        const dayNum   = day.getDate();
+        const month    = day.toLocaleDateString('en-US', { month: 'short' });
+
+        html += `
+            <div class="cal-day-cell ${isToday ? 'today' : ''}" data-idx="${i}">
+                <span class="cal-day-name">${dayName}</span>
+                <div class="cal-day-num-wrap">
+                    <span class="cal-day-num ${isToday ? 'today' : ''}">${dayNum}</span>
+                </div>
+                <span class="cal-month-label">${month}</span>
+            </div>
+        `;
+    });
+
+    header.innerHTML = html;
+
+    header.querySelectorAll('.cal-day-cell').forEach((cell, i) => {
+        cell.addEventListener('click', () => {
+            CAL.focusDate = new Date(days[i]);
+            CAL.view = 'day';
+            renderAll();
+        });
+    });
+}
+
+// ── Grid ──────────────────────────────────────────────────────
+function renderGrid() {
+    const grid  = document.getElementById('calGrid');
+    if (!grid) return;
+
+    const days    = getVisibleDays();
+    const totalH  = (HOUR_END - HOUR_START) * 60 * PX_PER_MIN;
+    const today   = todayMidnight();
+
+    const filtered = CAL.events.filter(e =>
+        CAL.filterDoc === 'all' || e.extendedProps?.doctorName === CAL.filterDoc
+    );
+
+    // ── Time gutter ──
+    let gutterHtml = `<div class="cal-gutter" style="height:${totalH}px">`;
+    for (let h = HOUR_START; h < HOUR_END; h++) {
+        const top = (h - HOUR_START) * 60 * PX_PER_MIN;
+        gutterHtml += `<div class="cal-hour-label" style="top:${top}px">${pad(h)}:00</div>`;
+    }
+    gutterHtml += `</div>`;
+
+    // ── Day columns ──
+    let colsHtml = '';
+
+    days.forEach((day, colIdx) => {
+        const isToday  = day.getTime() === today.getTime();
+        const dayStart = new Date(day); dayStart.setHours(0,0,0,0);
+        const dayEnd   = new Date(day); dayEnd.setHours(23,59,59,999);
+
+        const dayEvents = filtered.filter(e =>
+            e.startDate >= dayStart && e.startDate <= dayEnd
+        );
+
+        // Grid lines
+        let lines = '';
+        for (let h = HOUR_START; h < HOUR_END; h++) {
+            const top  = (h - HOUR_START) * 60 * PX_PER_MIN;
+            const half = top + 30 * PX_PER_MIN;
+            lines += `<div class="cal-hour-line" style="top:${top}px"></div>
+                      <div class="cal-half-line" style="top:${half}px"></div>`;
+        }
+
+        // Now indicator (today only)
+        const nowTop = isToday ? getNowTop() : null;
+        const nowHtml = nowTop !== null
+            ? `<div class="cal-now-line" id="nowLine" style="top:${nowTop}px"><div class="cal-now-dot"></div></div>`
+            : '';
+
+        // Appointment blocks
+        let eventsHtml = dayEvents.map(ev => buildEventBlock(ev)).join('');
+
+        colsHtml += `<div class="cal-day-col ${isToday ? 'today' : ''}"
+                          style="height:${totalH}px"
+                          data-col-idx="${colIdx}"
+                          data-day="${day.toISOString().split('T')[0]}">
+            ${lines}${nowHtml}${eventsHtml}
+        </div>`;
+    });
+
+    grid.innerHTML = gutterHtml + colsHtml;
+
+    // Attach event listeners
+    attachGridListeners(days);
+}
+
+function buildEventBlock(ev) {
+    const top    = getEventTop(ev.startDate);
+    const height = getEventHeight(ev.startDate, ev.endDate);
+    const doc    = ev.extendedProps?.doctorName ?? '';
+    const color  = CAL.doctorColors[doc] || '#7A6860';
+    const status = ev.extendedProps?.status || 'Scheduled';
+
+    const isDone = status === 'Completed' || status === 'Cancelled';
+    const bg     = isDone ? '#F5F0EB' : `${color}22`;
+    const border = isDone ? '#BBA89E' : color;
+    const text   = isDone ? '#BBA89E' : color;
+
+    const name   = escHtml(ev.extendedProps?.patientName || ev.title || '');
+    const reason = escHtml(ev.extendedProps?.reason || '');
+    const showReason = height > 38 && reason;
+
+    return `<div class="cal-event"
+                 data-appt-id="${ev.id}"
+                 style="top:${top}px;height:${height}px;background:${bg};border-left-color:${border};"
+                 tabindex="0"
+                 aria-label="${name}">
+        <div class="cal-event-name" style="color:${text}">${name}</div>
+        ${showReason ? `<div class="cal-event-reason">${reason}</div>` : ''}
+    </div>`;
+}
+
+function attachGridListeners(days) {
+    const grid = document.getElementById('calGrid');
+
+    // Click on appointment block → open panel
+    grid.querySelectorAll('.cal-event').forEach(el => {
+        el.addEventListener('click', e => {
+            e.stopPropagation();
+            openDetailPanel(parseInt(el.dataset.apptId));
+        });
+        el.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openDetailPanel(parseInt(el.dataset.apptId));
+            }
+        });
+    });
+
+    // Click on empty column area → open create modal at that time
+    grid.querySelectorAll('.cal-day-col').forEach((col, i) => {
+        col.addEventListener('click', e => {
+            if (e.target.closest('.cal-event')) return;
+            const scroller = document.getElementById('calGridScroller');
+            const rect     = col.getBoundingClientRect();
+            const relY     = e.clientY - rect.top + scroller.scrollTop;
+            const totalMins = Math.round(relY / PX_PER_MIN / 15) * 15;
+            const h = HOUR_START + Math.floor(totalMins / 60);
+            const m = totalMins % 60;
+
+            const clickedDay = new Date(days[i]);
+            clickedDay.setHours(Math.min(h, HOUR_END - 1), m, 0, 0);
+            openCreateModalWithDate(null, clickedDay);
+        });
+    });
+}
+
+// ── Positioning helpers ───────────────────────────────────────
+function getEventTop(start) {
+    return ((start.getHours() - HOUR_START) * 60 + start.getMinutes()) * PX_PER_MIN;
+}
+
+function getEventHeight(start, end) {
+    return Math.max(((end - start) / 60000) * PX_PER_MIN - 3, 24);
+}
+
+function getNowTop() {
+    const now = new Date();
+    const h = now.getHours();
+    const m = now.getMinutes();
+    if (h < HOUR_START || h >= HOUR_END) return null;
+    return (h - HOUR_START) * 60 * PX_PER_MIN + m * PX_PER_MIN;
+}
+
+function startNowIndicatorRefresh() {
+    setInterval(() => {
+        const line = document.getElementById('nowLine');
+        if (line) {
+            const top = getNowTop();
+            if (top !== null) line.style.top = `${top}px`;
+        }
+    }, 60000);
+}
+
+function scrollToNow() {
+    const top = getNowTop();
+    if (top === null) return;
+    const scroller = document.getElementById('calGridScroller');
+    if (scroller) scroller.scrollTop = Math.max(0, top - 120);
+}
+
+// ── Detail slide-in panel ─────────────────────────────────────
+function openDetailPanel(apptId) {
+    const ev = CAL.events.find(e => e.id == apptId);
+    if (!ev) return;
+
+    CAL.openApptId = apptId;
+
+    const props   = ev.extendedProps ?? {};
+    const doc     = props.doctorName ?? '';
+    const color   = CAL.doctorColors[doc] || '#7A6860';
+    const status  = props.status || 'Scheduled';
 
     const statusClass = {
         'Scheduled': 'status-scheduled',
         'Completed': 'status-completed',
         'Cancelled': 'status-cancelled',
-        'NoShow':    'status-noshow'
-    }[props.status] || 'status-scheduled';
+        'NoShow':    'status-noshow',
+    }[status] ?? 'status-scheduled';
 
-    viewMode.style.display = 'block';
-    editMode.style.display = 'none';
-    modalTitle.textContent = 'Appointment Details';
+    const fmt     = d => d.toLocaleDateString('en-US',  { weekday: 'short', month: 'short', day: 'numeric' });
+    const fmtTime = d => d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-    const fmt     = d => d?.toLocaleDateString('en-US',  { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) ?? '—';
-    const fmtTime = d => d?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) ?? '—';
+    // Header (tinted with doctor color)
+    document.getElementById('detailHeader').style.background  = `${color}18`;
+    document.getElementById('detailHeader').style.borderBottomColor = `${color}33`;
+    document.getElementById('detailHeader').innerHTML = `
+        <button class="cal-detail-close" id="panelCloseBtn" aria-label="Close">&times;</button>
+        <div class="cal-detail-patient">${escHtml(props.patientName ?? '—')}</div>
+        ${props.reason ? `<div class="cal-detail-reason">${escHtml(props.reason)}</div>` : ''}
+        <span class="cal-detail-status ${statusClass}">${status}</span>
+    `;
 
-    viewMode.innerHTML = `
+    // Body rows
+    document.getElementById('detailRows').innerHTML = `
         <div class="cal-detail-row">
-            <div class="cal-detail-icon">👤</div>
-            <div class="cal-detail-content">
-                <div class="cal-detail-label">Patient</div>
-                <div class="cal-detail-value">${props.patientName ?? '—'}</div>
+            <span class="cal-detail-icon">🕐</span>
+            <div class="cal-detail-info">
+                <div class="cal-detail-info-label">Date & Time</div>
+                <div class="cal-detail-info-value">${fmt(ev.startDate)}<br>${fmtTime(ev.startDate)} – ${fmtTime(ev.endDate)}</div>
             </div>
         </div>
         <div class="cal-detail-row">
-            <div class="cal-detail-icon">📞</div>
-            <div class="cal-detail-content">
-                <div class="cal-detail-label">Phone</div>
-                <div class="cal-detail-value">${props.patientPhone ?? '—'}</div>
+            <span class="cal-detail-icon">👨‍⚕️</span>
+            <div class="cal-detail-info">
+                <div class="cal-detail-info-label">Doctor</div>
+                <div class="cal-detail-info-value">${escHtml(doc || '—')}</div>
             </div>
         </div>
         <div class="cal-detail-row">
-            <div class="cal-detail-icon">🩺</div>
-            <div class="cal-detail-content">
-                <div class="cal-detail-label">Doctor</div>
-                <div class="cal-detail-value">${props.doctorName ?? '—'}</div>
-            </div>
-        </div>
-        <div class="cal-detail-row">
-            <div class="cal-detail-icon">🕐</div>
-            <div class="cal-detail-content">
-                <div class="cal-detail-label">Date & Time</div>
-                <div class="cal-detail-value">
-                    ${fmt(event.start)}
-                    <br><span style="color:var(--cal-text-muted);font-size:13px;">${fmtTime(event.start)} – ${fmtTime(event.end)}</span>
-                </div>
-            </div>
-        </div>
-        ${props.reason ? `
-        <div class="cal-detail-row">
-            <div class="cal-detail-icon">📋</div>
-            <div class="cal-detail-content">
-                <div class="cal-detail-label">Reason</div>
-                <div class="cal-detail-value">${props.reason}</div>
-            </div>
-        </div>` : ''}
-        <div class="cal-detail-row">
-            <div class="cal-detail-icon">🏷️</div>
-            <div class="cal-detail-content">
-                <div class="cal-detail-label">Status</div>
-                <span class="cal-status-badge ${statusClass}">${props.status}</span>
+            <span class="cal-detail-icon">📞</span>
+            <div class="cal-detail-info">
+                <div class="cal-detail-info-label">Phone</div>
+                <div class="cal-detail-info-value" style="direction:ltr;text-align:left">${escHtml(props.patientPhone || '—')}</div>
             </div>
         </div>
     `;
 
-    detailsActions.innerHTML = `
-        <button type="button" class="cal-btn cal-btn-success" onclick="switchToEditMode()">Edit</button>
-        <button type="button" class="cal-btn cal-btn-danger"  onclick="deleteAppointment(${event.id})">Delete</button>
+    // Footer
+    document.getElementById('detailFooter').innerHTML = `
+        <button class="cal-detail-btn-primary" id="panelEditBtn"
+                style="background:${color}">Edit Appointment</button>
+        <button class="cal-detail-btn-danger" id="panelDeleteBtn">Cancel Appointment</button>
     `;
 
-    document.getElementById('detailsModal').classList.add('active');
+    document.getElementById('panelCloseBtn').addEventListener('click', closeDetailPanel);
+    document.getElementById('panelEditBtn').addEventListener('click', () => {
+        closeDetailPanel();
+        openEditModal(apptId);
+    });
+    document.getElementById('panelDeleteBtn').addEventListener('click', () => {
+        deleteAppointment(apptId);
+    });
+
+    document.getElementById('detailPanel').classList.add('open');
 }
 
-// ── Edit Mode ──────────────────────────────────────────────────────────
-function switchToEditMode() {
-    fetch('/Appointments/GetAppointment/' + currentAppointmentId)
+function closeDetailPanel() {
+    document.getElementById('detailPanel').classList.remove('open');
+    CAL.openApptId = null;
+}
+
+// ── Edit modal ────────────────────────────────────────────────
+function openEditModal(apptId) {
+    fetch('/Appointments/GetAppointment/' + apptId)
         .then(r => r.json())
         .then(data => {
-            document.getElementById('viewMode').style.display  = 'none';
-            document.getElementById('editMode').style.display  = 'block';
-            document.getElementById('modalTitle').textContent  = 'Edit Appointment';
-
             document.getElementById('EditId').value             = data.id;
             document.getElementById('EditPatientName').value    = data.patientName;
             document.getElementById('EditDoctorId').value       = data.doctorId;
@@ -238,69 +422,46 @@ function switchToEditMode() {
             document.getElementById('EditReasonForVisit').value = data.reasonForVisit ?? '';
             document.getElementById('EditNotes').value          = data.notes ?? '';
 
-            document.getElementById('detailsActions').innerHTML = `
-                <button type="button" class="cal-btn cal-btn-ghost" onclick="cancelEdit()">Cancel</button>
-                <button type="submit" form="editForm" class="cal-btn cal-btn-primary">Save Changes</button>
-            `;
+            document.getElementById('editModal').classList.add('active');
         })
         .catch(() => showToast('Could not load appointment data.', 'error'));
 }
 
-function cancelEdit() {
-    window.calendarInstance?.refetchEvents();
-    closeDetailsModal();
+function setupEditModal() {
+    document.getElementById('closeEditBtn')
+        ?.addEventListener('click', () => document.getElementById('editModal').classList.remove('active'));
+
+    document.getElementById('editModal')
+        ?.addEventListener('click', e => {
+            if (e.target === e.currentTarget)
+                e.currentTarget.classList.remove('active');
+        });
 }
 
-// ── Delete ─────────────────────────────────────────────────────────────
+// ── Delete ────────────────────────────────────────────────────
 function deleteAppointment(id) {
-    if (!confirm('Delete this appointment? This action cannot be undone.')) return;
-
+    if (!confirm('Delete this appointment? This cannot be undone.')) return;
     const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
     const form  = document.createElement('form');
     form.method = 'POST';
     form.action = '/Appointments/Delete/' + id;
-
-    const tok  = document.createElement('input');
-    tok.type   = 'hidden';
-    tok.name   = '__RequestVerificationToken';
-    tok.value  = token;
+    const tok   = Object.assign(document.createElement('input'), {
+        type: 'hidden', name: '__RequestVerificationToken', value: token
+    });
     form.appendChild(tok);
     document.body.appendChild(form);
     form.submit();
 }
 
-// ── Details Modal ──────────────────────────────────────────────────────
-function setupDetailsModal() {
-    document.getElementById('closeDetailsBtn')
-        ?.addEventListener('click', closeDetailsModal);
-
-    document.getElementById('detailsModal')
-        ?.addEventListener('click', e => {
-            if (e.target === e.currentTarget) closeDetailsModal();
-        });
-}
-
-function closeDetailsModal() {
-    document.getElementById('detailsModal').classList.remove('active');
-}
-
-// ── Create Modal ───────────────────────────────────────────────────────
+// ── Create modal ──────────────────────────────────────────────
 function setupCreateModal() {
     const modal     = document.getElementById('appointmentModal');
     const openBtn   = document.getElementById('openModalBtn');
     const closeBtn  = document.getElementById('closeModalBtn');
     const cancelBtn = document.getElementById('cancelModalBtn');
 
-    const open = () => {
-        resetCreateForm();
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    };
-
-    const close = () => {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    };
+    const open  = () => { resetCreateForm(); modal.classList.add('active'); document.body.style.overflow = 'hidden'; };
+    const close = () => { modal.classList.remove('active'); document.body.style.overflow = ''; };
 
     openBtn?.addEventListener('click', open);
     closeBtn?.addEventListener('click', close);
@@ -310,65 +471,45 @@ function setupCreateModal() {
 
 function openCreateModalWithDate(dateStr, dateObj) {
     resetCreateForm();
+    const modal = document.getElementById('appointmentModal');
+    if (!modal) return;
+
     const d = new Date(dateObj);
-    d.setHours(9, 0, 0, 0);
     document.getElementById('StartTime').value = formatLocal(d);
     d.setMinutes(d.getMinutes() + 30);
     document.getElementById('EndTime').value = formatLocal(d);
 
-    document.getElementById('appointmentModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-function openCreateModalWithDateRange(startDate, endDate) {
-    resetCreateForm();
-    document.getElementById('StartTime').value = formatLocal(startDate);
-    document.getElementById('EndTime').value   = formatLocal(endDate);
-
-    document.getElementById('appointmentModal').style.display = 'flex';
+    modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
 function resetCreateForm() {
-    const existingRadio = document.getElementById('existingPatientRadio');
-    if (existingRadio) {
-        existingRadio.checked = true;
-        existingRadio.dispatchEvent(new Event('change'));
-    }
+    const existing = document.getElementById('existingPatientRadio');
+    if (existing) { existing.checked = true; existing.dispatchEvent(new Event('change')); }
 
     ['ExistingPatientId', 'DoctorId', 'StartTime', 'EndTime'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-
-    document.querySelectorAll('textarea[name^="NewAppointment"]')
-        .forEach(t => (t.value = ''));
-    document.querySelectorAll('input[name^="NewAppointment.NewPatient"]')
-        .forEach(i => (i.value = ''));
+    document.querySelectorAll('textarea[name^="NewAppointment"]').forEach(t => (t.value = ''));
+    document.querySelectorAll('input[name^="NewAppointment.NewPatient"]').forEach(i => (i.value = ''));
 
     const note = document.getElementById('doctorAvailabilityNote');
     if (note) { note.textContent = ''; note.className = 'cal-doctor-note'; }
 }
 
-// ── Patient Toggle ─────────────────────────────────────────────────────
+// ── Patient toggle ────────────────────────────────────────────
 function setupPatientToggle() {
-    const existingRadio   = document.getElementById('existingPatientRadio');
-    const newRadio        = document.getElementById('newPatientRadio');
-    const existingSection = document.getElementById('existing-patient-section');
-    const newSection      = document.getElementById('new-patient-section');
+    const existingR = document.getElementById('existingPatientRadio');
+    const newR      = document.getElementById('newPatientRadio');
+    const existingS = document.getElementById('existing-patient-section');
+    const newS      = document.getElementById('new-patient-section');
 
-    existingRadio?.addEventListener('change', () => {
-        existingSection.style.display = 'block';
-        newSection.style.display      = 'none';
-    });
-
-    newRadio?.addEventListener('change', () => {
-        existingSection.style.display = 'none';
-        newSection.style.display      = 'block';
-    });
+    existingR?.addEventListener('change', () => { existingS.style.display = 'block'; newS.style.display = 'none'; });
+    newR?.addEventListener('change',      () => { existingS.style.display = 'none';  newS.style.display = 'block'; });
 }
 
-// ── Doctor Availability ────────────────────────────────────────────────
+// ── Doctor availability ───────────────────────────────────────
 function setupDoctorAvailability() {
     const startInput = document.getElementById('StartTime');
     const endInput   = document.getElementById('EndTime');
@@ -381,116 +522,133 @@ function setupDoctorAvailability() {
         }
         loadAvailableDoctors();
     });
-
     endInput?.addEventListener('change', loadAvailableDoctors);
 }
 
 function loadAvailableDoctors() {
-    const startInput   = document.getElementById('StartTime');
-    const endInput     = document.getElementById('EndTime');
-    const doctorSelect = document.getElementById('DoctorId');
-    const doctorNote   = document.getElementById('doctorAvailabilityNote');
-
-    const start = startInput?.value ?? '';
-    const end   = endInput?.value   ?? '';
+    const start = document.getElementById('StartTime')?.value;
+    const end   = document.getElementById('EndTime')?.value;
+    const sel   = document.getElementById('DoctorId');
+    const note  = document.getElementById('doctorAvailabilityNote');
     if (!start || !end) return;
 
-    doctorNote.textContent = 'Checking availability…';
-    doctorNote.className   = 'cal-doctor-note loading';
-    doctorSelect.innerHTML = '<option value="">Loading…</option>';
+    note.textContent = 'Checking availability…';
+    note.className   = 'cal-doctor-note loading';
+    sel.innerHTML    = '<option value="">Loading…</option>';
 
     const url = `${window.appEndpoints.getAvailableDoctors}?startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`;
 
-    fetch(url)
-        .then(r => r.json())
-        .then(doctors => {
-            if (doctors.length === 0) {
-                doctorSelect.innerHTML = '<option value="">No doctors available at this time</option>';
-                doctorNote.textContent = 'No doctors available for this slot.';
-                doctorNote.className   = 'cal-doctor-note error';
-            } else {
-                doctorSelect.innerHTML = '<option value="">— Select Doctor —</option>';
-                doctors.forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value       = d.value;
-                    opt.textContent = d.text;
-                    doctorSelect.appendChild(opt);
-                });
-                doctorNote.textContent = `${doctors.length} doctor${doctors.length > 1 ? 's' : ''} available.`;
-                doctorNote.className   = 'cal-doctor-note success';
-            }
-        })
-        .catch(() => {
-            doctorNote.textContent = 'Could not load doctors.';
-            doctorNote.className   = 'cal-doctor-note error';
+    fetch(url).then(r => r.json()).then(docs => {
+        if (!docs.length) {
+            sel.innerHTML    = '<option value="">No doctors available</option>';
+            note.textContent = 'No doctors free at this time.';
+            note.className   = 'cal-doctor-note error';
+        } else {
+            sel.innerHTML = '<option value="">— Select Doctor —</option>';
+            docs.forEach(d => {
+                const o = Object.assign(document.createElement('option'), { value: d.value, textContent: d.text });
+                sel.appendChild(o);
+            });
+            note.textContent = `${docs.length} doctor${docs.length > 1 ? 's' : ''} available.`;
+            note.className   = 'cal-doctor-note success';
+        }
+    }).catch(() => { note.textContent = 'Could not load doctors.'; note.className = 'cal-doctor-note error'; });
+}
+
+// ── Edit end-time auto-calc ───────────────────────────────────
+function setupEditTimeCalc() {
+    document.getElementById('EditStartTime')
+        ?.addEventListener('change', () => {
+            const s = document.getElementById('EditStartTime');
+            const e = document.getElementById('EditEndTime');
+            if (s?.value) { const d = new Date(s.value); d.setMinutes(d.getMinutes() + 30); e.value = formatLocal(d); }
         });
 }
 
-// ── End Time Auto-Calc ─────────────────────────────────────────────────
-function setupEditTimeCalc() {
-    document.getElementById('EditStartTime')
-        ?.addEventListener('change', () => calculateEndTime('EditStartTime', 'EditEndTime'));
-}
+// ── Navigation ────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('prevBtn')?.addEventListener('click', () => {
+        if (CAL.view === 'week') {
+            CAL.weekStart.setDate(CAL.weekStart.getDate() - 7);
+        } else {
+            CAL.focusDate.setDate(CAL.focusDate.getDate() - 1);
+        }
+        renderAll();
+    });
 
-function calculateEndTime(startId, endId) {
-    const start = document.getElementById(startId);
-    const end   = document.getElementById(endId);
-    if (start?.value) {
-        const d = new Date(start.value);
-        d.setMinutes(d.getMinutes() + 30);
-        end.value = formatLocal(d);
-    }
-}
+    document.getElementById('nextBtn')?.addEventListener('click', () => {
+        if (CAL.view === 'week') {
+            CAL.weekStart.setDate(CAL.weekStart.getDate() + 7);
+        } else {
+            CAL.focusDate.setDate(CAL.focusDate.getDate() + 1);
+        }
+        renderAll();
+    });
 
-// ── Helpers ────────────────────────────────────────────────────────────
-function formatLocal(dt) {
-    const y  = dt.getFullYear();
-    const mo = String(dt.getMonth() + 1).padStart(2, '0');
-    const d  = String(dt.getDate()).padStart(2, '0');
-    const h  = String(dt.getHours()).padStart(2, '0');
-    const mi = String(dt.getMinutes()).padStart(2, '0');
-    return `${y}-${mo}-${d}T${h}:${mi}`;
-}
+    document.getElementById('todayBtn')?.addEventListener('click', () => {
+        CAL.weekStart = getWeekStart(new Date());
+        CAL.focusDate = new Date();
+        renderAll();
+        scrollToNow();
+    });
 
-// ── Toast Notifications ────────────────────────────────────────────────
-function showToast(message, type = 'success') {
-    const container = document.getElementById('toastContainer');
-    if (!container) return;
+    document.getElementById('weekBtn')?.addEventListener('click', () => { CAL.view = 'week'; renderAll(); });
+    document.getElementById('dayBtn')?.addEventListener('click',  () => { CAL.view = 'day';  renderAll(); });
 
-    const icons = { success: '✓', error: '✕', warning: '!', info: 'ℹ' };
+    // Close detail panel when clicking outside
+    document.getElementById('calGrid')
+        ?.addEventListener('click', e => {
+            if (!e.target.closest('.cal-event') && !e.target.closest('.cal-detail-panel')) {
+                closeDetailPanel();
+            }
+        });
+});
 
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <span class="toast-icon">${icons[type] ?? '•'}</span>
-        <span class="toast-message">${message}</span>
-        <button class="toast-dismiss" aria-label="Dismiss">✕</button>
-    `;
-
-    toast.querySelector('.toast-dismiss').addEventListener('click', () => dismissToast(toast));
-    container.appendChild(toast);
-
-    setTimeout(() => dismissToast(toast), 4500);
-}
-
-function dismissToast(toast) {
-    toast.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
-    toast.style.opacity    = '0';
-    toast.style.transform  = 'translateX(20px)';
-    setTimeout(() => toast.remove(), 260);
-}
-
-// ── PDF / Excel ────────────────────────────────────────────────────────
+// ── PDF / Excel ────────────────────────────────────────────────
 function printWeekPdf() {
-    const calendar = window.calendarInstance;
-    if (!calendar) { showToast('Calendar not ready.', 'error'); return; }
-    const dateStr = calendar.getDate().toISOString().split('T')[0];
-    window.open(`/Appointments/PrintWeekSchedulePdf?weekStart=${dateStr}`, '_blank');
+    const d = (CAL.view === 'week' ? CAL.weekStart : CAL.focusDate).toISOString().split('T')[0];
+    window.open(`/Appointments/PrintWeekSchedulePdf?weekStart=${d}`, '_blank');
 }
 
 function exportWeekExcel() {
-    const calendar = window.calendarInstance;
-    if (!calendar) { showToast('Calendar not ready.', 'error'); return; }
-    const dateStr = calendar.getDate().toISOString().split('T')[0];
-    window.location.href = `/Appointments/ExportWeekScheduleExcel?weekStart=${dateStr}`;
+    const d = (CAL.view === 'week' ? CAL.weekStart : CAL.focusDate).toISOString().split('T')[0];
+    window.location.href = `/Appointments/ExportWeekScheduleExcel?weekStart=${d}`;
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+    const c = document.getElementById('toastContainer');
+    if (!c) return;
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<span class="toast-msg">${escHtml(msg)}</span>
+                   <button class="toast-close" onclick="this.closest('.toast').remove()">✕</button>`;
+    c.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.25s'; setTimeout(() => t.remove(), 260); }, 4500);
+}
+
+// ── Utilities ─────────────────────────────────────────────────
+function getWeekStart(d) {
+    const day = new Date(d);
+    const dow = day.getDay();           // 0=Sun .. 6=Sat
+    const diff = (dow === 0) ? -6 : 1 - dow;  // Monday = 0
+    day.setDate(day.getDate() + diff);
+    day.setHours(0, 0, 0, 0);
+    return day;
+}
+
+function todayMidnight() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+function formatLocal(dt) {
+    return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function escHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
