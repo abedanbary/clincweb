@@ -9,89 +9,168 @@
 <link rel="stylesheet" href="~/css/Appointments.css" />
 <link rel="stylesheet" href="~/css/Calendar.css" />
 
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Loading Overlay -->
+<div class="cal-loading" id="calLoading">
+    <div class="cal-loading-spinner"></div>
+    <p class="cal-loading-text">Loading appointments…</p>
+</div>
+
 <div class="appointments-page">
+
     <!-- Header -->
     <header class="appointments-header">
         <div class="appointments-header-text">
             <h1 class="appointments-title">Appointments Calendar</h1>
             <p class="appointments-subtitle">Visual calendar view of all appointments</p>
         </div>
-        <div style="display: flex; gap: 12px;">
-            <button type="button" class="btn-ghost" onclick="printWeekPdf()">🖨️ Print PDF</button>
-            <button type="button" class="btn-ghost" onclick="exportWeekExcel()">📊 Export Excel</button>
-            <a asp-action="Index" class="btn-ghost">📋 Table View</a>
-            <button type="button" class="btn-primary" id="openModalBtn">+ New Appointment</button>
+        <div class="cal-header-actions">
+            <button type="button" class="cal-btn cal-btn-ghost" onclick="printWeekPdf()">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                Print PDF
+            </button>
+            <button type="button" class="cal-btn cal-btn-ghost" onclick="exportWeekExcel()">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                </svg>
+                Export Excel
+            </button>
+            <a asp-action="Index" class="cal-btn cal-btn-ghost">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M3 10h18M3 14h18M3 6h18M3 18h18"/>
+                </svg>
+                Table View
+            </a>
+            <button type="button" class="cal-btn cal-btn-primary" id="openModalBtn">
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                </svg>
+                New Appointment
+            </button>
         </div>
     </header>
 
-    <!-- Success/Error Messages -->
+    <!-- Alerts -->
     @if (TempData["Success"] != null)
     {
-        <div class="alert alert-success">
-            @TempData["Success"]
-        </div>
+        <div class="alert alert-success">@TempData["Success"]</div>
     }
-
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-error">
-            @TempData["Error"]
-        </div>
+        <div class="alert alert-error">@TempData["Error"]</div>
     }
 
+    <!-- Stats Bar -->
+    <div class="cal-stats-bar">
+        <div class="cal-stat">
+            <div class="cal-stat-indicator scheduled"></div>
+            <div>
+                <div class="cal-stat-count" id="stat-scheduled">—</div>
+                <div class="cal-stat-label">Scheduled</div>
+            </div>
+        </div>
+        <div class="cal-stat">
+            <div class="cal-stat-indicator completed"></div>
+            <div>
+                <div class="cal-stat-count" id="stat-completed">—</div>
+                <div class="cal-stat-label">Completed</div>
+            </div>
+        </div>
+        <div class="cal-stat">
+            <div class="cal-stat-indicator cancelled"></div>
+            <div>
+                <div class="cal-stat-count" id="stat-cancelled">—</div>
+                <div class="cal-stat-label">Cancelled</div>
+            </div>
+        </div>
+        <div class="cal-stat">
+            <div class="cal-stat-indicator noshow"></div>
+            <div>
+                <div class="cal-stat-count" id="stat-noshow">—</div>
+                <div class="cal-stat-label">No Show</div>
+            </div>
+        </div>
+        <div class="cal-stat cal-stat-total">
+            <div class="cal-stat-indicator total"></div>
+            <div>
+                <div class="cal-stat-count" id="stat-total">—</div>
+                <div class="cal-stat-label">Total</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Calendar -->
-    <section class="appointments-card" style="padding: 24px;">
+    <section class="cal-card">
         <div id="calendar"></div>
     </section>
+
 </div>
 
-<!-- Appointment Details/Edit Modal -->
-<div class="appointment-details-modal" id="detailsModal">
-    <div class="appointment-details-card">
-        <div class="appointment-details-header">
-            <h2 class="appointment-details-title" id="modalTitle">Appointment Details</h2>
-            <button type="button" class="appointment-details-close" id="closeDetailsBtn">&times;</button>
-        </div>
-        
-        <!-- View Mode -->
-        <div class="appointment-details-body" id="viewMode">
-            <!-- Content will be dynamically inserted -->
+<!-- ==============================
+     Appointment Details Modal
+     ============================== -->
+<div class="cal-modal-overlay" id="detailsModal">
+    <div class="cal-modal-panel">
+
+        <div class="cal-modal-header">
+            <div class="cal-modal-header-content">
+                <div class="cal-modal-header-icon">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <h2 class="cal-modal-title" id="modalTitle">Appointment Details</h2>
+            </div>
+            <button type="button" class="cal-modal-close" id="closeDetailsBtn" aria-label="Close">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
 
-        <!-- Edit Mode (Hidden by default) -->
-        <div class="appointment-details-body" id="editMode" style="display: none;">
+        <!-- View Mode (dynamically filled) -->
+        <div class="cal-modal-body" id="viewMode"></div>
+
+        <!-- Edit Mode -->
+        <div class="cal-modal-body" id="editMode" style="display:none;">
             <form asp-action="Edit" method="post" id="editForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" id="EditId" name="Id" />
 
-                <!-- Patient Info (Read-only) -->
-                <div class="appointments-field" style="margin-bottom: 16px;">
-                    <label class="appointments-label">Patient</label>
-                    <input type="text" id="EditPatientName" class="appointments-input" readonly style="background: #f1f5f9; cursor: not-allowed;" />
+                <div class="cal-form-group">
+                    <label class="cal-form-label">Patient</label>
+                    <input type="text" id="EditPatientName" class="cal-form-input" readonly />
                 </div>
 
-                <div class="appointments-field" style="margin-bottom: 16px;">
-                 <label class="appointments-label">Doctor</label>
-                  <select id="EditDoctorId" name="DoctorId" asp-items="Model.Doctors" class="appointments-select" required>
-                     <option value="">-- Select Doctor --</option>
-                  </select>
+                <div class="cal-form-group">
+                    <label class="cal-form-label">Doctor</label>
+                    <select id="EditDoctorId" name="DoctorId" asp-items="Model.Doctors" class="cal-form-select" required>
+                        <option value="">— Select Doctor —</option>
+                    </select>
                 </div>
-                <!-- Date & Time -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                    <div class="appointments-field">
-                        <label class="appointments-label">Start Time</label>
-                        <input id="EditStartTime" name="StartTime" type="datetime-local" class="appointments-input" required />
+
+                <div class="cal-form-row">
+                    <div class="cal-form-group">
+                        <label class="cal-form-label">Start Time</label>
+                        <input id="EditStartTime" name="StartTime" type="datetime-local" class="cal-form-input" required />
                     </div>
-                    <div class="appointments-field">
-                        <label class="appointments-label">End Time</label>
-                        <input id="EditEndTime" name="EndTime" type="datetime-local" class="appointments-input" required />
+                    <div class="cal-form-group">
+                        <label class="cal-form-label">End Time</label>
+                        <input id="EditEndTime" name="EndTime" type="datetime-local" class="cal-form-input" required />
                     </div>
                 </div>
 
-                <!-- Status -->
-                <div class="appointments-field" style="margin-bottom: 16px;">
-                    <label class="appointments-label">Status</label>
-                    <select id="EditStatus" name="Status" class="appointments-select" required>
+                <div class="cal-form-group">
+                    <label class="cal-form-label">Status</label>
+                    <select id="EditStatus" name="Status" class="cal-form-select" required>
                         <option value="1">Scheduled</option>
                         <option value="2">Completed</option>
                         <option value="3">Cancelled</option>
@@ -99,205 +178,157 @@
                     </select>
                 </div>
 
-                <!-- Reason -->
-                <div class="appointments-field" style="margin-bottom: 16px;">
-                    <label class="appointments-label">Reason for Visit</label>
-                    <textarea id="EditReasonForVisit" name="ReasonForVisit" class="appointments-textarea" rows="2"></textarea>
+                <div class="cal-form-group">
+                    <label class="cal-form-label">Reason for Visit</label>
+                    <textarea id="EditReasonForVisit" name="ReasonForVisit" class="cal-form-textarea" rows="2"></textarea>
                 </div>
 
-                <!-- Notes -->
-                <div class="appointments-field" style="margin-bottom: 16px;">
-                    <label class="appointments-label">Notes</label>
-                    <textarea id="EditNotes" name="Notes" class="appointments-textarea" rows="2"></textarea>
+                <div class="cal-form-group">
+                    <label class="cal-form-label">Notes</label>
+                    <textarea id="EditNotes" name="Notes" class="cal-form-textarea" rows="2"></textarea>
                 </div>
             </form>
         </div>
 
-        <!-- Actions -->
-        <div class="appointment-details-actions" id="detailsActions">
-            <!-- Buttons will be dynamically inserted -->
-        </div>
+        <!-- Footer (dynamically filled) -->
+        <div class="cal-modal-footer" id="detailsActions"></div>
+
     </div>
 </div>
 
-<!-- Create Appointment Modal -->
-<div class="modal-overlay" id="appointmentModal" style="display: none;">
-    <div class="modal-card" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <h2 class="modal-title">New Appointment</h2>
-            <button type="button" class="modal-close" id="closeModalBtn">&times;</button>
+<!-- ==============================
+     Create Appointment Modal
+     ============================== -->
+<div class="modal-overlay" id="appointmentModal" style="display:none;">
+    <div class="cal-create-panel" onclick="event.stopPropagation()">
+
+        <div class="cal-modal-header">
+            <div class="cal-modal-header-content">
+                <div class="cal-modal-header-icon">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </div>
+                <h2 class="cal-modal-title">New Appointment</h2>
+            </div>
+            <button type="button" class="cal-modal-close" id="closeModalBtn" aria-label="Close">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
 
-        <form asp-action="Create" method="post" class="appointments-form">
-            @Html.AntiForgeryToken()
+        <div class="cal-modal-body cal-create-body">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
 
-            <div class="patient-toggle">
-                <label>
-                    <input type="radio" name="NewAppointment.IsNewPatient" value="false" checked id="existingPatientRadio" />
-                    <span>Existing Patient</span>
-                </label>
-                <label>
-                    <input type="radio" name="NewAppointment.IsNewPatient" value="true" id="newPatientRadio" />
-                    <span>New Patient</span>
-                </label>
-            </div>
-
-            <div id="existing-patient-section">
-                <div class="appointments-field">
-                    <label class="appointments-label">Patient</label>
-                    <select asp-for="NewAppointment.ExistingPatientId" asp-items="Model.Patients" class="appointments-select" id="ExistingPatientId">
-                        <option value="">-- Select Patient --</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="new-patient-section" style="display: none;">
-                <h3>Patient Details</h3>
-                
-                <div class="appointments-field-row">
-                    <div class="appointments-field">
-                        <label class="appointments-label">First Name *</label>
-                        <input name="NewAppointment.NewPatientFirstName" class="appointments-input" />
-                    </div>
-                    <div class="appointments-field">
-                        <label class="appointments-label">Last Name *</label>
-                        <input name="NewAppointment.NewPatientLastName" class="appointments-input" />
-                    </div>
+                <!-- Patient Type Toggle -->
+                <div class="cal-patient-toggle">
+                    <label class="cal-toggle-option">
+                        <input type="radio" name="NewAppointment.IsNewPatient" value="false" checked id="existingPatientRadio" />
+                        <span class="cal-toggle-pill">Existing Patient</span>
+                    </label>
+                    <label class="cal-toggle-option">
+                        <input type="radio" name="NewAppointment.IsNewPatient" value="true" id="newPatientRadio" />
+                        <span class="cal-toggle-pill">New Patient</span>
+                    </label>
                 </div>
 
-                <div class="appointments-field-row">
-                    <div class="appointments-field">
-                        <label class="appointments-label">Phone *</label>
-                        <input name="NewAppointment.NewPatientPhone" class="appointments-input" />
-                    </div>
-                    <div class="appointments-field">
-                        <label class="appointments-label">Gender</label>
-                        <select name="NewAppointment.NewPatientGender" class="appointments-select">
-                            <option value="">-- Select --</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
+                <!-- Existing Patient -->
+                <div id="existing-patient-section">
+                    <div class="cal-form-group">
+                        <label class="cal-form-label">Patient</label>
+                        <select asp-for="NewAppointment.ExistingPatientId" asp-items="Model.Patients"
+                                class="cal-form-select" id="ExistingPatientId">
+                            <option value="">— Select Patient —</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="appointments-field">
-                    <label class="appointments-label">Date of Birth</label>
-                    <input name="NewAppointment.NewPatientDateOfBirth" type="date" class="appointments-input" />
+                <!-- New Patient -->
+                <div id="new-patient-section" style="display:none;">
+                    <div class="cal-section-heading">Patient Details</div>
+                    <div class="cal-form-row">
+                        <div class="cal-form-group">
+                            <label class="cal-form-label">First Name *</label>
+                            <input name="NewAppointment.NewPatientFirstName" class="cal-form-input" placeholder="First name" />
+                        </div>
+                        <div class="cal-form-group">
+                            <label class="cal-form-label">Last Name *</label>
+                            <input name="NewAppointment.NewPatientLastName" class="cal-form-input" placeholder="Last name" />
+                        </div>
+                    </div>
+                    <div class="cal-form-row">
+                        <div class="cal-form-group">
+                            <label class="cal-form-label">Phone *</label>
+                            <input name="NewAppointment.NewPatientPhone" class="cal-form-input" placeholder="+1 (555) 000-0000" />
+                        </div>
+                        <div class="cal-form-group">
+                            <label class="cal-form-label">Gender</label>
+                            <select name="NewAppointment.NewPatientGender" class="cal-form-select">
+                                <option value="">— Select —</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cal-form-group">
+                        <label class="cal-form-label">Date of Birth</label>
+                        <input name="NewAppointment.NewPatientDateOfBirth" type="date" class="cal-form-input" />
+                    </div>
                 </div>
-            </div>
 
-            <div class="appointments-field-row">
-                <div class="appointments-field">
-                    <label class="appointments-label">Start Time</label>
-                    <input name="NewAppointment.StartTime" type="datetime-local" class="appointments-input" id="StartTime" />
+                <div class="cal-section-divider"></div>
+
+                <div class="cal-form-row">
+                    <div class="cal-form-group">
+                        <label class="cal-form-label">Start Time</label>
+                        <input name="NewAppointment.StartTime" type="datetime-local" class="cal-form-input" id="StartTime" />
+                    </div>
+                    <div class="cal-form-group">
+                        <label class="cal-form-label">End Time</label>
+                        <input name="NewAppointment.EndTime" type="datetime-local" class="cal-form-input" id="EndTime" />
+                    </div>
                 </div>
-                <div class="appointments-field">
-                    <label class="appointments-label">End Time</label>
-                    <input name="NewAppointment.EndTime" type="datetime-local" class="appointments-input" id="EndTime" />
+
+                <div class="cal-form-group">
+                    <label class="cal-form-label">Doctor</label>
+                    <select name="NewAppointment.DoctorId" class="cal-form-select" id="DoctorId">
+                        <option value="">— Select time first —</option>
+                    </select>
+                    <span class="cal-doctor-note" id="doctorAvailabilityNote"></span>
                 </div>
-            </div>
 
-            <div class="appointments-field">
-                <label class="appointments-label">Doctor</label>
-                <select name="NewAppointment.DoctorId" class="appointments-select" id="DoctorId">
-                    <option value="">-- Select time first --</option>
-                </select>
-                <span id="doctorAvailabilityNote" style="font-size: 12px; color: #64748b; margin-top: 4px; display: block;"></span>
-            </div>
+                <div class="cal-form-group">
+                    <label class="cal-form-label">Reason for Visit</label>
+                    <textarea name="NewAppointment.ReasonForVisit" class="cal-form-textarea" rows="2"
+                              placeholder="Brief description…"></textarea>
+                </div>
 
-            <div class="appointments-field">
-                <label class="appointments-label">Reason for Visit</label>
-                <textarea name="NewAppointment.ReasonForVisit" class="appointments-textarea" rows="2"></textarea>
-            </div>
+                <div class="cal-form-group">
+                    <label class="cal-form-label">Notes</label>
+                    <textarea name="NewAppointment.Notes" class="cal-form-textarea" rows="2"
+                              placeholder="Additional notes…"></textarea>
+                </div>
 
-            <div class="appointments-field">
-                <label class="appointments-label">Notes</label>
-                <textarea name="NewAppointment.Notes" class="appointments-textarea" rows="2"></textarea>
-            </div>
+                <div class="cal-modal-footer">
+                    <button type="button" class="cal-btn cal-btn-ghost" id="cancelModalBtn">Cancel</button>
+                    <button type="submit" class="cal-btn cal-btn-primary">Save Appointment</button>
+                </div>
+            </form>
+        </div>
 
-            <div class="appointments-form-actions">
-                <button type="submit" class="btn-primary">Save Appointment</button>
-                <button type="button" class="btn-ghost" id="cancelModalBtn">Cancel</button>
-            </div>
-        </form>
     </div>
 </div>
 
 @section Scripts {
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
-    
     <script>
         window.appEndpoints = {
-            getDoctors: '@Url.Action("GetDoctorsListAsync", "Appointments")',
-            getAvailableDoctors: '@Url.Action("GetAvailableDoctors", "Appointments")',
-            getAppointment: '@Url.Action("GetAppointment", "Appointments")'
+            getDoctors:          '@Url.Action("GetDoctorsListAsync",  "Appointments")',
+            getAvailableDoctors: '@Url.Action("GetAvailableDoctors",  "Appointments")',
+            getAppointment:      '@Url.Action("GetAppointment",       "Appointments")'
         };
-
-        function formatLocal(dt) {
-            const y = dt.getFullYear();
-            const mo = String(dt.getMonth() + 1).padStart(2, '0');
-            const d = String(dt.getDate()).padStart(2, '0');
-            const h = String(dt.getHours()).padStart(2, '0');
-            const mi = String(dt.getMinutes()).padStart(2, '0');
-            return `${y}-${mo}-${d}T${h}:${mi}`;
-        }
-
-        function loadAvailableDoctors() {
-            const startInput = document.getElementById('StartTime');
-            const endInput = document.getElementById('EndTime');
-            const doctorSelect = document.getElementById('DoctorId');
-            const doctorNote = document.getElementById('doctorAvailabilityNote');
-            const start = startInput ? startInput.value : '';
-            const end = endInput ? endInput.value : '';
-            if (!start || !end) return;
-
-            doctorNote.textContent = 'Loading available doctors...';
-            doctorSelect.innerHTML = '<option value="">Loading...</option>';
-
-            fetch(`${window.appEndpoints.getAvailableDoctors}?startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`)
-                .then(r => r.json())
-                .then(doctors => {
-                    doctorSelect.innerHTML = '';
-                    if (doctors.length === 0) {
-                        doctorSelect.innerHTML = '<option value="">No doctors available at this time</option>';
-                        doctorNote.textContent = 'No doctors are available for the selected time slot.';
-                        doctorNote.style.color = '#ef4444';
-                    } else {
-                        doctorSelect.innerHTML = '<option value="">-- Select Doctor --</option>';
-                        doctors.forEach(d => {
-                            const opt = document.createElement('option');
-                            opt.value = d.value;
-                            opt.textContent = d.text;
-                            doctorSelect.appendChild(opt);
-                        });
-                        doctorNote.textContent = `${doctors.length} doctor(s) available at this time.`;
-                        doctorNote.style.color = '#10b981';
-                    }
-                })
-                .catch(() => {
-                    doctorNote.textContent = 'Could not load doctors.';
-                    doctorNote.style.color = '#ef4444';
-                });
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const startInput = document.getElementById('StartTime');
-            const endInput = document.getElementById('EndTime');
-            if (startInput) {
-                startInput.addEventListener('change', function () {
-                    if (this.value) {
-                        const startDate = new Date(this.value);
-                        startDate.setMinutes(startDate.getMinutes() + 30);
-                        if (endInput) endInput.value = formatLocal(startDate);
-                    }
-                    loadAvailableDoctors();
-                });
-            }
-            if (endInput) {
-                endInput.addEventListener('change', loadAvailableDoctors);
-            }
-        });
     </script>
-
     <script src="~/js/calendar.js"></script>
 }

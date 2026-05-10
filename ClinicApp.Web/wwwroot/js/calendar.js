@@ -1,454 +1,496 @@
-// calendar.js
+// calendar.js — Modern Clinic Calendar
 let currentAppointmentId = null;
-let isEditMode = false;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeCalendar();
     setupCreateModal();
     setupPatientToggle();
+    setupDetailsModal();
+    setupDoctorAvailability();
+    setupEditTimeCalc();
 });
 
-// Initialize FullCalendar
+// ── Initialize FullCalendar ────────────────────────────────────────────
 function initializeCalendar() {
-    var calendarEl = document.getElementById('calendar');
-    
-    if (!calendarEl) return; // If not on calendar page, exit
-    
-    var calendar = new FullCalendar.Calendar(calendarEl, {
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) return;
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         headerToolbar: {
-            left: 'prev,next today',
+            left:   'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            right:  'dayGridMonth,timeGridWeek,timeGridDay'
         },
         buttonText: {
             today: 'Today',
             month: 'Month',
-            week: 'Week',
-            day: 'Day'
+            week:  'Week',
+            day:   'Day'
         },
-        height: 'auto',
-        slotMinTime: '07:00:00',
-        slotMaxTime: '22:00:00',
+        height:       'auto',
+        slotMinTime:  '07:00:00',
+        slotMaxTime:  '22:00:00',
         slotDuration: '00:30:00',
-        selectable: true,
-        
+        selectable:   true,
+        nowIndicator: true,
+        dayMaxEvents: 3,
+
         events: '/Appointments/GetCalendarEvents',
-        
-        eventClick: function(info) {
+
+        eventContent: renderEventContent,
+
+        eventClick: function (info) {
             showAppointmentDetails(info.event);
         },
-        
-        dateClick: function(info) {
+
+        dateClick: function (info) {
             openCreateModalWithDate(info.dateStr, info.date);
         },
-        
-        select: function(info) {
+
+        select: function (info) {
             openCreateModalWithDateRange(info.start, info.end);
         },
-        
+
+        loading: function (isLoading) {
+            const overlay = document.getElementById('calLoading');
+            if (overlay) overlay.classList.toggle('active', isLoading);
+        },
+
+        eventsSet: function (events) {
+            updateStats(events);
+        },
+
         eventTimeFormat: {
-            hour: '2-digit',
+            hour:   '2-digit',
             minute: '2-digit',
             hour12: false
         },
         slotLabelFormat: {
-            hour: '2-digit',
+            hour:   '2-digit',
             minute: '2-digit',
             hour12: false
         }
     });
-    
+
     calendar.render();
-    
-    // Store calendar instance globally for refresh
     window.calendarInstance = calendar;
 }
 
+// ── Custom Event Rendering ─────────────────────────────────────────────
+function renderEventContent(arg) {
+    const props    = arg.event.extendedProps;
+    const isTimeGrid = arg.view.type.startsWith('timeGrid');
 
+    const pill = document.createElement('div');
+    pill.className = 'cal-event-pill';
 
+    const dot = document.createElement('div');
+    dot.className = 'cal-event-dot';
 
+    const text = document.createElement('div');
+    text.className = 'cal-event-text';
+    text.textContent = props.patientName || arg.event.title;
 
-// Show appointment details (View Mode)
+    pill.appendChild(dot);
+    pill.appendChild(text);
+
+    if (isTimeGrid) {
+        // Show time range and doctor in week/day view
+        const timeEl = document.createElement('div');
+        timeEl.className = 'cal-event-time';
+        const start = arg.event.start;
+        const end   = arg.event.end;
+        if (start && end) {
+            const fmt = t => t.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            timeEl.textContent = `${fmt(start)} – ${fmt(end)}`;
+        }
+        pill.appendChild(timeEl);
+
+        if (props.doctorName) {
+            const doctorEl = document.createElement('div');
+            doctorEl.className = 'cal-event-doctor';
+            doctorEl.textContent = props.doctorName;
+            pill.appendChild(doctorEl);
+        }
+    }
+
+    return { domNodes: [pill] };
+}
+
+// ── Update Stats Bar ───────────────────────────────────────────────────
+function updateStats(events) {
+    const counts = { Scheduled: 0, Completed: 0, Cancelled: 0, NoShow: 0 };
+    events.forEach(ev => {
+        const s = ev.extendedProps?.status;
+        if (s && Object.prototype.hasOwnProperty.call(counts, s)) counts[s]++;
+    });
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+    const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    set('stat-scheduled', counts.Scheduled);
+    set('stat-completed',  counts.Completed);
+    set('stat-cancelled',  counts.Cancelled);
+    set('stat-noshow',     counts.NoShow);
+    set('stat-total',      total);
+}
+
+// ── Appointment Details (View Mode) ───────────────────────────────────
 function showAppointmentDetails(event) {
     currentAppointmentId = event.id;
-    isEditMode = false;
-    
-    const props = event.extendedProps;
-    const viewMode = document.getElementById('viewMode');
-    const editMode = document.getElementById('editMode');
-    const modalTitle = document.getElementById('modalTitle');
+
+    const props          = event.extendedProps;
+    const viewMode       = document.getElementById('viewMode');
+    const editMode       = document.getElementById('editMode');
+    const modalTitle     = document.getElementById('modalTitle');
     const detailsActions = document.getElementById('detailsActions');
-    
+
     const statusClass = {
         'Scheduled': 'status-scheduled',
         'Completed': 'status-completed',
         'Cancelled': 'status-cancelled',
-        'NoShow': 'status-noshow'
+        'NoShow':    'status-noshow'
     }[props.status] || 'status-scheduled';
 
     viewMode.style.display = 'block';
     editMode.style.display = 'none';
     modalTitle.textContent = 'Appointment Details';
 
+    const fmt     = d => d?.toLocaleDateString('en-US',  { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) ?? '—';
+    const fmtTime = d => d?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) ?? '—';
+
     viewMode.innerHTML = `
-        <div class="appointment-detail-row">
-            
-            <div class="appointment-detail-content">
-                <div class="appointment-detail-label">Patient</div>
-                <div class="appointment-detail-value">${props.patientName}</div>
+        <div class="cal-detail-row">
+            <div class="cal-detail-icon">👤</div>
+            <div class="cal-detail-content">
+                <div class="cal-detail-label">Patient</div>
+                <div class="cal-detail-value">${props.patientName ?? '—'}</div>
             </div>
         </div>
-        <div class="appointment-detail-row">
-            
-            <div class="appointment-detail-content">
-                <div class="appointment-detail-label">Phone</div>
-                <div class="appointment-detail-value">${props.patientPhone}</div>
+        <div class="cal-detail-row">
+            <div class="cal-detail-icon">📞</div>
+            <div class="cal-detail-content">
+                <div class="cal-detail-label">Phone</div>
+                <div class="cal-detail-value">${props.patientPhone ?? '—'}</div>
             </div>
         </div>
-        <div class="appointment-detail-row">
-            <div class="appointment-detail-content">
-                <div class="appointment-detail-label">Doctor</div>
-                <div class="appointment-detail-value">${props.doctorName}</div>
+        <div class="cal-detail-row">
+            <div class="cal-detail-icon">🩺</div>
+            <div class="cal-detail-content">
+                <div class="cal-detail-label">Doctor</div>
+                <div class="cal-detail-value">${props.doctorName ?? '—'}</div>
             </div>
         </div>
-        <div class="appointment-detail-row">
-        
-            <div class="appointment-detail-content">
-                <div class="appointment-detail-label">Date & Time</div>
-                <div class="appointment-detail-value">
-                    ${event.start.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}<br>
-                    ${event.start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - ${event.end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+        <div class="cal-detail-row">
+            <div class="cal-detail-icon">🕐</div>
+            <div class="cal-detail-content">
+                <div class="cal-detail-label">Date & Time</div>
+                <div class="cal-detail-value">
+                    ${fmt(event.start)}
+                    <br><span style="color:var(--cal-text-muted);font-size:13px;">${fmtTime(event.start)} – ${fmtTime(event.end)}</span>
                 </div>
             </div>
         </div>
         ${props.reason ? `
-        <div class="appointment-detail-row">
-           
-            <div class="appointment-detail-content">
-                <div class="appointment-detail-label">Reason</div>
-                <div class="appointment-detail-value">${props.reason}</div>
+        <div class="cal-detail-row">
+            <div class="cal-detail-icon">📋</div>
+            <div class="cal-detail-content">
+                <div class="cal-detail-label">Reason</div>
+                <div class="cal-detail-value">${props.reason}</div>
             </div>
-        </div>
-        ` : ''}
-        <div class="appointment-detail-row">
-           
-            <div class="appointment-detail-content">
-                <div class="appointment-detail-label">Status</div>
-                <div class="appointment-status-badge ${statusClass}">${props.status}</div>
+        </div>` : ''}
+        <div class="cal-detail-row">
+            <div class="cal-detail-icon">🏷️</div>
+            <div class="cal-detail-content">
+                <div class="cal-detail-label">Status</div>
+                <span class="cal-status-badge ${statusClass}">${props.status}</span>
             </div>
         </div>
     `;
 
     detailsActions.innerHTML = `
-        <button type="button" class="btn-edit" onclick="switchToEditMode()">
-             Edit
-        </button>
-        <button type="button" class="btn-delete" onclick="deleteAppointment(${event.id})">
-             Delete
-        </button>
+        <button type="button" class="cal-btn cal-btn-success" onclick="switchToEditMode()">Edit</button>
+        <button type="button" class="cal-btn cal-btn-danger"  onclick="deleteAppointment(${event.id})">Delete</button>
     `;
 
     document.getElementById('detailsModal').classList.add('active');
 }
 
-// Switch to Edit Mode
-// Switch to Edit Mode
+// ── Edit Mode ──────────────────────────────────────────────────────────
 function switchToEditMode() {
-    isEditMode = true;
-    
     fetch('/Appointments/GetAppointment/' + currentAppointmentId)
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
-            const viewMode = document.getElementById('viewMode');
-            const editMode = document.getElementById('editMode');
-            const modalTitle = document.getElementById('modalTitle');
-            const detailsActions = document.getElementById('detailsActions');
+            document.getElementById('viewMode').style.display  = 'none';
+            document.getElementById('editMode').style.display  = 'block';
+            document.getElementById('modalTitle').textContent  = 'Edit Appointment';
 
-            viewMode.style.display = 'none';
-            editMode.style.display = 'block';
-            modalTitle.textContent = 'Edit Appointment';
+            document.getElementById('EditId').value             = data.id;
+            document.getElementById('EditPatientName').value    = data.patientName;
+            document.getElementById('EditDoctorId').value       = data.doctorId;
+            document.getElementById('EditStartTime').value      = data.startTime;
+            document.getElementById('EditEndTime').value        = data.endTime;
+            document.getElementById('EditStatus').value         = data.status;
+            document.getElementById('EditReasonForVisit').value = data.reasonForVisit ?? '';
+            document.getElementById('EditNotes').value          = data.notes ?? '';
 
-            // Fill form with data
-            document.getElementById('EditId').value = data.id;
-            document.getElementById('EditPatientName').value = data.patientName;
-            document.getElementById('EditDoctorId').value = data.doctorId;
-            document.getElementById('EditStartTime').value = data.startTime;
-            document.getElementById('EditEndTime').value = data.endTime;
-            document.getElementById('EditStatus').value = data.status;
-            document.getElementById('EditReasonForVisit').value = data.reasonForVisit || '';
-            document.getElementById('EditNotes').value = data.notes || '';
-
-            detailsActions.innerHTML = `
-                <button type="button" class="btn-ghost" onclick="cancelEdit()">
-                    Cancel
-                </button>
-                <button type="submit" form="editForm" class="btn-primary">
-                    💾 Save Changes
-                </button>
+            document.getElementById('detailsActions').innerHTML = `
+                <button type="button" class="cal-btn cal-btn-ghost" onclick="cancelEdit()">Cancel</button>
+                <button type="submit" form="editForm" class="cal-btn cal-btn-primary">Save Changes</button>
             `;
         })
-        .catch(err => {
-            alert('Error loading appointment data');
-            console.error(err);
-        });
+        .catch(() => showToast('Could not load appointment data.', 'error'));
 }
 
-// Cancel Edit
 function cancelEdit() {
-    if (window.calendarInstance) {
-        window.calendarInstance.refetchEvents();
-    }
+    window.calendarInstance?.refetchEvents();
     closeDetailsModal();
 }
 
-// Close details modal
+// ── Delete ─────────────────────────────────────────────────────────────
+function deleteAppointment(id) {
+    if (!confirm('Delete this appointment? This action cannot be undone.')) return;
+
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+    const form  = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/Appointments/Delete/' + id;
+
+    const tok  = document.createElement('input');
+    tok.type   = 'hidden';
+    tok.name   = '__RequestVerificationToken';
+    tok.value  = token;
+    form.appendChild(tok);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// ── Details Modal ──────────────────────────────────────────────────────
+function setupDetailsModal() {
+    document.getElementById('closeDetailsBtn')
+        ?.addEventListener('click', closeDetailsModal);
+
+    document.getElementById('detailsModal')
+        ?.addEventListener('click', e => {
+            if (e.target === e.currentTarget) closeDetailsModal();
+        });
+}
+
 function closeDetailsModal() {
     document.getElementById('detailsModal').classList.remove('active');
-    isEditMode = false;
 }
 
-// Delete appointment
-function deleteAppointment(id) {
-    if (confirm('Are you sure you want to delete this appointment?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/Appointments/Delete/' + id;
-        
-        const token = document.createElement('input');
-        token.type = 'hidden';
-        token.name = '__RequestVerificationToken';
-        token.value = document.querySelector('input[name="__RequestVerificationToken"]').value;
-        
-        form.appendChild(token);
-        document.body.appendChild(form);
-        form.submit();
-    }
+// ── Create Modal ───────────────────────────────────────────────────────
+function setupCreateModal() {
+    const modal     = document.getElementById('appointmentModal');
+    const openBtn   = document.getElementById('openModalBtn');
+    const closeBtn  = document.getElementById('closeModalBtn');
+    const cancelBtn = document.getElementById('cancelModalBtn');
+
+    const open = () => {
+        resetCreateForm();
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    };
+
+    const close = () => {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    };
+
+    openBtn?.addEventListener('click', open);
+    closeBtn?.addEventListener('click', close);
+    cancelBtn?.addEventListener('click', close);
+    modal?.addEventListener('click', e => { if (e.target === modal) close(); });
 }
 
-// Setup details modal close
-document.addEventListener('DOMContentLoaded', function() {
-    const closeDetailsBtn = document.getElementById('closeDetailsBtn');
-    const detailsModal = document.getElementById('detailsModal');
-    
-    if (closeDetailsBtn) {
-        closeDetailsBtn.addEventListener('click', closeDetailsModal);
-    }
-    
-    if (detailsModal) {
-        detailsModal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeDetailsModal();
-            }
-        });
-    }
-});
-
-// Open create modal with specific date
 function openCreateModalWithDate(dateStr, dateObj) {
     resetCreateForm();
-    
-    const modal = document.getElementById('appointmentModal');
-    const startTimeInput = document.getElementById('StartTime');
-    const endTimeInput = document.getElementById('EndTime');
-    
-    const defaultDate = new Date(dateObj);
-    defaultDate.setHours(9, 0, 0, 0);
-    
-    const year = defaultDate.getFullYear();
-    const month = String(defaultDate.getMonth() + 1).padStart(2, '0');
-    const day = String(defaultDate.getDate()).padStart(2, '0');
-    
-    startTimeInput.value = `${year}-${month}-${day}T09:00`;
-    
-    const endDate = new Date(defaultDate);
-    endDate.setMinutes(endDate.getMinutes() + 30);
-    const endHours = String(endDate.getHours()).padStart(2, '0');
-    const endMinutes = String(endDate.getMinutes()).padStart(2, '0');
-    endTimeInput.value = `${year}-${month}-${day}T${endHours}:${endMinutes}`;
-    
-    modal.style.display = 'flex';
+    const d = new Date(dateObj);
+    d.setHours(9, 0, 0, 0);
+    document.getElementById('StartTime').value = formatLocal(d);
+    d.setMinutes(d.getMinutes() + 30);
+    document.getElementById('EndTime').value = formatLocal(d);
+
+    document.getElementById('appointmentModal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
 
-// Open create modal with date range
 function openCreateModalWithDateRange(startDate, endDate) {
     resetCreateForm();
-    
-    const modal = document.getElementById('appointmentModal');
-    const startTimeInput = document.getElementById('StartTime');
-    const endTimeInput = document.getElementById('EndTime');
-    
-    const startYear = startDate.getFullYear();
-    const startMonth = String(startDate.getMonth() + 1).padStart(2, '0');
-    const startDay = String(startDate.getDate()).padStart(2, '0');
-    const startHours = String(startDate.getHours()).padStart(2, '0');
-    const startMinutes = String(startDate.getMinutes()).padStart(2, '0');
-    
-    startTimeInput.value = `${startYear}-${startMonth}-${startDay}T${startHours}:${startMinutes}`;
-    
-    const endYear = endDate.getFullYear();
-    const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
-    const endDay = String(endDate.getDate()).padStart(2, '0');
-    const endHours = String(endDate.getHours()).padStart(2, '0');
-    const endMinutes = String(endDate.getMinutes()).padStart(2, '0');
-    
-    endTimeInput.value = `${endYear}-${endMonth}-${endDay}T${endHours}:${endMinutes}`;
-    
-    modal.style.display = 'flex';
+    document.getElementById('StartTime').value = formatLocal(startDate);
+    document.getElementById('EndTime').value   = formatLocal(endDate);
+
+    document.getElementById('appointmentModal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
 
-// Reset create form
 function resetCreateForm() {
     const existingRadio = document.getElementById('existingPatientRadio');
     if (existingRadio) {
         existingRadio.checked = true;
         existingRadio.dispatchEvent(new Event('change'));
     }
-    
-    const fields = [
-        'ExistingPatientId',
-        'DoctorId',
-        'StartTime',
-        'EndTime'
-    ];
-    
-    fields.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) element.value = '';
+
+    ['ExistingPatientId', 'DoctorId', 'StartTime', 'EndTime'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
     });
-    
-    const textareas = document.querySelectorAll('textarea[name^="NewAppointment"]');
-    textareas.forEach(textarea => textarea.value = '');
-    
-    const inputs = document.querySelectorAll('input[name^="NewAppointment.NewPatient"]');
-    inputs.forEach(input => input.value = '');
+
+    document.querySelectorAll('textarea[name^="NewAppointment"]')
+        .forEach(t => (t.value = ''));
+    document.querySelectorAll('input[name^="NewAppointment.NewPatient"]')
+        .forEach(i => (i.value = ''));
+
+    const note = document.getElementById('doctorAvailabilityNote');
+    if (note) { note.textContent = ''; note.className = 'cal-doctor-note'; }
 }
 
-// Setup create modal
-function setupCreateModal() {
-    const modal = document.getElementById('appointmentModal');
-    const openBtn = document.getElementById('openModalBtn');
-    const closeBtn = document.getElementById('closeModalBtn');
-    const cancelBtn = document.getElementById('cancelModalBtn');
-    
-    if (openBtn) {
-        openBtn.addEventListener('click', function() {
-            resetCreateForm();
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        });
-    }
-    
-    function closeCreateModal() {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-    
-    if (closeBtn) closeBtn.addEventListener('click', closeCreateModal);
-    if (cancelBtn) cancelBtn.addEventListener('click', closeCreateModal);
-    
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeCreateModal();
-            }
-        });
-    }
-}
-
-// Setup patient toggle
+// ── Patient Toggle ─────────────────────────────────────────────────────
 function setupPatientToggle() {
-    const existingRadio = document.getElementById('existingPatientRadio');
-    const newRadio = document.getElementById('newPatientRadio');
+    const existingRadio   = document.getElementById('existingPatientRadio');
+    const newRadio        = document.getElementById('newPatientRadio');
     const existingSection = document.getElementById('existing-patient-section');
-    const newSection = document.getElementById('new-patient-section');
-    
-    if (existingRadio) {
-        existingRadio.addEventListener('change', function() {
-            if (this.checked) {
-                existingSection.style.display = 'block';
-                newSection.style.display = 'none';
-            }
-        });
-    }
-    
-    if (newRadio) {
-        newRadio.addEventListener('change', function() {
-            if (this.checked) {
-                existingSection.style.display = 'none';
-                newSection.style.display = 'block';
-            }
-        });
-    }
+    const newSection      = document.getElementById('new-patient-section');
+
+    existingRadio?.addEventListener('change', () => {
+        existingSection.style.display = 'block';
+        newSection.style.display      = 'none';
+    });
+
+    newRadio?.addEventListener('change', () => {
+        existingSection.style.display = 'none';
+        newSection.style.display      = 'block';
+    });
 }
 
-// Auto-calculate end time
-document.addEventListener('DOMContentLoaded', function() {
-    const startTimeInput = document.getElementById('StartTime');
-    const editStartTimeInput = document.getElementById('EditStartTime');
-    
-    if (startTimeInput) {
-        startTimeInput.addEventListener('change', function() {
-            calculateEndTime('StartTime', 'EndTime');
+// ── Doctor Availability ────────────────────────────────────────────────
+function setupDoctorAvailability() {
+    const startInput = document.getElementById('StartTime');
+    const endInput   = document.getElementById('EndTime');
+
+    startInput?.addEventListener('change', function () {
+        if (this.value) {
+            const d = new Date(this.value);
+            d.setMinutes(d.getMinutes() + 30);
+            if (endInput) endInput.value = formatLocal(d);
+        }
+        loadAvailableDoctors();
+    });
+
+    endInput?.addEventListener('change', loadAvailableDoctors);
+}
+
+function loadAvailableDoctors() {
+    const startInput   = document.getElementById('StartTime');
+    const endInput     = document.getElementById('EndTime');
+    const doctorSelect = document.getElementById('DoctorId');
+    const doctorNote   = document.getElementById('doctorAvailabilityNote');
+
+    const start = startInput?.value ?? '';
+    const end   = endInput?.value   ?? '';
+    if (!start || !end) return;
+
+    doctorNote.textContent = 'Checking availability…';
+    doctorNote.className   = 'cal-doctor-note loading';
+    doctorSelect.innerHTML = '<option value="">Loading…</option>';
+
+    const url = `${window.appEndpoints.getAvailableDoctors}?startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(doctors => {
+            if (doctors.length === 0) {
+                doctorSelect.innerHTML = '<option value="">No doctors available at this time</option>';
+                doctorNote.textContent = 'No doctors available for this slot.';
+                doctorNote.className   = 'cal-doctor-note error';
+            } else {
+                doctorSelect.innerHTML = '<option value="">— Select Doctor —</option>';
+                doctors.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value       = d.value;
+                    opt.textContent = d.text;
+                    doctorSelect.appendChild(opt);
+                });
+                doctorNote.textContent = `${doctors.length} doctor${doctors.length > 1 ? 's' : ''} available.`;
+                doctorNote.className   = 'cal-doctor-note success';
+            }
+        })
+        .catch(() => {
+            doctorNote.textContent = 'Could not load doctors.';
+            doctorNote.className   = 'cal-doctor-note error';
         });
-    }
-    
-    if (editStartTimeInput) {
-        editStartTimeInput.addEventListener('change', function() {
-            calculateEndTime('EditStartTime', 'EditEndTime');
-        });
-    }
-});
+}
+
+// ── End Time Auto-Calc ─────────────────────────────────────────────────
+function setupEditTimeCalc() {
+    document.getElementById('EditStartTime')
+        ?.addEventListener('change', () => calculateEndTime('EditStartTime', 'EditEndTime'));
+}
 
 function calculateEndTime(startId, endId) {
-    const startInput = document.getElementById(startId);
-    const endInput = document.getElementById(endId);
-    
-    if (startInput && endInput && startInput.value) {
-        const startDate = new Date(startInput.value);
-        startDate.setMinutes(startDate.getMinutes() + 30);
-
-        const year = startDate.getFullYear();
-        const month = String(startDate.getMonth() + 1).padStart(2, '0');
-        const day = String(startDate.getDate()).padStart(2, '0');
-        const hours = String(startDate.getHours()).padStart(2, '0');
-        const minutes = String(startDate.getMinutes()).padStart(2, '0');
-
-        endInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    const start = document.getElementById(startId);
+    const end   = document.getElementById(endId);
+    if (start?.value) {
+        const d = new Date(start.value);
+        d.setMinutes(d.getMinutes() + 30);
+        end.value = formatLocal(d);
     }
-    // ... كل الكود الموجود ...
 }
-// Print week as PDF (أضف في الآخر)
-     function printWeekPdf() {
-       const calendar = window.calendarInstance;
-    
-       if (!calendar) {
-            alert('Calendar not initialized');
-         return;
-        }
-    
-        // Get current date
-      const currentDate = calendar.getDate();
-      const dateStr = currentDate.toISOString().split('T')[0];
-    
-      // Open PDF in new tab
-      window.open(`/Appointments/PrintWeekSchedulePdf?weekStart=${dateStr}`, '_blank');
-    }
-    // Export week as Excel
+
+// ── Helpers ────────────────────────────────────────────────────────────
+function formatLocal(dt) {
+    const y  = dt.getFullYear();
+    const mo = String(dt.getMonth() + 1).padStart(2, '0');
+    const d  = String(dt.getDate()).padStart(2, '0');
+    const h  = String(dt.getHours()).padStart(2, '0');
+    const mi = String(dt.getMinutes()).padStart(2, '0');
+    return `${y}-${mo}-${d}T${h}:${mi}`;
+}
+
+// ── Toast Notifications ────────────────────────────────────────────────
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const icons = { success: '✓', error: '✕', warning: '!', info: 'ℹ' };
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] ?? '•'}</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-dismiss" aria-label="Dismiss">✕</button>
+    `;
+
+    toast.querySelector('.toast-dismiss').addEventListener('click', () => dismissToast(toast));
+    container.appendChild(toast);
+
+    setTimeout(() => dismissToast(toast), 4500);
+}
+
+function dismissToast(toast) {
+    toast.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    toast.style.opacity    = '0';
+    toast.style.transform  = 'translateX(20px)';
+    setTimeout(() => toast.remove(), 260);
+}
+
+// ── PDF / Excel ────────────────────────────────────────────────────────
+function printWeekPdf() {
+    const calendar = window.calendarInstance;
+    if (!calendar) { showToast('Calendar not ready.', 'error'); return; }
+    const dateStr = calendar.getDate().toISOString().split('T')[0];
+    window.open(`/Appointments/PrintWeekSchedulePdf?weekStart=${dateStr}`, '_blank');
+}
+
 function exportWeekExcel() {
     const calendar = window.calendarInstance;
-    
-    if (!calendar) {
-        alert('Calendar not initialized');
-        return;
-    }
-    
-    const currentDate = calendar.getDate();
-    const dateStr = currentDate.toISOString().split('T')[0];
-    
-    // Download Excel
+    if (!calendar) { showToast('Calendar not ready.', 'error'); return; }
+    const dateStr = calendar.getDate().toISOString().split('T')[0];
     window.location.href = `/Appointments/ExportWeekScheduleExcel?weekStart=${dateStr}`;
 }
-
