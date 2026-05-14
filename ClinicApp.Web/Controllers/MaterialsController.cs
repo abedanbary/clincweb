@@ -9,7 +9,7 @@ using ClinicApp.Web.Services;
 
 namespace ClinicApp.Web.Controllers
 {
-    [Authorize(Roles = "Manager")]
+    [Authorize(Roles = "Manager,Doctor")]
     public class MaterialsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -53,6 +53,7 @@ namespace ClinicApp.Web.Controllers
         // 🟩 POST: /Materials/Add
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Manager")]
         public async Task<IActionResult> Add(MaterialsPageViewModel vm)
         {
             var clinicId = GetCurrentClinicId();
@@ -148,6 +149,7 @@ namespace ClinicApp.Web.Controllers
         // 🟡 POST: /Materials/Edit/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Manager")]
         public async Task<IActionResult> Edit(int id, string name, string? description, string unit, int minimumLimit, string? supplier)
         {
             var clinicId = GetCurrentClinicId();
@@ -172,6 +174,7 @@ namespace ClinicApp.Web.Controllers
         // 🔴 POST: /Materials/Delete/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Manager")]
         public async Task<IActionResult> Delete(int id)
         {
             var clinicId = GetCurrentClinicId();
@@ -229,9 +232,10 @@ namespace ClinicApp.Web.Controllers
 
         return RedirectToAction(nameof(Index));
         }
-        // 🟣 GET: /Materials/Exporvt
+        // 🟣 GET: /Materials/Export
         // 📊 Export to Excel
         [HttpGet]
+        [Authorize(Roles = "Manager")]
          public async Task<IActionResult> ExportExcel()
          {  var clinicId = GetCurrentClinicId();
     

@@ -3,8 +3,9 @@
 @model MaterialsPageViewModel
 
 @{
-    Layout = "_ManagerLayout";
+    Layout = User.IsInRole("Doctor") ? "_DoctorLayout" : "_ManagerLayout";
     ViewData["Title"] = "Materials";
+    var isManager = User.IsInRole("Manager");
 }
 
 <div class="materials-page">
@@ -19,12 +20,15 @@
         </div>
 
         <div class="materials-header-actions">
-            <a href="/Materials/ExportExcel" class="btn-ghost" style="text-decoration: none;">
-               📊 Export to Excel
-            </a>
-            <button class="btn-primary" onclick="openAddMaterialModal()">
-                Add Material
-            </button>
+            @if (isManager)
+            {
+                <a href="/Materials/ExportExcel" class="btn-ghost" style="text-decoration: none;">
+                   📊 Export to Excel
+                </a>
+                <button class="btn-primary" onclick="openAddMaterialModal()">
+                    Add Material
+                </button>
+            }
         </div>
     </header>
 
@@ -90,11 +94,14 @@
                                     </td>
                                     <td>
                                         <button class="btn-ghost btn-sm" onclick="openEditQuantityModal(@item.Id, '@item.Name', @item.Quantity)">+/-</button>
-                                        <button class="btn-ghost btn-sm" onclick="editMaterial(@item.Id)">Edit</button>
-                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display: inline;" onsubmit="return confirm('Delete this material?')">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn-ghost btn-danger btn-sm">Remove</button>
-                                        </form>
+                                        @if (isManager)
+                                        {
+                                            <button class="btn-ghost btn-sm" onclick="editMaterial(@item.Id)">Edit</button>
+                                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display: inline;" onsubmit="return confirm('Delete this material?')">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn-ghost btn-danger btn-sm">Remove</button>
+                                            </form>
+                                        }
                                     </td>
                                 </tr>
                                  <tr id="history-@item.Id" class="materials-history-row" style="display: none;">
@@ -120,6 +127,8 @@
     </section>
 </div>
 
+@if (isManager)
+{
 <!-- ✅ Modal: Add Material -->
 <div id="addMaterialModal" class="modal" style="display: none;">
     <div class="modal-overlay" onclick="closeAddMaterialModal()"></div>
@@ -179,6 +188,7 @@
         </form>
     </div>
 </div>
+}
 
 <!-- ✅ Modal: Edit Quantity -->
 <div id="editQuantityModal" class="modal" style="display: none;">
