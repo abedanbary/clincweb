@@ -117,7 +117,6 @@ try
     {
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<ApplicationDbContext>();
-        var hasher = services.GetRequiredService<IPasswordHasher<AppUser>>();
 
         Console.WriteLine("Applying migrations...");
        try
@@ -130,39 +129,8 @@ try
         }
         Console.WriteLine("Migrations applied successfully");
 
-        // Seed default data
-        if (!context.AppUsers.Any())
-        {
-            Console.WriteLine("Seeding initial data...");
-            
-            var clinic = new Clinic
-            {
-                Name = "Main Clinic",
-                Address = "Haifa"
-            };
-            context.Clinics.Add(clinic);
-            context.SaveChanges();
-
-            var manager = new AppUser
-            {
-                FirstName = "Admin",
-                LastName = "User",
-                Email = "admin@clinic.com",
-                Phone = "0500000000",
-                ClinicId = clinic.Id,
-                Role = UserRole.Manager,
-            };
-            manager.PasswordHash = hasher.HashPassword(manager, "123456");
-
-            context.AppUsers.Add(manager);
-            context.SaveChanges();
-            
-            Console.WriteLine("Initial data seeded successfully");
-        }
-        else
-        {
-            Console.WriteLine("Data already exists, skipping seed");
-        }
+        // Migration handles all seed data (SeedDemoData migration)
+        Console.WriteLine("Migrations applied — demo data is seeded via migration");
     }
 }
 catch (Exception ex)
