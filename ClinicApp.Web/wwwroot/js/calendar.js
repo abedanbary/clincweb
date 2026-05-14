@@ -250,8 +250,9 @@ function renderGrid() {
             ? `<div class="cal-now-line" id="nowLine" style="top:${nowTop}px"><div class="cal-now-dot"></div></div>`
             : '';
 
-        // Appointment blocks
-        let eventsHtml = dayEvents.map(ev => buildEventBlock(ev)).join('');
+        // Appointment blocks with overlap-aware column layout
+        const layout   = computeOverlapLayout(dayEvents);
+        let eventsHtml = dayEvents.map(ev => buildEventBlock(ev, layout)).join('');
 
         colsHtml += `<div class="cal-day-col ${isToday ? 'today' : ''}"
                           style="height:${totalH}px"
@@ -267,7 +268,7 @@ function renderGrid() {
     attachGridListeners(days);
 }
 
-function buildEventBlock(ev) {
+function buildEventBlock(ev, layout) {
     const top    = getEventTop(ev.startDate);
     const height = getEventHeight(ev.startDate, ev.endDate);
     const doc    = ev.extendedProps?.doctorName ?? '';
@@ -283,9 +284,18 @@ function buildEventBlock(ev) {
     const reason = escHtml(ev.extendedProps?.reason || '');
     const showReason = height > 38 && reason;
 
+    // Overlap-aware positioning
+    const lane  = layout?.eventLane.get(ev.id)  ?? 0;
+    const total = layout?.eventTotal.get(ev.id) ?? 1;
+    const colW  = 100 / total;
+    const leftPct  = lane * colW;
+    const rightPct = 100 - (lane + 1) * colW;
+    const leftStyle  = `calc(${leftPct}% + ${lane === 0 ? 4 : 2}px)`;
+    const rightStyle = `calc(${rightPct}% + ${lane === total - 1 ? 4 : 2}px)`;
+
     return `<div class="cal-event"
                  data-appt-id="${ev.id}"
-                 style="top:${top}px;height:${height}px;background:${bg};border-left-color:${border};"
+                 style="top:${top}px;height:${height}px;left:${leftStyle};right:${rightStyle};background:${bg};border-left-color:${border};"
                  tabindex="0"
                  aria-label="${name}">
         <div class="cal-event-name" style="color:${text}">${name}</div>
@@ -326,6 +336,47 @@ function attachGridListeners(days) {
             openCreateModalWithDate(null, clickedDay);
         });
     });
+}
+
+// ── Overlap layout ────────────────────────────────────────────
+// Returns { eventLane: Map<id,col>, eventTotal: Map<id,totalCols> }
+function computeOverlapLayout(events) {
+    const eventLane  = new Map();
+    const eventTotal = new Map();
+
+    if (!events.length) return { eventLane, eventTotal };
+
+    // Sort by start time, then by longer events first
+    const sorted = [...events].sort((a, b) =>
+        a.startDate - b.startDate || b.endDate - a.endDate
+    );
+
+    // Greedy column assignment: place each event in the first free column
+    const colEnd = []; // colEnd[i] = last endDate occupying column i
+
+    for (const ev of sorted) {
+        let col = 0;
+        while (col < colEnd.length && colEnd[col] > ev.startDate) col++;
+        eventLane.set(ev.id, col);
+        colEnd[col] = ev.endDate;
+    }
+
+    // For each event, find the max column index among all overlapping events
+    for (const ev of sorted) {
+        let maxCol = eventLane.get(ev.id);
+        for (const other of sorted) {
+            if (other.id !== ev.id && eventsOverlap(ev, other)) {
+                maxCol = Math.max(maxCol, eventLane.get(other.id));
+            }
+        }
+        eventTotal.set(ev.id, maxCol + 1);
+    }
+
+    return { eventLane, eventTotal };
+}
+
+function eventsOverlap(a, b) {
+    return a.startDate < b.endDate && a.endDate > b.startDate;
 }
 
 // ── Positioning helpers ───────────────────────────────────────

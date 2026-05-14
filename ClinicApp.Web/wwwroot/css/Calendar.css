@@ -3,7 +3,8 @@
    ============================================================ */
 
 /* ── Design tokens ──────────────────────────────────────────── */
-.cal-root {
+/* Defined on :root so modals outside .cal-root still inherit them */
+:root {
     --c-accent:    #10b981;
     --c-accent-dk: #059669;
     --c-bg:        #f8fafc;
@@ -428,8 +429,7 @@
 /* ── Appointment blocks ─────────────────────────────────────── */
 .cal-event {
     position: absolute;
-    left: 4px;
-    right: 4px;
+    /* left/right set inline by JS based on overlap lane */
     border-radius: 6px;
     padding: 3px 7px;
     overflow: hidden;

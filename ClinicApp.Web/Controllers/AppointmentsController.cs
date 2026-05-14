@@ -330,7 +330,22 @@ namespace ClinicApp.Web.Controllers
             if (hasConflict)
             {
                 TempData["Error"] = "Doctor already has an appointment at this time";
-                return RedirectToAction(nameof(Index));
+                var referer = Request.Headers["Referer"].ToString();
+                return referer.Contains("/Calendar") ? RedirectToAction(nameof(Calendar)) : RedirectToAction(nameof(Index));
+            }
+
+            // Prevent same patient from having two overlapping appointments
+            var hasPatientConflict = await _context.Appointments
+                .AnyAsync(a => a.PatientId == patientId &&
+                               a.StartTime < endTimeUtc &&
+                               a.EndTime > startTimeUtc &&
+                               a.Status != AppointmentStatus.Cancelled);
+
+            if (hasPatientConflict)
+            {
+                TempData["Error"] = "This patient already has an appointment at this time";
+                var referer2 = Request.Headers["Referer"].ToString();
+                return referer2.Contains("/Calendar") ? RedirectToAction(nameof(Calendar)) : RedirectToAction(nameof(Index));
             }
 
             // إنشاء الموعد
@@ -352,15 +367,8 @@ namespace ClinicApp.Web.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Appointment created successfully!";
-            
-            // Check if request came from calendar
-            var referer = Request.Headers["Referer"].ToString();
-            if (referer.Contains("/Calendar"))
-            {
-                return RedirectToAction(nameof(Calendar));
-            }
-            
-            return RedirectToAction(nameof(Index));
+            var referer3 = Request.Headers["Referer"].ToString();
+            return referer3.Contains("/Calendar") ? RedirectToAction(nameof(Calendar)) : RedirectToAction(nameof(Index));
         }
 
         // POST: Appointments/Edit
@@ -397,6 +405,20 @@ namespace ClinicApp.Web.Controllers
             if (hasConflict)
             {
                 TempData["Error"] = "Doctor already has an appointment at this time";
+                return RedirectToAction(nameof(Calendar));
+            }
+
+            // Prevent same patient from having two overlapping appointments
+            var hasPatientConflictEdit = await _context.Appointments
+                .AnyAsync(a => a.Id != model.Id &&
+                               a.PatientId == appointment.PatientId &&
+                               a.StartTime < endTimeUtc &&
+                               a.EndTime > startTimeUtc &&
+                               a.Status != AppointmentStatus.Cancelled);
+
+            if (hasPatientConflictEdit)
+            {
+                TempData["Error"] = "This patient already has an appointment at this time";
                 return RedirectToAction(nameof(Calendar));
             }
 
