@@ -245,6 +245,109 @@ public class CalendarControllerTests
         Assert.Equal(10, root[0].GetProperty("value").GetInt32());
     }
 
+    // ── CheckPatientConflict ──────────────────────────────────────
+
+    [Fact]
+    public async Task CheckPatientConflict_WhenPatientFree_ReturnsNoConflict()
+    {
+        using var db = TestHelpers.CreateDb(nameof(CheckPatientConflict_WhenPatientFree_ReturnsNoConflict));
+
+        db.AppUsers.Add(MakeDoctor(10));
+        db.Patients.Add(MakePatient(5));
+        await db.SaveChangesAsync();
+
+        var controller = TestHelpers.CreateAppointmentsController(db);
+
+        var start = DateTime.UtcNow.AddHours(5).ToString("yyyy-MM-ddTHH:mm");
+        var end   = DateTime.UtcNow.AddHours(6).ToString("yyyy-MM-ddTHH:mm");
+
+        var result = await controller.CheckPatientConflict(5, start, end);
+        var root   = ParseJson(result);
+
+        Assert.False(root.GetProperty("hasConflict").GetBoolean());
+    }
+
+    [Fact]
+    public async Task CheckPatientConflict_WhenOverlap_ReturnsConflict()
+    {
+        using var db = TestHelpers.CreateDb(nameof(CheckPatientConflict_WhenOverlap_ReturnsConflict));
+
+        db.AppUsers.Add(MakeDoctor(10));
+        db.Patients.Add(MakePatient(5));
+        var existing = MakeAppointment(1, 10, 5, offsetHours: 2);
+        db.Appointments.Add(existing);
+        await db.SaveChangesAsync();
+
+        var controller = TestHelpers.CreateAppointmentsController(db);
+
+        // Overlapping window
+        var start = existing.StartTime.AddMinutes(15).ToString("yyyy-MM-ddTHH:mm");
+        var end   = existing.EndTime.AddMinutes(15).ToString("yyyy-MM-ddTHH:mm");
+
+        var result = await controller.CheckPatientConflict(5, start, end);
+        var root   = ParseJson(result);
+
+        Assert.True(root.GetProperty("hasConflict").GetBoolean());
+        Assert.Contains("already has an appointment", root.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task CheckPatientConflict_WhenCancelled_DoesNotConflict()
+    {
+        using var db = TestHelpers.CreateDb(nameof(CheckPatientConflict_WhenCancelled_DoesNotConflict));
+
+        db.AppUsers.Add(MakeDoctor(10));
+        db.Patients.Add(MakePatient(5));
+        var cancelled = MakeAppointment(1, 10, 5, offsetHours: 2, status: AppointmentStatus.Cancelled);
+        db.Appointments.Add(cancelled);
+        await db.SaveChangesAsync();
+
+        var controller = TestHelpers.CreateAppointmentsController(db);
+
+        var start = cancelled.StartTime.ToString("yyyy-MM-ddTHH:mm");
+        var end   = cancelled.EndTime.ToString("yyyy-MM-ddTHH:mm");
+
+        var result = await controller.CheckPatientConflict(5, start, end);
+        var root   = ParseJson(result);
+
+        Assert.False(root.GetProperty("hasConflict").GetBoolean());
+    }
+
+    [Fact]
+    public async Task CheckPatientConflict_WithExcludeId_IgnoresExcludedAppointment()
+    {
+        using var db = TestHelpers.CreateDb(nameof(CheckPatientConflict_WithExcludeId_IgnoresExcludedAppointment));
+
+        db.AppUsers.Add(MakeDoctor(10));
+        db.Patients.Add(MakePatient(5));
+        var appt = MakeAppointment(1, 10, 5, offsetHours: 2);
+        db.Appointments.Add(appt);
+        await db.SaveChangesAsync();
+
+        var controller = TestHelpers.CreateAppointmentsController(db);
+
+        var start = appt.StartTime.ToString("yyyy-MM-ddTHH:mm");
+        var end   = appt.EndTime.ToString("yyyy-MM-ddTHH:mm");
+
+        // Exclude the same appointment (editing it) — should not conflict with itself
+        var result = await controller.CheckPatientConflict(5, start, end, excludeId: 1);
+        var root   = ParseJson(result);
+
+        Assert.False(root.GetProperty("hasConflict").GetBoolean());
+    }
+
+    [Fact]
+    public async Task CheckPatientConflict_WhenInvalidTimes_ReturnsNoConflict()
+    {
+        using var db = TestHelpers.CreateDb(nameof(CheckPatientConflict_WhenInvalidTimes_ReturnsNoConflict));
+        var controller = TestHelpers.CreateAppointmentsController(db);
+
+        var result = await controller.CheckPatientConflict(5, "not-a-date", "also-bad");
+        var root   = ParseJson(result);
+
+        Assert.False(root.GetProperty("hasConflict").GetBoolean());
+    }
+
     // ── Edit ──────────────────────────────────────────────────────
 
     [Fact]

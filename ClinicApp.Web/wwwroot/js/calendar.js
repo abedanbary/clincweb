@@ -803,20 +803,36 @@ function checkPatientConflict(excludeId = null) {
 }
 
 function loadAvailableDoctors() {
-    // Doctors always book for themselves; no need to query availability
-    if (window.currentUser?.role === 'Doctor') return;
-
     const start = document.getElementById('StartTime')?.value;
     const end   = document.getElementById('EndTime')?.value;
-    const sel   = document.getElementById('DoctorId');
     const note  = document.getElementById('doctorAvailabilityNote');
     if (!start || !end) return;
 
+    const url = `${window.appEndpoints.getAvailableDoctors}?startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`;
+
+    // For doctors: check if they themselves are free at the selected time
+    if (window.currentUser?.role === 'Doctor') {
+        if (note) { note.textContent = 'Checking your availability…'; note.className = 'cal-doctor-note loading'; }
+        fetch(url).then(r => r.json()).then(docs => {
+            if (!note) return;
+            const isFree = docs.some(d => String(d.value) === String(window.currentUser.id));
+            if (isFree) {
+                note.textContent = '✓ You are free at this time';
+                note.className   = 'cal-doctor-note success';
+            } else {
+                note.textContent = '⚠ You already have an appointment at this time';
+                note.className   = 'cal-doctor-note error';
+            }
+        }).catch(() => { if (note) { note.textContent = ''; note.className = 'cal-doctor-note'; } });
+        return;
+    }
+
+    // Manager / assistant: populate the doctor select
+    const sel = document.getElementById('DoctorId');
+    if (!sel) return;
     note.textContent = 'Checking availability…';
     note.className   = 'cal-doctor-note loading';
     sel.innerHTML    = '<option value="">Loading…</option>';
-
-    const url = `${window.appEndpoints.getAvailableDoctors}?startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`;
 
     fetch(url).then(r => r.json()).then(docs => {
         if (!docs.length) {
