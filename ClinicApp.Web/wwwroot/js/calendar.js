@@ -8,14 +8,15 @@ const DOC_PALETTE = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#06
 
 // ── State ─────────────────────────────────────────────────────
 const CAL = {
-    view:       'week',
-    weekStart:  getWeekStart(new Date()),  // Monday of displayed week
-    focusDate:  new Date(),                // active day in Day view
-    filterDoc:  'all',
-    openApptId: null,
-    events:     [],
-    doctorColors: {},
-    colorIdx:   0,
+    view:          'week',
+    weekStart:     getWeekStart(new Date()),
+    focusDate:     new Date(),
+    filterDoc:     'all',
+    showCancelled: false,
+    openApptId:    null,
+    events:        [],
+    doctorColors:  {},
+    colorIdx:      0,
 };
 
 // ── Bootstrap ─────────────────────────────────────────────────
@@ -59,6 +60,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('weekBtn')?.addEventListener('click', () => { CAL.view = 'week'; renderAll(); });
     document.getElementById('dayBtn')?.addEventListener('click',  () => { CAL.view = 'day';  renderAll(); });
+
+    document.getElementById('cancelledToggleBtn')?.addEventListener('click', () => {
+        CAL.showCancelled = !CAL.showCancelled;
+        const btn = document.getElementById('cancelledToggleBtn');
+        if (btn) {
+            btn.textContent = CAL.showCancelled ? 'Hide Cancelled' : 'Show Cancelled';
+            btn.classList.toggle('active-filter', CAL.showCancelled);
+        }
+        renderAll();
+    });
 
     document.getElementById('calGrid')
         ?.addEventListener('click', e => {
@@ -176,17 +187,28 @@ function renderDayHeader() {
 
     days.forEach((day, i) => {
         const isToday  = day.getTime() === today.getTime();
+        const isPast   = day < today && !isToday;
         const dayName  = day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
         const dayNum   = day.getDate();
         const month    = day.toLocaleDateString('en-US', { month: 'short' });
 
+        const dayStart = new Date(day); dayStart.setHours(0,0,0,0);
+        const dayEnd   = new Date(day); dayEnd.setHours(23,59,59,999);
+        const dayCount = CAL.events.filter(e => {
+            if (!CAL.showCancelled && e.extendedProps?.status === 'Cancelled') return false;
+            return e.startDate >= dayStart && e.startDate <= dayEnd;
+        }).length;
+
         html += `
-            <div class="cal-day-cell ${isToday ? 'today' : ''}" data-idx="${i}">
+            <div class="cal-day-cell ${isToday ? 'today' : ''} ${isPast ? 'past' : ''}" data-idx="${i}">
                 <span class="cal-day-name">${dayName}</span>
                 <div class="cal-day-num-wrap">
                     <span class="cal-day-num ${isToday ? 'today' : ''}">${dayNum}</span>
                 </div>
-                <span class="cal-month-label">${month}</span>
+                <div class="cal-day-meta">
+                    <span class="cal-month-label">${month}</span>
+                    ${dayCount > 0 ? `<span class="cal-day-count">${dayCount}</span>` : ''}
+                </div>
             </div>
         `;
     });
@@ -211,9 +233,11 @@ function renderGrid() {
     const totalH  = (HOUR_END - HOUR_START) * 60 * PX_PER_MIN;
     const today   = todayMidnight();
 
-    const filtered = CAL.events.filter(e =>
-        CAL.filterDoc === 'all' || e.extendedProps?.doctorName === CAL.filterDoc
-    );
+    const filtered = CAL.events.filter(e => {
+        if (CAL.filterDoc !== 'all' && e.extendedProps?.doctorName !== CAL.filterDoc) return false;
+        if (!CAL.showCancelled && e.extendedProps?.status === 'Cancelled') return false;
+        return true;
+    });
 
     // ── Time gutter ──
     let gutterHtml = `<div class="cal-gutter" style="height:${totalH}px">`;
@@ -228,6 +252,7 @@ function renderGrid() {
 
     days.forEach((day, colIdx) => {
         const isToday  = day.getTime() === today.getTime();
+        const isPast   = day < today && !isToday;
         const dayStart = new Date(day); dayStart.setHours(0,0,0,0);
         const dayEnd   = new Date(day); dayEnd.setHours(23,59,59,999);
 
@@ -244,6 +269,16 @@ function renderGrid() {
                       <div class="cal-half-line" style="top:${half}px"></div>`;
         }
 
+        // Past-time shading: whole column for past days, partial for today
+        let pastHtml = '';
+        if (isPast) {
+            pastHtml = `<div class="cal-past-overlay" style="height:${totalH}px"></div>`;
+        } else if (isToday) {
+            const pt = getNowTop();
+            if (pt !== null && pt > 0)
+                pastHtml = `<div class="cal-past-overlay" style="height:${pt}px"></div>`;
+        }
+
         // Now indicator (today only)
         const nowTop = isToday ? getNowTop() : null;
         const nowHtml = nowTop !== null
@@ -254,11 +289,11 @@ function renderGrid() {
         const layout   = computeOverlapLayout(dayEvents);
         let eventsHtml = dayEvents.map(ev => buildEventBlock(ev, layout)).join('');
 
-        colsHtml += `<div class="cal-day-col ${isToday ? 'today' : ''}"
+        colsHtml += `<div class="cal-day-col ${isToday ? 'today' : ''} ${isPast ? 'past-day' : ''}"
                           style="height:${totalH}px"
                           data-col-idx="${colIdx}"
                           data-day="${day.toISOString().split('T')[0]}">
-            ${lines}${nowHtml}${eventsHtml}
+            ${lines}${pastHtml}${nowHtml}${eventsHtml}
         </div>`;
     });
 
@@ -275,10 +310,12 @@ function buildEventBlock(ev, layout) {
     const color  = CAL.doctorColors[doc] || '#7A6860';
     const status = ev.extendedProps?.status || 'Scheduled';
 
-    const isDone = status === 'Completed' || status === 'Cancelled';
-    const bg     = isDone ? '#f1f5f9' : `${color}1a`;
-    const border = isDone ? '#94a3b8' : color;
-    const text   = isDone ? '#94a3b8' : color;
+    const isCancelled = status === 'Cancelled';
+    const isDone      = status === 'Completed' || isCancelled;
+    const bg          = isCancelled ? '#fef2f2' : isDone ? '#f1f5f9' : `${color}18`;
+    const border      = isCancelled ? '#fca5a5' : isDone ? '#cbd5e1' : color;
+    const text        = isCancelled ? '#ef4444' : isDone ? '#94a3b8' : color;
+    const opacity     = isCancelled ? 'opacity:0.7;' : '';
 
     const name   = escHtml(ev.extendedProps?.patientName || ev.title || '');
     const reason = escHtml(ev.extendedProps?.reason || '');
@@ -293,13 +330,16 @@ function buildEventBlock(ev, layout) {
     const leftStyle  = `calc(${leftPct}% + ${lane === 0 ? 4 : 2}px)`;
     const rightStyle = `calc(${rightPct}% + ${lane === total - 1 ? 4 : 2}px)`;
 
-    return `<div class="cal-event"
+    const cancelledBadge = isCancelled ? `<span class="cal-event-cancelled-tag">Cancelled</span>` : '';
+
+    return `<div class="cal-event ${isCancelled ? 'cal-event--cancelled' : ''}"
                  data-appt-id="${ev.id}"
-                 style="top:${top}px;height:${height}px;left:${leftStyle};right:${rightStyle};background:${bg};border-left-color:${border};"
+                 style="top:${top}px;height:${height}px;left:${leftStyle};right:${rightStyle};background:${bg};border-left-color:${border};${opacity}"
                  tabindex="0"
                  aria-label="${name}">
         <div class="cal-event-name" style="color:${text}">${name}</div>
         ${showReason ? `<div class="cal-event-reason">${reason}</div>` : ''}
+        ${cancelledBadge}
     </div>`;
 }
 
@@ -324,15 +364,20 @@ function attachGridListeners(days) {
     grid.querySelectorAll('.cal-day-col').forEach((col, i) => {
         col.addEventListener('click', e => {
             if (e.target.closest('.cal-event')) return;
-            const scroller = document.getElementById('calGridScroller');
-            const rect     = col.getBoundingClientRect();
-            const relY     = e.clientY - rect.top + scroller.scrollTop;
+            const scroller  = document.getElementById('calGridScroller');
+            const rect      = col.getBoundingClientRect();
+            const relY      = e.clientY - rect.top + scroller.scrollTop;
             const totalMins = Math.round(relY / PX_PER_MIN / 15) * 15;
             const h = HOUR_START + Math.floor(totalMins / 60);
             const m = totalMins % 60;
 
             const clickedDay = new Date(days[i]);
             clickedDay.setHours(Math.min(h, HOUR_END - 1), m, 0, 0);
+
+            if (clickedDay < new Date()) {
+                showToast('Cannot schedule appointments in the past.', 'error');
+                return;
+            }
             openCreateModalWithDate(null, clickedDay);
         });
     });
@@ -545,7 +590,7 @@ function setupCreateModal() {
     const closeBtn  = document.getElementById('closeModalBtn');
     const cancelBtn = document.getElementById('cancelModalBtn');
 
-    const open  = () => { resetCreateForm(); modal.classList.add('active'); document.body.style.overflow = 'hidden'; };
+    const open  = () => { resetCreateForm(); applyDateMinima(); modal.classList.add('active'); document.body.style.overflow = 'hidden'; };
     const close = () => { modal.classList.remove('active'); document.body.style.overflow = ''; };
 
     openBtn?.addEventListener('click', open);
@@ -554,8 +599,22 @@ function setupCreateModal() {
     modal?.addEventListener('click', e => { if (e.target === modal) close(); });
 }
 
+// Set min datetime on the create form inputs to prevent selecting the past
+function applyDateMinima() {
+    const nowStr = formatLocal(new Date());
+    const s = document.getElementById('StartTime');
+    const e = document.getElementById('EndTime');
+    if (s) s.min = nowStr;
+    if (e) e.min = nowStr;
+}
+
 function openCreateModalWithDate(_dateStr, dateObj) {
+    if (dateObj < new Date()) {
+        showToast('Cannot schedule appointments in the past.', 'error');
+        return;
+    }
     resetCreateForm();
+    applyDateMinima();
     const modal = document.getElementById('appointmentModal');
     if (!modal) return;
 

@@ -347,6 +347,15 @@ namespace ClinicApp.Web.Controllers
             // تحويل الأوقات إلى UTC مرة واحدة
             var startTimeUtc = DateTime.SpecifyKind(appointmentModel.StartTime.Value, DateTimeKind.Utc);
             var endTimeUtc = DateTime.SpecifyKind(appointmentModel.EndTime.Value, DateTimeKind.Utc);
+
+            // Block past appointments (allow up to 5 min in the past for clock drift)
+            if (startTimeUtc < DateTime.UtcNow.AddMinutes(-5))
+            {
+                TempData["Error"] = "Cannot create appointments in the past";
+                var referer0 = Request.Headers["Referer"].ToString();
+                return referer0.Contains("/Calendar") ? RedirectToAction(nameof(Calendar)) : RedirectToAction(nameof(Index));
+            }
+
             // التحقق من التعارض
             var hasConflict = await _context.Appointments
                 .AnyAsync(a => a.DoctorId == appointmentModel.DoctorId &&
