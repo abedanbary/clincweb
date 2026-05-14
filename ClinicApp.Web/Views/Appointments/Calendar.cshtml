@@ -247,22 +247,51 @@
 
                 <div class="cal-section-divider"></div>
 
+                <!-- Hidden fields submitted to server -->
+                <input type="hidden" name="NewAppointment.StartTime" id="StartTime" />
+                <input type="hidden" name="NewAppointment.EndTime"   id="EndTime" />
+
                 <div class="cal-form-row">
                     <div class="cal-form-group">
-                        <label class="cal-form-label">Start Time</label>
-                        <input name="NewAppointment.StartTime" type="datetime-local" class="cal-form-input" id="StartTime" />
+                        <label class="cal-form-label">Date</label>
+                        <input type="date" class="cal-form-input" id="ApptDate" />
                     </div>
                     <div class="cal-form-group">
-                        <label class="cal-form-label">End Time</label>
-                        <input name="NewAppointment.EndTime" type="datetime-local" class="cal-form-input" id="EndTime" />
+                        <label class="cal-form-label">Start Time</label>
+                        <select class="cal-form-select" id="ApptTime">
+                            <option value="">— Select time —</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="cal-form-group">
+                    <label class="cal-form-label">Duration</label>
+                    <div class="cal-duration-pills" id="durationPills">
+                        <button type="button" class="cal-duration-pill" data-minutes="15">15 min</button>
+                        <button type="button" class="cal-duration-pill active" data-minutes="30">30 min</button>
+                        <button type="button" class="cal-duration-pill" data-minutes="45">45 min</button>
+                        <button type="button" class="cal-duration-pill" data-minutes="60">1 hr</button>
+                        <button type="button" class="cal-duration-pill" data-minutes="90">1.5 hr</button>
+                        <button type="button" class="cal-duration-pill" data-minutes="120">2 hr</button>
                     </div>
                 </div>
 
                 <div class="cal-form-group">
                     <label class="cal-form-label">Doctor</label>
-                    <select name="NewAppointment.DoctorId" class="cal-form-select" id="DoctorId">
-                        <option value="">— Select time first —</option>
-                    </select>
+                    @if (userRole == "Doctor")
+                    {
+                        var doctorFirst = User.FindFirstValue("FirstName") ?? "";
+                        var doctorLast  = User.FindFirstValue("LastName")  ?? "";
+                        var doctorId    = User.FindFirstValue("UserId")    ?? "";
+                        <div class="cal-readonly-field">Dr. @doctorFirst @doctorLast</div>
+                        <input type="hidden" name="NewAppointment.DoctorId" id="DoctorId" value="@doctorId" />
+                    }
+                    else
+                    {
+                        <select name="NewAppointment.DoctorId" class="cal-form-select" id="DoctorId">
+                            <option value="">— Select time first —</option>
+                        </select>
+                    }
                     <span class="cal-doctor-note" id="doctorAvailabilityNote"></span>
                 </div>
 
@@ -295,6 +324,11 @@
             getAvailableDoctors:  '@Url.Action("GetAvailableDoctors",  "Appointments")',
             getAppointment:       '@Url.Action("GetAppointment",        "Appointments")',
             checkPatientConflict: '@Url.Action("CheckPatientConflict",  "Appointments")'
+        };
+        window.currentUser = {
+            role: '@(userRole ?? "")',
+            id:   '@(User.FindFirstValue("UserId") ?? "")',
+            name: 'Dr. @(User.FindFirstValue("FirstName") ?? "") @(User.FindFirstValue("LastName") ?? "")'
         };
     </script>
     <script src="~/js/calendar.js"></script>

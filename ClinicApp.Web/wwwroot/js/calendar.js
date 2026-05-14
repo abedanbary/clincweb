@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
         scrollToNow();
     });
 
+    populateTimeSelect();
+    applyDateMinima();
     setupCreateModal();
     setupEditModal();
     setupPatientToggle();
@@ -599,13 +601,70 @@ function setupCreateModal() {
     modal?.addEventListener('click', e => { if (e.target === modal) close(); });
 }
 
-// Set min datetime on the create form inputs to prevent selecting the past
+// Populate ApptTime select with 30-min slots from 07:00 to 20:30
+function populateTimeSelect() {
+    const sel = document.getElementById('ApptTime');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Select time —</option>';
+    for (let h = HOUR_START; h <= 20; h++) {
+        for (let m of [0, 30]) {
+            if (h === 20 && m === 30) continue;
+            const hh = String(h).padStart(2, '0');
+            const mm = String(m).padStart(2, '0');
+            const o = document.createElement('option');
+            o.value = `${hh}:${mm}`;
+            o.textContent = `${hh}:${mm}`;
+            sel.appendChild(o);
+        }
+    }
+}
+
+// Compute StartTime and EndTime hidden fields from ApptDate + ApptTime + selected duration
+function computeStartEnd() {
+    const dateVal = document.getElementById('ApptDate')?.value;
+    const timeVal = document.getElementById('ApptTime')?.value;
+    const activePill = document.querySelector('#durationPills .cal-duration-pill.active');
+    const minutes = activePill ? parseInt(activePill.dataset.minutes, 10) : 30;
+
+    const sHidden = document.getElementById('StartTime');
+    const eHidden = document.getElementById('EndTime');
+
+    if (!dateVal || !timeVal) {
+        if (sHidden) sHidden.value = '';
+        if (eHidden) eHidden.value = '';
+        return;
+    }
+
+    const start = new Date(`${dateVal}T${timeVal}`);
+    const end   = new Date(start.getTime() + minutes * 60000);
+    if (sHidden) sHidden.value = formatLocal(start);
+    if (eHidden) eHidden.value = formatLocal(end);
+}
+
+// Filter ApptTime options: disable past slots when date == today
 function applyDateMinima() {
-    const nowStr = formatLocal(new Date());
-    const s = document.getElementById('StartTime');
-    const e = document.getElementById('EndTime');
-    if (s) s.min = nowStr;
-    if (e) e.min = nowStr;
+    const dateEl = document.getElementById('ApptDate');
+    if (!dateEl) return;
+    const today = new Date().toISOString().split('T')[0];
+    dateEl.min = today;
+
+    const timeEl = document.getElementById('ApptTime');
+    if (!timeEl) return;
+    const selectedDate = dateEl.value;
+    const nowH = new Date().getHours();
+    const nowM = new Date().getMinutes();
+
+    Array.from(timeEl.options).forEach(opt => {
+        if (!opt.value) return;
+        const [h, m] = opt.value.split(':').map(Number);
+        opt.disabled = selectedDate === today && (h < nowH || (h === nowH && m <= nowM));
+    });
+
+    // If the currently selected slot is now disabled, reset it
+    if (timeEl.selectedOptions[0]?.disabled) {
+        timeEl.value = '';
+        computeStartEnd();
+    }
 }
 
 function openCreateModalWithDate(_dateStr, dateObj) {
@@ -614,14 +673,23 @@ function openCreateModalWithDate(_dateStr, dateObj) {
         return;
     }
     resetCreateForm();
-    applyDateMinima();
+
     const modal = document.getElementById('appointmentModal');
     if (!modal) return;
 
+    // Pre-fill date and round time to next 30-min slot
     const d = new Date(dateObj);
-    document.getElementById('StartTime').value = formatLocal(d);
-    d.setMinutes(d.getMinutes() + 30);
-    document.getElementById('EndTime').value = formatLocal(d);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const h = d.getHours();
+    const m = d.getMinutes() < 30 ? 0 : 30;
+    const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+
+    const dateEl = document.getElementById('ApptDate');
+    const timeEl = document.getElementById('ApptTime');
+    if (dateEl) dateEl.value = dateStr;
+    if (timeEl) timeEl.value = timeStr;
+    applyDateMinima();
+    computeStartEnd();
 
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -631,10 +699,26 @@ function resetCreateForm() {
     const existing = document.getElementById('existingPatientRadio');
     if (existing) { existing.checked = true; existing.dispatchEvent(new Event('change')); }
 
-    ['ExistingPatientId', 'DoctorId', 'StartTime', 'EndTime'].forEach(id => {
+    ['ExistingPatientId', 'StartTime', 'EndTime'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
+    // Don't reset DoctorId hidden field for doctors (it's always their own id)
+    if (window.currentUser?.role !== 'Doctor') {
+        const sel = document.getElementById('DoctorId');
+        if (sel) sel.value = '';
+    }
+
+    const dateEl = document.getElementById('ApptDate');
+    const timeEl = document.getElementById('ApptTime');
+    if (dateEl) dateEl.value = '';
+    if (timeEl) timeEl.value = '';
+
+    // Reset duration to 30 min default
+    document.querySelectorAll('#durationPills .cal-duration-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.minutes === '30');
+    });
+
     document.querySelectorAll('textarea[name^="NewAppointment"]').forEach(t => (t.value = ''));
     document.querySelectorAll('input[name^="NewAppointment.NewPatient"]').forEach(i => (i.value = ''));
 
@@ -658,23 +742,31 @@ function setupPatientToggle() {
 
 // ── Doctor availability ───────────────────────────────────────
 function setupDoctorAvailability() {
-    const startInput   = document.getElementById('StartTime');
-    const endInput     = document.getElementById('EndTime');
-    const patientSel   = document.getElementById('ExistingPatientId');
+    const dateEl     = document.getElementById('ApptDate');
+    const timeEl     = document.getElementById('ApptTime');
+    const patientSel = document.getElementById('ExistingPatientId');
 
     const onTimeChange = function () {
-        if (startInput?.value) {
-            const d = new Date(startInput.value);
-            d.setMinutes(d.getMinutes() + 30);
-            if (endInput && !endInput.value) endInput.value = formatLocal(d);
-        }
+        applyDateMinima();
+        computeStartEnd();
         loadAvailableDoctors();
         checkPatientConflict();
     };
 
-    startInput?.addEventListener('change', onTimeChange);
-    endInput?.addEventListener('change',   () => { loadAvailableDoctors(); checkPatientConflict(); });
+    dateEl?.addEventListener('change', onTimeChange);
+    timeEl?.addEventListener('change', onTimeChange);
     patientSel?.addEventListener('change', checkPatientConflict);
+
+    // Duration pills
+    document.getElementById('durationPills')?.addEventListener('click', e => {
+        const pill = e.target.closest('.cal-duration-pill');
+        if (!pill) return;
+        document.querySelectorAll('#durationPills .cal-duration-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        computeStartEnd();
+        loadAvailableDoctors();
+        checkPatientConflict();
+    });
 }
 
 function checkPatientConflict(excludeId = null) {
@@ -711,6 +803,9 @@ function checkPatientConflict(excludeId = null) {
 }
 
 function loadAvailableDoctors() {
+    // Doctors always book for themselves; no need to query availability
+    if (window.currentUser?.role === 'Doctor') return;
+
     const start = document.getElementById('StartTime')?.value;
     const end   = document.getElementById('EndTime')?.value;
     const sel   = document.getElementById('DoctorId');

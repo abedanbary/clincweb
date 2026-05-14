@@ -1015,6 +1015,50 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* ── Duration pills ─────────────────────────────────────────── */
+.cal-duration-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.cal-duration-pill {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1.5px solid var(--c-border);
+    background: var(--c-bg);
+    color: var(--c-text-mid);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.cal-duration-pill:hover {
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+}
+
+.cal-duration-pill.active {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* ── Readonly doctor field ──────────────────────────────────── */
+.cal-readonly-field {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--c-border);
+    border-radius: 8px;
+    background: var(--c-bg);
+    color: var(--c-text-mid);
+    font-size: 13px;
+    font-weight: 500;
+}
+
 /* ── Modal buttons ──────────────────────────────────────────── */
 .cal-btn {
     display: inline-flex;

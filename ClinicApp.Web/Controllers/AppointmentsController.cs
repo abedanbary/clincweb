@@ -299,6 +299,13 @@ namespace ClinicApp.Web.Controllers
 
             var clinicIdForCreate = GetCurrentClinicId();
             var currentUserIdForCreate = GetCurrentUserId();
+            var userRoleForCreate = GetCurrentUserRole();
+
+            // Doctors can only book for themselves
+            if (userRoleForCreate == UserRole.Doctor)
+            {
+                appointmentModel.DoctorId = currentUserIdForCreate;
+            }
 
             int patientId;
 
