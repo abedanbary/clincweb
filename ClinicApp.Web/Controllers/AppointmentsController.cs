@@ -239,6 +239,33 @@ namespace ClinicApp.Web.Controllers
             return Json(patients);
         }
 
+        // API: Check if a patient has a conflicting appointment at the given time
+        [HttpGet]
+        public async Task<IActionResult> CheckPatientConflict(int patientId, string startTime, string endTime, int? excludeId = null)
+        {
+            if (!DateTime.TryParse(startTime, out var start) || !DateTime.TryParse(endTime, out var end))
+                return Json(new { hasConflict = false });
+
+            var startUtc = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+            var endUtc   = DateTime.SpecifyKind(end,   DateTimeKind.Utc);
+
+            var conflict = await _context.Appointments
+                .Where(a => a.PatientId == patientId &&
+                            a.StartTime < endUtc &&
+                            a.EndTime   > startUtc &&
+                            a.Status    != AppointmentStatus.Cancelled &&
+                            (excludeId == null || a.Id != excludeId))
+                .Select(a => new { a.StartTime, a.EndTime })
+                .FirstOrDefaultAsync();
+
+            if (conflict == null)
+                return Json(new { hasConflict = false });
+
+            var localStart = conflict.StartTime.ToLocalTime().ToString("ddd dd MMM, HH:mm");
+            var localEnd   = conflict.EndTime.ToLocalTime().ToString("HH:mm");
+            return Json(new { hasConflict = true, message = $"Patient already has an appointment {localStart}–{localEnd}" });
+        }
+
         // POST: Appointments/Create
         [HttpPost]
         [ValidateAntiForgeryToken]

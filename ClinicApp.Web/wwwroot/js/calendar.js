@@ -581,6 +581,9 @@ function resetCreateForm() {
 
     const note = document.getElementById('doctorAvailabilityNote');
     if (note) { note.textContent = ''; note.className = 'cal-doctor-note'; }
+
+    const patNote = document.getElementById('patientConflictNote');
+    if (patNote) { patNote.textContent = ''; patNote.className = 'cal-doctor-note'; }
 }
 
 // ── Patient toggle ────────────────────────────────────────────
@@ -596,18 +599,56 @@ function setupPatientToggle() {
 
 // ── Doctor availability ───────────────────────────────────────
 function setupDoctorAvailability() {
-    const startInput = document.getElementById('StartTime');
-    const endInput   = document.getElementById('EndTime');
+    const startInput   = document.getElementById('StartTime');
+    const endInput     = document.getElementById('EndTime');
+    const patientSel   = document.getElementById('ExistingPatientId');
 
-    startInput?.addEventListener('change', function () {
-        if (this.value) {
-            const d = new Date(this.value);
+    const onTimeChange = function () {
+        if (startInput?.value) {
+            const d = new Date(startInput.value);
             d.setMinutes(d.getMinutes() + 30);
-            if (endInput) endInput.value = formatLocal(d);
+            if (endInput && !endInput.value) endInput.value = formatLocal(d);
         }
         loadAvailableDoctors();
-    });
-    endInput?.addEventListener('change', loadAvailableDoctors);
+        checkPatientConflict();
+    };
+
+    startInput?.addEventListener('change', onTimeChange);
+    endInput?.addEventListener('change',   () => { loadAvailableDoctors(); checkPatientConflict(); });
+    patientSel?.addEventListener('change', checkPatientConflict);
+}
+
+function checkPatientConflict(excludeId = null) {
+    const patientId = document.getElementById('ExistingPatientId')?.value;
+    const start     = document.getElementById('StartTime')?.value;
+    const end       = document.getElementById('EndTime')?.value;
+    const note      = document.getElementById('patientConflictNote');
+
+    if (!note) return;
+
+    // Only check for existing patient mode
+    const isNew = document.getElementById('newPatientRadio')?.checked;
+    if (isNew || !patientId || !start || !end) {
+        note.textContent = '';
+        note.className   = 'cal-doctor-note';
+        return;
+    }
+
+    let url = `${window.appEndpoints.checkPatientConflict}?patientId=${patientId}&startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`;
+    if (excludeId) url += `&excludeId=${excludeId}`;
+
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            if (data.hasConflict) {
+                note.textContent = `⚠ ${data.message}`;
+                note.className   = 'cal-doctor-note error';
+            } else {
+                note.textContent = '✓ Patient is free at this time';
+                note.className   = 'cal-doctor-note success';
+            }
+        })
+        .catch(() => { note.textContent = ''; note.className = 'cal-doctor-note'; });
 }
 
 function loadAvailableDoctors() {

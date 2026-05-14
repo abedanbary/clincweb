@@ -208,6 +208,7 @@
                                 class="cal-form-select" id="ExistingPatientId">
                             <option value="">— Select Patient —</option>
                         </select>
+                        <span class="cal-doctor-note" id="patientConflictNote"></span>
                     </div>
                 </div>
 
@@ -290,8 +291,9 @@
 @section Scripts {
     <script>
         window.appEndpoints = {
-            getAvailableDoctors: '@Url.Action("GetAvailableDoctors", "Appointments")',
-            getAppointment:      '@Url.Action("GetAppointment",      "Appointments")'
+            getAvailableDoctors:  '@Url.Action("GetAvailableDoctors",  "Appointments")',
+            getAppointment:       '@Url.Action("GetAppointment",        "Appointments")',
+            checkPatientConflict: '@Url.Action("CheckPatientConflict",  "Appointments")'
         };
     </script>
     <script src="~/js/calendar.js"></script>
