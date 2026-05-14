@@ -92,6 +92,31 @@ namespace ClinicApp.Web.Controllers
             return View(vm);
         }
 
+        // GET: /Payments/GetPatientAppointments?patientId=5
+        [HttpGet]
+        [Authorize(Roles = "Manager")]
+        public async Task<IActionResult> GetPatientAppointments(int patientId)
+        {
+            var clinicId = GetCurrentClinicId();
+            var appointments = await _context.Appointments
+                .Include(a => a.Doctor)
+                .Where(a => a.PatientId == patientId && a.ClinicId == clinicId
+                         && a.Status != AppointmentStatus.Cancelled)
+                .OrderByDescending(a => a.StartTime)
+                .Select(a => new
+                {
+                    value = a.Id,
+                    text = $"{a.StartTime.ToLocalTime():MMM dd, yyyy HH:mm} — Dr. {a.Doctor.FirstName} {a.Doctor.LastName}",
+                    doctorId = a.DoctorId,
+                    doctorName = $"Dr. {a.Doctor.FirstName} {a.Doctor.LastName}",
+                    alreadyPaid = _context.Payments.Any(p =>
+                        p.AppointmentId == a.Id && p.Status == PaymentStatus.Paid)
+                })
+                .ToListAsync();
+
+            return Json(appointments);
+        }
+
         // GET: /Payments/GetPatientTreatments?patientId=5
         [HttpGet]
         [Authorize(Roles = "Manager")]
@@ -154,6 +179,17 @@ namespace ClinicApp.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            if (input.AppointmentId.HasValue && input.AppointmentId > 0)
+            {
+                var alreadyPaid = await _context.Payments.AnyAsync(p =>
+                    p.AppointmentId == input.AppointmentId && p.Status == PaymentStatus.Paid);
+                if (alreadyPaid)
+                {
+                    TempData["Error"] = "This appointment has already been paid.";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
             var lastInvoice = await _context.Payments
                 .Where(p => p.ClinicId == clinicId)
                 .MaxAsync(p => (int?)p.InvoiceNumber) ?? 1000;
@@ -163,6 +199,7 @@ namespace ClinicApp.Web.Controllers
                 InvoiceNumber = lastInvoice + 1,
                 PatientId = input.PatientId,
                 DoctorId = input.DoctorId,
+                AppointmentId = input.AppointmentId == 0 ? null : input.AppointmentId,
                 TreatmentId = input.TreatmentId == 0 ? null : input.TreatmentId,
                 Amount = input.Amount,
                 Method = input.Method,

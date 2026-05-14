@@ -86,6 +86,12 @@ namespace ClinicApp.Web.Data
                 entity.HasIndex(a => new { a.DoctorId, a.StartTime });
             });
 
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.Appointment)
+                .WithMany()
+                .HasForeignKey(p => p.AppointmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             modelBuilder.Entity<DoctorSchedule>(entity =>
             {
                 entity.HasOne(s => s.Doctor)

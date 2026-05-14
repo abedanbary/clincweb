@@ -208,7 +208,7 @@
                     <div class="pay-form-row">
                         <div class="pay-form-group">
                             <label class="pay-form-label">Patient *</label>
-                            <select name="NewPayment.PatientId" id="createPatientId" class="pay-form-select" required onchange="loadTreatments(this.value, 'createTreatmentId', 'createDoctorId', 'createAmount')">
+                            <select name="NewPayment.PatientId" id="createPatientId" class="pay-form-select" required onchange="onCreatePatientChange(this.value)">
                                 <option value="">Select patient...</option>
                                 @foreach (var p in Model.Patients)
                                 {
@@ -225,7 +225,15 @@
                                     <option value="@d.Value">@d.Text</option>
                                 }
                             </select>
+                            <input type="text" id="createDoctorName" class="pay-form-input" placeholder="Auto-filled from appointment" readonly style="background:#f5f5f5;cursor:not-allowed;display:none;" />
                         </div>
+                    </div>
+                    <div class="pay-form-group">
+                        <label class="pay-form-label">Appointment (optional)</label>
+                        <select name="NewPayment.AppointmentId" id="createAppointmentId" class="pay-form-select" onchange="onAppointmentChange(this)">
+                            <option value="">No specific appointment</option>
+                        </select>
+                        <span id="createAlreadyPaidWarning" style="color:#c0392b;font-size:0.85em;display:none;">This appointment is already paid.</span>
                     </div>
                     <div class="pay-form-group">
                         <label class="pay-form-label">Treatment (optional)</label>
@@ -380,6 +388,73 @@
         }
         function closeCreateModal() {
             document.getElementById('createModal').style.display = 'none';
+        }
+
+        function onCreatePatientChange(patientId) {
+            document.getElementById('createAppointmentId').innerHTML = '<option value="">No specific appointment</option>';
+            document.getElementById('createDoctorId').value = '';
+            document.getElementById('createDoctorName').value = '';
+            document.getElementById('createAlreadyPaidWarning').style.display = 'none';
+            showDoctorDropdown(true);
+            loadTreatments(patientId, 'createTreatmentId', null, 'createAmount');
+            if (!patientId) return;
+            fetch(`/Payments/GetPatientAppointments?patientId=${patientId}`)
+                .then(r => r.json())
+                .then(appts => {
+                    const sel = document.getElementById('createAppointmentId');
+                    appts.forEach(a => {
+                        const opt = document.createElement('option');
+                        opt.value = a.value;
+                        opt.text = a.alreadyPaid ? a.text + ' \u2714 PAID' : a.text;
+                        opt.dataset.doctorId = a.doctorId;
+                        opt.dataset.doctorName = a.doctorName;
+                        opt.dataset.alreadyPaid = a.alreadyPaid;
+                        if (a.alreadyPaid) opt.style.color = '#c0392b';
+                        sel.appendChild(opt);
+                    });
+                });
+        }
+
+        function showDoctorDropdown(show) {
+            document.getElementById('createDoctorId').style.display = show ? '' : 'none';
+            document.getElementById('createDoctorName').style.display = show ? 'none' : '';
+            document.getElementById('createDoctorId').required = show;
+        }
+
+        function onAppointmentChange(sel) {
+            const opt = sel.options[sel.selectedIndex];
+            const warning = document.getElementById('createAlreadyPaidWarning');
+            const submitBtn = document.querySelector('#createModal button[type="submit"]');
+            if (opt && opt.dataset.doctorId) {
+                // Appointment selected: lock doctor to the appointment's doctor
+                showDoctorDropdown(false);
+                document.getElementById('createDoctorName').value = opt.dataset.doctorName;
+                // Add hidden input so the doctorId is still submitted
+                let hiddenDoc = document.getElementById('createDoctorIdHidden');
+                if (!hiddenDoc) {
+                    hiddenDoc = document.createElement('input');
+                    hiddenDoc.type = 'hidden';
+                    hiddenDoc.name = 'NewPayment.DoctorId';
+                    hiddenDoc.id = 'createDoctorIdHidden';
+                    sel.closest('form').appendChild(hiddenDoc);
+                }
+                hiddenDoc.value = opt.dataset.doctorId;
+                if (opt.dataset.alreadyPaid === 'true') {
+                    warning.style.display = 'inline';
+                    submitBtn.disabled = true;
+                } else {
+                    warning.style.display = 'none';
+                    submitBtn.disabled = false;
+                }
+            } else {
+                // No appointment: show doctor dropdown
+                showDoctorDropdown(true);
+                document.getElementById('createDoctorName').value = '';
+                const hiddenDoc = document.getElementById('createDoctorIdHidden');
+                if (hiddenDoc) hiddenDoc.remove();
+                warning.style.display = 'none';
+                submitBtn.disabled = false;
+            }
         }
         function openEditModal(id) {
             fetch(`/Payments/GetPayment/${id}`)

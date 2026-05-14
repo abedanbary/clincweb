@@ -34,6 +34,8 @@ namespace ClinicApp.Web.ViewModels
         [Required]
         public int DoctorId { get; set; }
 
+        public int? AppointmentId { get; set; }
+
         public int? TreatmentId { get; set; }
 
         [Required]

@@ -25,6 +25,9 @@ namespace ClinicApp.Web.Models
         public int? TreatmentId { get; set; }
         public Treatment? Treatment { get; set; }
 
+        public int? AppointmentId { get; set; }
+        public Appointment? Appointment { get; set; }
+
         public int ClinicId { get; set; }
         public Clinic Clinic { get; set; } = null!;
     }
