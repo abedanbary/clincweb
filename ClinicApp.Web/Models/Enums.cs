@@ -1,5 +1,19 @@
 namespace ClinicApp.Web.Models
 {
+    public enum PatientFileCategory
+    {
+        IntraoralPhoto = 0,
+        PanoramicXray = 1,
+        BitewingXray = 2,
+        PeriapicalXray = 3,
+        CbctScan = 4,
+        IntraoralScan = 5,
+        MedicalReport = 6,
+        Prescription = 7,
+        Invoice = 8,
+        Other = 9
+    }
+
     public enum PaymentMethod
     {
         Cash = 1,

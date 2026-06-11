@@ -29,10 +29,10 @@ namespace ClinicApp.Web.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Patient → Files relationship
+            // Patient → PatientFiles relationship
             modelBuilder.Entity<PatientFile>()
                 .HasOne(f => f.Patient)
-                .WithMany(p => p.Files)
+                .WithMany(p => p.PatientFiles)
                 .HasForeignKey(f => f.PatientId)
                 .OnDelete(DeleteBehavior.Cascade);
 

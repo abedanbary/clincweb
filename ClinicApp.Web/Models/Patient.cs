@@ -30,7 +30,7 @@ namespace ClinicApp.Web.Models
      public ICollection<TreatmentPlan> TreatmentPlans { get; set; } = new List<TreatmentPlan>();
      public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
      [ValidateNever]
-     public ICollection<PatientFile> Files { get; set; } = new List<PatientFile>();
+     public ICollection<PatientFile> PatientFiles { get; set; } = new List<PatientFile>();
     }
 }
     

@@ -10,10 +10,18 @@ public class PatientFile
     [ValidateNever]
     public Patient Patient { get; set; } = null!;
 
-    public string OriginalFileName { get; set; } = null!;
-    public string ObjectPath { get; set; } = null!;
-    public string ContentType { get; set; } = null!;
+    public PatientFileCategory Category { get; set; }
+
+    public string OriginalFileName { get; set; } = string.Empty;
+    public string StoredFileName { get; set; } = string.Empty;
+    public string ObjectPath { get; set; } = string.Empty;
+    public string ContentType { get; set; } = string.Empty;
+    public string Extension { get; set; } = string.Empty;
+
     public long Size { get; set; }
+
     public DateTime UploadedAtUtc { get; set; }
-    public string? Description { get; set; }
+    public DateTime? DeletedAtUtc { get; set; }
+
+    public string? Notes { get; set; }
 }

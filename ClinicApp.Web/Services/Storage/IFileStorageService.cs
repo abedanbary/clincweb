@@ -19,6 +19,11 @@ public interface IFileStorageService
     Task<bool> ExistsAsync(
         string objectPath,
         CancellationToken cancellationToken = default);
+
+    Task StreamToAsync(
+        string objectPath,
+        Stream destination,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class UploadedFileResult

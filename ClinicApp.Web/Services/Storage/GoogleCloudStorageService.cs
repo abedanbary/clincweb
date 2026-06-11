@@ -11,32 +11,43 @@ public sealed class GoogleCloudStorageService : IFileStorageService
     private readonly string _bucketName;
     private readonly long _maxFileSizeBytes;
 
+    // Extensions accepted regardless of content type (browsers send generic types for 3D files).
+    private static readonly HashSet<string> ThreeDExtensions = new(StringComparer.OrdinalIgnoreCase)
+        { ".stl", ".obj", ".ply", ".glb", ".gltf" };
+
+    // All extensions this service will accept.
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+        { ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".stl", ".obj", ".ply", ".glb", ".gltf" };
+
+    // Content types required for non-3D files.
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
-        "application/pdf", "image/jpeg", "image/png", "image/webp"
-    };
-
-    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".pdf", ".jpg", ".jpeg", ".png", ".webp"
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "model/stl",
+        "model/obj",
+        "model/ply",
+        "model/gltf-binary",
+        "model/gltf+json",
+        "application/octet-stream", // generic browser fallback for binary files
+        "text/plain"                // some browsers send .stl/.obj as text/plain
     };
 
     public GoogleCloudStorageService()
     {
         var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON")
             ?? throw new InvalidOperationException(
-                "GOOGLE_CREDENTIALS_JSON environment variable is not set. " +
-                "Provide the service account JSON as the value of this variable.");
+                "GOOGLE_CREDENTIALS_JSON environment variable is not set.");
 
         _bucketName = Environment.GetEnvironmentVariable("GOOGLE_BUCKET_NAME")
             ?? throw new InvalidOperationException(
-                "GOOGLE_BUCKET_NAME environment variable is not set. " +
-                "Provide the name of your Google Cloud Storage bucket.");
+                "GOOGLE_BUCKET_NAME environment variable is not set.");
 
-        var maxMb = int.TryParse(Environment.GetEnvironmentVariable("MAX_UPLOAD_FILE_SIZE_MB"), out var mb) ? mb : 10;
+        var maxMb = int.TryParse(Environment.GetEnvironmentVariable("MAX_UPLOAD_FILE_SIZE_MB"), out var mb) ? mb : 50;
         _maxFileSizeBytes = maxMb * 1024L * 1024L;
 
-        // Suppress obsolete warnings — these APIs still function correctly in v4.x
 #pragma warning disable CS0618
         var credential = GoogleCredential.FromJson(credentialsJson);
         _storageClient = StorageClient.Create(credential);
@@ -58,15 +69,22 @@ public sealed class GoogleCloudStorageService : IFileStorageService
             throw new ArgumentException(
                 $"File size ({file.Length / 1024 / 1024} MB) exceeds the maximum allowed size of {_maxFileSizeBytes / 1024 / 1024} MB.");
 
-        var contentType = (file.ContentType ?? string.Empty).Split(';')[0].Trim().ToLowerInvariant();
-        if (!AllowedContentTypes.Contains(contentType))
-            throw new ArgumentException(
-                $"File type '{contentType}' is not allowed. Allowed types: application/pdf, image/jpeg, image/png, image/webp.");
-
-        var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant() ?? string.Empty;
+        var extension = (Path.GetExtension(file.FileName) ?? string.Empty).ToLowerInvariant();
         if (!AllowedExtensions.Contains(extension))
             throw new ArgumentException(
-                $"File extension '{extension}' is not allowed. Allowed extensions: .pdf, .jpg, .jpeg, .png, .webp.");
+                $"File extension '{extension}' is not allowed.");
+
+        var browserContentType = (file.ContentType ?? string.Empty).Split(';')[0].Trim().ToLowerInvariant();
+
+        // For non-3D files, the browser content type must also be valid.
+        if (!ThreeDExtensions.Contains(extension) && !AllowedContentTypes.Contains(browserContentType))
+            throw new ArgumentException(
+                $"File type '{browserContentType}' is not allowed for extension '{extension}'.");
+
+        // Use canonical MIME type for 3D files when the browser sends a generic type.
+        var effectiveContentType = ThreeDExtensions.Contains(extension)
+            ? (PatientFileHelper.CanonicalMimeForThreeD(extension) ?? browserContentType)
+            : browserContentType;
 
         var safeFolder = NormalizeFolder(folder);
         var guid = Guid.NewGuid().ToString("N");
@@ -78,7 +96,7 @@ public sealed class GoogleCloudStorageService : IFileStorageService
         await _storageClient.UploadObjectAsync(
             _bucketName,
             objectPath,
-            contentType,
+            effectiveContentType,
             stream,
             cancellationToken: cancellationToken);
 
@@ -87,7 +105,7 @@ public sealed class GoogleCloudStorageService : IFileStorageService
             OriginalFileName = Path.GetFileName(file.FileName),
             StoredFileName = storedFileName,
             ObjectPath = objectPath,
-            ContentType = contentType,
+            ContentType = effectiveContentType,
             Size = file.Length,
             UploadedAtUtc = now
         };
@@ -101,14 +119,12 @@ public sealed class GoogleCloudStorageService : IFileStorageService
         if (string.IsNullOrWhiteSpace(objectPath))
             throw new ArgumentException("Object path must not be empty.", nameof(objectPath));
 
-        var duration = expiration ?? TimeSpan.FromHours(1);
-
         var template = UrlSigner.RequestTemplate
             .FromBucket(_bucketName)
             .WithObjectName(objectPath)
             .WithHttpMethod(HttpMethod.Get);
 
-        var options = UrlSigner.Options.FromDuration(duration);
+        var options = UrlSigner.Options.FromDuration(expiration ?? TimeSpan.FromHours(1));
 
         return await _urlSigner.SignAsync(template, options, cancellationToken);
     }
@@ -135,6 +151,21 @@ public sealed class GoogleCloudStorageService : IFileStorageService
         {
             return false;
         }
+    }
+
+    public async Task StreamToAsync(
+        string objectPath,
+        Stream destination,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(objectPath))
+            throw new ArgumentException("Object path must not be empty.", nameof(objectPath));
+
+        await _storageClient.DownloadObjectAsync(
+            _bucketName,
+            objectPath,
+            destination,
+            cancellationToken: cancellationToken);
     }
 
     private static string NormalizeFolder(string folder)

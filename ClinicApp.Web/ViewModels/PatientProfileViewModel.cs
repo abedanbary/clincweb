@@ -21,7 +21,5 @@ namespace ClinicApp.Web.ViewModels
 
         // خريطة الأسنان (ToothNumber → {Status, Notes, UpdatedAt})
         public List<PatientTooth> Teeth { get; set; } = new();
-
-        public List<PatientFile> Files { get; set; } = new();
     }
 }

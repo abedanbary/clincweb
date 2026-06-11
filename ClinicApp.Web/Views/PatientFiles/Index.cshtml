@@ -1,0 +1,259 @@
+@using ClinicApp.Web.ViewModels
+@using ClinicApp.Web.Models
+@using ClinicApp.Web.Services.Storage
+@model PatientFilesViewModel
+
+@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = $"Files — {Model.PatientFirstName} {Model.PatientLastName}";
+
+    string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / 1024.0 / 1024.0:F1} MB";
+    }
+}
+
+<style>
+.pf-page { padding: 1.5rem; max-width: 960px; margin: 0 auto; }
+.pf-breadcrumb { font-size: .85rem; color: #6b7280; margin-bottom: 1.2rem; }
+.pf-breadcrumb a { color: #6366f1; text-decoration: none; }
+.pf-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
+.pf-card-header { padding: .9rem 1.2rem; border-bottom: 1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between; }
+.pf-card-title { font-size: 1rem; font-weight: 600; color: #111827; margin:0; }
+.pf-upload-form { padding: 1.2rem; display:grid; gap:.75rem; }
+.pf-row { display:grid; grid-template-columns: 1fr 1fr; gap:.75rem; }
+.pf-field label { display:block; font-size:.8rem; font-weight:500; color:#374151; margin-bottom:.3rem; }
+.pf-field input, .pf-field select, .pf-field textarea {
+    width:100%; padding:.5rem .75rem; border:1px solid #d1d5db; border-radius:8px;
+    font-size:.875rem; color:#111827; background:#fff; box-sizing:border-box;
+}
+.pf-field input[type=file] { padding:.4rem .5rem; }
+.pf-field select { cursor:pointer; }
+.pf-error { background:#fef2f2; border:1px solid #fca5a5; border-radius:8px; color:#dc2626; font-size:.85rem; padding:.75rem 1rem; }
+.btn-upload { background:#6366f1; color:#fff; border:none; border-radius:8px; padding:.55rem 1.2rem; font-size:.875rem; font-weight:500; cursor:pointer; }
+.btn-upload:hover { background:#4f46e5; }
+.file-table { width:100%; border-collapse:collapse; }
+.file-table th { font-size:.75rem; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.05em; padding:.6rem 1rem; text-align:left; border-bottom:1px solid #e5e7eb; }
+.file-table td { padding:.75rem 1rem; border-bottom:1px solid #f3f4f6; vertical-align:middle; font-size:.875rem; }
+.file-table tr:last-child td { border-bottom:none; }
+.file-table tr:hover td { background:#f9fafb; }
+.badge { display:inline-block; padding:.2rem .55rem; border-radius:999px; font-size:.72rem; font-weight:500; }
+.badge-img   { background:#dcfce7; color:#16a34a; }
+.badge-xray  { background:#fef3c7; color:#d97706; }
+.badge-scan  { background:#dbeafe; color:#2563eb; }
+.badge-doc   { background:#f3e8ff; color:#7c3aed; }
+.badge-other { background:#f1f5f9; color:#64748b; }
+.file-name-cell { max-width:220px; }
+.file-name-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; font-weight:500; color:#111827; }
+.file-name-notes { font-size:.75rem; color:#9ca3af; margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.btn-action { display:inline-flex; align-items:center; gap:.3rem; padding:.3rem .65rem; border-radius:6px; font-size:.78rem; font-weight:500; cursor:pointer; border:1px solid; text-decoration:none; }
+.btn-view    { background:#eff6ff; color:#2563eb; border-color:#bfdbfe; }
+.btn-view:hover { background:#dbeafe; }
+.btn-dl      { background:#f0fdf4; color:#16a34a; border-color:#bbf7d0; }
+.btn-dl:hover { background:#dcfce7; }
+.btn-3d      { background:#faf5ff; color:#7c3aed; border-color:#e9d5ff; }
+.btn-3d:hover { background:#f3e8ff; }
+.btn-del     { background:#fff1f2; color:#e11d48; border-color:#fecdd3; }
+.btn-del:hover { background:#ffe4e6; }
+.actions-cell { white-space:nowrap; }
+.empty-state { text-align:center; padding:3rem 1rem; color:#9ca3af; font-size:.9rem; }
+/* Image preview modal */
+.img-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:1000; align-items:center; justify-content:center; }
+.img-modal-overlay.active { display:flex; }
+.img-modal-inner { position:relative; max-width:90vw; max-height:90vh; }
+.img-modal-inner img { max-width:90vw; max-height:85vh; object-fit:contain; border-radius:8px; }
+.img-modal-close { position:absolute; top:-12px; right:-12px; background:#fff; border:none; border-radius:50%; width:28px; height:28px; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+</style>
+
+<div class="pf-page">
+
+    <div class="pf-breadcrumb">
+        <a asp-controller="Patients" asp-action="Index">Patients</a> /
+        <a asp-controller="Patients" asp-action="Profile" asp-route-id="@Model.PatientId">@Model.PatientFirstName @Model.PatientLastName</a> /
+        Files
+    </div>
+
+    <!-- Upload Card -->
+    <div class="pf-card">
+        <div class="pf-card-header">
+            <h2 class="pf-card-title">Upload New File</h2>
+        </div>
+        <form asp-controller="PatientFiles" asp-action="Upload" asp-route-patientId="@Model.PatientId"
+              method="post" enctype="multipart/form-data" class="pf-upload-form">
+            @Html.AntiForgeryToken()
+            @if (!string.IsNullOrEmpty(Model.UploadError))
+            {
+                <div class="pf-error">@Model.UploadError</div>
+            }
+            <div class="pf-row">
+                <div class="pf-field">
+                    <label>File <span style="color:#9ca3af">(PDF, Images, STL, OBJ, PLY, GLB, GLTF — max 50 MB)</span></label>
+                    <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.stl,.obj,.ply,.glb,.gltf" required />
+                </div>
+                <div class="pf-field">
+                    <label>Category</label>
+                    <select name="category">
+                        <option value="0">Intraoral Photo — صورة داخل الفم</option>
+                        <option value="1">Panoramic X-ray — أشعة بانورامية</option>
+                        <option value="2">Bitewing X-ray — أشعة Bitewing</option>
+                        <option value="3">Periapical X-ray — أشعة حول الجذر</option>
+                        <option value="4">CBCT Scan — تصوير ثلاثي الأبعاد CBCT</option>
+                        <option value="5">Intraoral Scan — نموذج ثلاثي الأبعاد</option>
+                        <option value="6">Medical Report — تقرير طبي</option>
+                        <option value="7">Prescription — وصفة علاج</option>
+                        <option value="8">Invoice — فاتورة</option>
+                        <option value="9">Other — أخرى</option>
+                    </select>
+                </div>
+            </div>
+            <div class="pf-field">
+                <label>Notes (optional)</label>
+                <input type="text" name="notes" maxlength="200" placeholder="e.g. Pre-treatment panoramic, Right side bitewing..." />
+            </div>
+            <div>
+                <button type="submit" class="btn-upload">Upload File</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Files List Card -->
+    <div class="pf-card">
+        <div class="pf-card-header">
+            <h2 class="pf-card-title">Uploaded Files</h2>
+            <span style="font-size:.82rem;color:#6b7280;">@Model.Files.Count file(s)</span>
+        </div>
+
+        @if (!Model.Files.Any())
+        {
+            <div class="empty-state">No files uploaded yet for this patient.</div>
+        }
+        else
+        {
+            <table class="file-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Category</th>
+                        <th>Size</th>
+                        <th>Uploaded</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in Model.Files)
+                    {
+                        var isImage = PatientFileHelper.IsImage(f.Extension);
+                        var isPdf = PatientFileHelper.IsPdf(f.Extension);
+                        var is3D = PatientFileHelper.IsThreeDModel(f.Extension);
+
+                        var badgeClass = f.Category switch
+                        {
+                            PatientFileCategory.IntraoralPhoto => "badge-img",
+                            PatientFileCategory.PanoramicXray or PatientFileCategory.BitewingXray or PatientFileCategory.PeriapicalXray => "badge-xray",
+                            PatientFileCategory.CbctScan or PatientFileCategory.IntraoralScan => "badge-scan",
+                            PatientFileCategory.MedicalReport or PatientFileCategory.Prescription or PatientFileCategory.Invoice => "badge-doc",
+                            _ => "badge-other"
+                        };
+
+                        <tr>
+                            <td class="file-name-cell">
+                                <span class="file-name-text" title="@f.OriginalFileName">@f.OriginalFileName</span>
+                                @if (!string.IsNullOrEmpty(f.Notes))
+                                {
+                                    <span class="file-name-notes" title="@f.Notes">@f.Notes</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @badgeClass">@PatientFileHelper.GetDisplayName(f.Category)</span>
+                            </td>
+                            <td style="color:#6b7280;">@FormatSize(f.Size)</td>
+                            <td style="color:#6b7280;white-space:nowrap;">@f.UploadedAtUtc.ToString("MMM dd, yyyy")</td>
+                            <td class="actions-cell">
+                                @if (isImage)
+                                {
+                                    <button onclick="previewImage(@f.Id)" class="btn-action btn-view">Preview</button>
+                                }
+                                @if (isPdf)
+                                {
+                                    <button onclick="openFile(@f.Id)" class="btn-action btn-view">Open PDF</button>
+                                }
+                                @if (is3D)
+                                {
+                                    <a href="/patients/@Model.PatientId/files/@f.Id/viewer" class="btn-action btn-3d">3D View</a>
+                                }
+                                <button onclick="downloadFile(@f.Id, '@Uri.EscapeDataString(f.OriginalFileName)')" class="btn-action btn-dl">Download</button>
+                                <form asp-controller="PatientFiles" asp-action="Delete"
+                                      asp-route-patientId="@Model.PatientId" asp-route-fileId="@f.Id"
+                                      method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-action btn-del"
+                                            onclick="return confirm('Delete @Html.Raw(f.OriginalFileName.Replace("'", "\\'"))? This cannot be undone.')">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<!-- Image preview modal -->
+<div id="imgModal" class="img-modal-overlay" onclick="closeImgModal()">
+    <div class="img-modal-inner" onclick="event.stopPropagation()">
+        <button class="img-modal-close" onclick="closeImgModal()">&times;</button>
+        <img id="imgModalSrc" src="" alt="Preview" />
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const baseUrl = '/patients/@Model.PatientId/files';
+
+    async function getSignedUrl(fileId) {
+        const r = await fetch(`${baseUrl}/${fileId}/signed-url`);
+        if (!r.ok) throw new Error('Could not get signed URL');
+        const data = await r.json();
+        return data.url;
+    }
+
+    async function previewImage(fileId) {
+        try {
+            const url = await getSignedUrl(fileId);
+            document.getElementById('imgModalSrc').src = url;
+            document.getElementById('imgModal').classList.add('active');
+        } catch { alert('Could not load image preview.'); }
+    }
+
+    function closeImgModal() {
+        document.getElementById('imgModal').classList.remove('active');
+        document.getElementById('imgModalSrc').src = '';
+    }
+
+    async function openFile(fileId) {
+        try {
+            const url = await getSignedUrl(fileId);
+            window.open(url, '_blank');
+        } catch { alert('Could not open file.'); }
+    }
+
+    async function downloadFile(fileId, fileName) {
+        try {
+            const url = await getSignedUrl(fileId);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = decodeURIComponent(fileName);
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch { alert('Could not download file.'); }
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeImgModal(); });
+</script>
+}
