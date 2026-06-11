@@ -1,8 +1,10 @@
 using ClinicApp.Web.Data;
 using ClinicApp.Web.Models;
 using ClinicApp.Web.ViewModels;
+using ClinicApp.Web.Services.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClinicApp.Web.Controllers
@@ -11,10 +13,12 @@ namespace ClinicApp.Web.Controllers
     public class PatientsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IFileStorageService _storage;
 
-        public PatientsController(ApplicationDbContext context)
+        public PatientsController(ApplicationDbContext context, IFileStorageService storage)
         {
             _context = context;
+            _storage = storage;
         }
 
         private int GetCurrentClinicId()
@@ -156,6 +160,7 @@ namespace ClinicApp.Web.Controllers
 
             var patient = await _context.Patients
                 .Include(p => p.Teeth)
+                .Include(p => p.Files)
                 .FirstOrDefaultAsync(p => p.Id == id && p.ClinicId == clinicId);
 
             if (patient == null)
@@ -176,11 +181,98 @@ namespace ClinicApp.Web.Controllers
                 MedicalNotes = patient.MedicalNotes,
                 Allergies = patient.Allergies,
                 ChronicDiseases = patient.ChronicDiseases,
-                Teeth = patient.Teeth.ToList()
+                Teeth = patient.Teeth.ToList(),
+                Files = patient.Files.OrderByDescending(f => f.UploadedAtUtc).ToList()
             };
 
             ViewData["Title"] = $"{patient.FirstName} {patient.LastName} - Profile";
             return View(vm);
+        }
+
+        // POST: /Patients/UploadFile
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Doctor")]
+        [EnableRateLimiting("upload-limit")]
+        public async Task<IActionResult> UploadFile(int patientId, IFormFile file, string? description, CancellationToken cancellationToken)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var patientExists = await _context.Patients
+                .AnyAsync(p => p.Id == patientId && p.ClinicId == clinicId, cancellationToken);
+
+            if (!patientExists)
+                return NotFound();
+
+            try
+            {
+                var result = await _storage.UploadAsync(file, $"patients/{patientId}", cancellationToken);
+
+                var patientFile = new PatientFile
+                {
+                    PatientId = patientId,
+                    OriginalFileName = result.OriginalFileName,
+                    ObjectPath = result.ObjectPath,
+                    ContentType = result.ContentType,
+                    Size = result.Size,
+                    UploadedAtUtc = result.UploadedAtUtc,
+                    Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim()
+                };
+
+                _context.PatientFiles.Add(patientFile);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            catch (ArgumentException ex)
+            {
+                TempData["FileError"] = ex.Message;
+            }
+
+            return RedirectToAction(nameof(Profile), new { id = patientId });
+        }
+
+        // GET: /Patients/FileUrl?fileId=X  (returns JSON { url })
+        [HttpGet]
+        [Authorize(Roles = "Doctor")]
+        public async Task<IActionResult> FileUrl(int fileId, CancellationToken cancellationToken)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var file = await _context.PatientFiles
+                .Include(f => f.Patient)
+                .FirstOrDefaultAsync(f => f.Id == fileId && f.Patient.ClinicId == clinicId, cancellationToken);
+
+            if (file == null)
+                return NotFound();
+
+            var url = await _storage.GenerateSignedReadUrlAsync(file.ObjectPath, TimeSpan.FromMinutes(30), cancellationToken);
+            return Ok(new { url });
+        }
+
+        // POST: /Patients/DeleteFile
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Doctor")]
+        public async Task<IActionResult> DeleteFile(int fileId, int patientId, CancellationToken cancellationToken)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var file = await _context.PatientFiles
+                .Include(f => f.Patient)
+                .FirstOrDefaultAsync(f => f.Id == fileId && f.Patient.ClinicId == clinicId, cancellationToken);
+
+            if (file == null)
+                return NotFound();
+
+            try
+            {
+                await _storage.DeleteAsync(file.ObjectPath, cancellationToken);
+            }
+            catch { /* file may already be gone in GCS — still remove DB record */ }
+
+            _context.PatientFiles.Remove(file);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return RedirectToAction(nameof(Profile), new { id = patientId });
         }
 
         // 🟩 POST: /Patients/UpdateTooth

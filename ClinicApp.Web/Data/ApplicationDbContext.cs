@@ -23,10 +23,18 @@ namespace ClinicApp.Web.Data
         public DbSet<TreatmentPlan> TreatmentPlans { get; set; }
         public DbSet<PatientTooth> PatientTeeth { get; set; }
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
+        public DbSet<PatientFile> PatientFiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Patient → Files relationship
+            modelBuilder.Entity<PatientFile>()
+                .HasOne(f => f.Patient)
+                .WithMany(p => p.Files)
+                .HasForeignKey(f => f.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Patient → Teeth relationship
             modelBuilder.Entity<PatientTooth>()

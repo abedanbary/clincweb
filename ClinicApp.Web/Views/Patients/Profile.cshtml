@@ -2,6 +2,15 @@
 @using ClinicApp.Web.Models
 @model PatientProfileViewModel
 
+@functions {
+    static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024} KB";
+        return $"{bytes / 1024 / 1024} MB";
+    }
+}
+
 @{
     Layout = "_DoctorLayout";
     ViewData["Title"] = $"{Model.FirstName} {Model.LastName}";
@@ -120,7 +129,7 @@
 
         </div>
 
-        <!-- Right Column: Dental Chart -->
+        <!-- Right Column: Dental Chart + Files -->
         <div class="profile-main">
             <div class="profile-card dental-chart-card">
                 <div class="profile-card-header">
@@ -187,6 +196,73 @@
                 </div>
 
             </div>
+            <!-- Patient Files Card -->
+            <div class="profile-card" style="margin-top:1.5rem;">
+                <div class="profile-card-header">
+                    <h2 class="profile-card-title">Patient Files</h2>
+                </div>
+
+                @if (TempData["FileError"] != null)
+                {
+                    <div style="color:#dc2626;padding:.5rem 1rem;font-size:.875rem;">@TempData["FileError"]</div>
+                }
+
+                <!-- Upload form -->
+                <form asp-action="UploadFile" method="post" enctype="multipart/form-data" style="padding:1rem;border-bottom:1px solid #e5e7eb;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="patientId" value="@Model.PatientId" />
+                    <div class="patients-field" style="margin-bottom:.75rem;">
+                        <label class="patients-label">File (PDF, JPG, PNG, WEBP — max 10 MB)</label>
+                        <input type="file" name="file" class="patients-input" accept=".pdf,.jpg,.jpeg,.png,.webp" required />
+                    </div>
+                    <div class="patients-field" style="margin-bottom:.75rem;">
+                        <label class="patients-label">Description (optional)</label>
+                        <input type="text" name="description" class="patients-input" placeholder="e.g. X-Ray, Consent Form, ID..." maxlength="100" />
+                    </div>
+                    <button type="submit" class="btn-primary">Upload</button>
+                </form>
+
+                <!-- Files list -->
+                @if (Model.Files.Any())
+                {
+                    <ul style="list-style:none;margin:0;padding:0;">
+                        @foreach (var f in Model.Files)
+                        {
+                            <li style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid #f3f4f6;gap:1rem;">
+                                <div style="min-width:0;">
+                                    <div style="font-weight:500;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@f.OriginalFileName">
+                                        @f.OriginalFileName
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(f.Description))
+                                    {
+                                        <div style="font-size:.75rem;color:#6b7280;margin-top:1px;">@f.Description</div>
+                                    }
+                                    <div style="font-size:.75rem;color:#9ca3af;margin-top:2px;">
+                                        @f.UploadedAtUtc.ToString("MMM dd, yyyy") &bull; @FormatFileSize(f.Size)
+                                    </div>
+                                </div>
+                                <div style="display:flex;gap:.5rem;flex-shrink:0;">
+                                    <button onclick="viewFile(@f.Id)" class="btn-ghost" style="font-size:.8rem;padding:.3rem .7rem;">View</button>
+                                    <form asp-action="DeleteFile" method="post" style="margin:0;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="fileId" value="@f.Id" />
+                                        <input type="hidden" name="patientId" value="@Model.PatientId" />
+                                        <button type="submit" onclick="return confirm('Delete this file?')"
+                                            style="font-size:.8rem;padding:.3rem .7rem;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="profile-empty" style="padding:1.5rem;">No files uploaded yet</div>
+                }
+            </div>
+
         </div>
 
     </section>
@@ -356,6 +432,20 @@
                 closeToothModal();
             }
         });
+
+        async function viewFile(fileId) {
+            try {
+                const response = await fetch(`@Url.Action("FileUrl", "Patients")?fileId=${fileId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    window.open(data.url, '_blank');
+                } else {
+                    alert('Could not generate file URL. Please try again.');
+                }
+            } catch {
+                alert('Network error. Please try again.');
+            }
+        }
     </script>
     
     @Html.AntiForgeryToken()
