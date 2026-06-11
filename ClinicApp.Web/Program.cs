@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using ClinicApp.Web.Models;
 using ClinicApp.Web.Services;
+using ClinicApp.Web.Services.Storage;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,11 +20,38 @@ builder.Logging.SetMinimumLevel(LogLevel.Debug);
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
+// File upload size limits (shared by Kestrel + multipart + the storage service)
+var maxUploadMb = int.TryParse(Environment.GetEnvironmentVariable("MAX_UPLOAD_FILE_SIZE_MB"), out var parsedMb) ? parsedMb : 10;
+var maxUploadBytes = maxUploadMb * 1024L * 1024L;
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = maxUploadBytes;
+});
+
 Console.WriteLine($"=== Application Starting ===");
 Console.WriteLine($"Port: {port}");
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+builder.Services.AddScoped<IFileStorageService, GoogleCloudStorageService>();
+
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = maxUploadBytes;
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("upload-limit", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 10;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueLimit = 0;
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 // Railway: Database Configuration with detailed logging
 try
@@ -159,6 +189,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
