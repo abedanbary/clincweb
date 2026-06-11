@@ -21,7 +21,7 @@ var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // File upload size limits (shared by Kestrel + multipart + the storage service)
-var maxUploadMb = int.TryParse(Environment.GetEnvironmentVariable("MAX_UPLOAD_FILE_SIZE_MB"), out var parsedMb) ? parsedMb : 50;
+var maxUploadMb = int.TryParse(Environment.GetEnvironmentVariable("MAX_UPLOAD_FILE_SIZE_MB"), out var parsedMb) ? parsedMb : 200;
 var maxUploadBytes = maxUploadMb * 1024L * 1024L;
 
 builder.WebHost.ConfigureKestrel(options =>

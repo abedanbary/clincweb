@@ -11,30 +11,6 @@ public sealed class GoogleCloudStorageService : IFileStorageService
     private readonly string _bucketName;
     private readonly long _maxFileSizeBytes;
 
-    // Extensions accepted regardless of content type (browsers send generic types for 3D files).
-    private static readonly HashSet<string> ThreeDExtensions = new(StringComparer.OrdinalIgnoreCase)
-        { ".stl", ".obj", ".ply", ".glb", ".gltf" };
-
-    // All extensions this service will accept.
-    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
-        { ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".stl", ".obj", ".ply", ".glb", ".gltf" };
-
-    // Content types required for non-3D files.
-    private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "application/pdf",
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "model/stl",
-        "model/obj",
-        "model/ply",
-        "model/gltf-binary",
-        "model/gltf+json",
-        "application/octet-stream", // generic browser fallback for binary files
-        "text/plain"                // some browsers send .stl/.obj as text/plain
-    };
-
     public GoogleCloudStorageService()
     {
         var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON")
@@ -45,7 +21,7 @@ public sealed class GoogleCloudStorageService : IFileStorageService
             ?? throw new InvalidOperationException(
                 "GOOGLE_BUCKET_NAME environment variable is not set.");
 
-        var maxMb = int.TryParse(Environment.GetEnvironmentVariable("MAX_UPLOAD_FILE_SIZE_MB"), out var mb) ? mb : 50;
+        var maxMb = int.TryParse(Environment.GetEnvironmentVariable("MAX_UPLOAD_FILE_SIZE_MB"), out var mb) ? mb : 200;
         _maxFileSizeBytes = maxMb * 1024L * 1024L;
 
 #pragma warning disable CS0618
@@ -62,27 +38,15 @@ public sealed class GoogleCloudStorageService : IFileStorageService
         string folder,
         CancellationToken cancellationToken = default)
     {
-        if (file == null || file.Length == 0)
-            throw new ArgumentException("File is empty or not provided.", nameof(file));
-
-        if (file.Length > _maxFileSizeBytes)
-            throw new ArgumentException(
-                $"File size ({file.Length / 1024 / 1024} MB) exceeds the maximum allowed size of {_maxFileSizeBytes / 1024 / 1024} MB.");
+        var error = FileValidator.Validate(file, _maxFileSizeBytes);
+        if (error != null)
+            throw new ArgumentException(error);
 
         var extension = (Path.GetExtension(file.FileName) ?? string.Empty).ToLowerInvariant();
-        if (!AllowedExtensions.Contains(extension))
-            throw new ArgumentException(
-                $"File extension '{extension}' is not allowed.");
-
         var browserContentType = (file.ContentType ?? string.Empty).Split(';')[0].Trim().ToLowerInvariant();
 
-        // For non-3D files, the browser content type must also be valid.
-        if (!ThreeDExtensions.Contains(extension) && !AllowedContentTypes.Contains(browserContentType))
-            throw new ArgumentException(
-                $"File type '{browserContentType}' is not allowed for extension '{extension}'.");
-
         // Use canonical MIME type for 3D files when the browser sends a generic type.
-        var effectiveContentType = ThreeDExtensions.Contains(extension)
+        var effectiveContentType = FileValidator.ThreeDExtensions.Contains(extension)
             ? (PatientFileHelper.CanonicalMimeForThreeD(extension) ?? browserContentType)
             : browserContentType;
 
