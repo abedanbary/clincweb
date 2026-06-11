@@ -389,7 +389,7 @@ function loadModel() {
         loader.load(streamUrl,
             (geometry) => {
                 geometry.computeVertexNormals();
-                const mat = new THREE.MeshPhongMaterial({ color: 0x6ee7b7, specular: 0x115e59, shininess: 90 });
+                const mat = new THREE.MeshPhongMaterial({ color: 0x9daeff, specular: 0x222244, shininess: 80 });
                 const mesh = new THREE.Mesh(geometry, mat);
                 loadedObject = new THREE.Group();
                 loadedObject.add(mesh);
@@ -407,7 +407,7 @@ function loadModel() {
             (object) => {
                 object.traverse((child) => {
                     if (child.isMesh && !child.material?.color) {
-                        child.material = new THREE.MeshPhongMaterial({ color: 0x6ee7b7 });
+                        child.material = new THREE.MeshPhongMaterial({ color: 0x9daeff });
                     }
                 });
                 loadedObject = object;
@@ -427,7 +427,7 @@ function loadModel() {
                 const hasColor = geometry.hasAttribute('color');
                 const mat = hasColor
                     ? new THREE.MeshStandardMaterial({ vertexColors: true })
-                    : new THREE.MeshPhongMaterial({ color: 0x6ee7b7, specular: 0x115e59, shininess: 90 });
+                    : new THREE.MeshPhongMaterial({ color: 0x9daeff, specular: 0x222244, shininess: 80 });
                 const mesh = new THREE.Mesh(geometry, mat);
                 loadedObject = new THREE.Group();
                 loadedObject.add(mesh);
