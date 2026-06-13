@@ -141,7 +141,7 @@
             <button class="modal-close" onclick="closeAddMaterialModal()">&times;</button>
         </div>
 
-        <form asp-action="Add" asp-controller="Materials" method="post" class="materials-form">
+        <form asp-action="Add" asp-controller="Materials" method="post" enctype="multipart/form-data" class="materials-form">
             @Html.AntiForgeryToken()
 
             <div class="materials-field">
@@ -212,6 +212,13 @@
                     <label class="materials-label">Invoice Notes (optional)</label>
                     <input class="materials-input" asp-for="Invoice.Notes" placeholder="e.g. Batch #123, net 30..." />
                 </div>
+                <div class="materials-field">
+                    <label class="materials-label">Invoice Image (optional)</label>
+                    <input type="file" name="invoiceImage" class="materials-input"
+                           accept=".jpg,.jpeg,.png,.pdf,.webp"
+                           style="padding:.4rem .5rem;" />
+                    <small style="color:#9ca3af;font-size:.72rem;">Photo or scan of the paper invoice</small>
+                </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem; color:#374151; padding:.4rem 0 0;">
                     <span>Total Amount</span>
                     <strong id="addTotalDisplay" style="color:#059669; font-size:1rem;">—</strong>
@@ -236,7 +243,7 @@
             <button class="modal-close" onclick="closeEditQuantityModal()">&times;</button>
         </div>
 
-        <form asp-action="UpdateQuantity" method="post" id="updateQuantityForm">
+        <form asp-action="UpdateQuantity" method="post" enctype="multipart/form-data" id="updateQuantityForm">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" id="editMaterialId" />
 
@@ -293,6 +300,13 @@
                 <div class="materials-field">
                     <label class="materials-label">Invoice Notes (optional)</label>
                     <input class="materials-input" name="invoiceNotes" placeholder="e.g. Batch #123, net 30..." />
+                </div>
+                <div class="materials-field">
+                    <label class="materials-label">Invoice Image (optional)</label>
+                    <input type="file" name="invoiceImage" class="materials-input"
+                           accept=".jpg,.jpeg,.png,.pdf,.webp"
+                           style="padding:.4rem .5rem;" />
+                    <small style="color:#9ca3af;font-size:.72rem;">Photo or scan of the paper invoice</small>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem; color:#374151; padding:.4rem 0 0;">
                     <span>Total Amount</span>

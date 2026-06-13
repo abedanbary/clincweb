@@ -30,5 +30,7 @@ public class MaterialInvoice
 
     public string? Notes { get; set; }
 
+    public string? InvoiceImageObjectPath { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

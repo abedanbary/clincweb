@@ -1,11 +1,12 @@
 using System.Security.Claims;
 using ClinicApp.Web.Data;
 using ClinicApp.Web.Models;
+using ClinicApp.Web.Services;
+using ClinicApp.Web.Services.Storage;
 using ClinicApp.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ClinicApp.Web.Services;
 
 namespace ClinicApp.Web.Controllers
 {
@@ -14,18 +15,22 @@ namespace ClinicApp.Web.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IExportService _exportService;
+        private readonly IFileStorageService? _storage;
 
-        public MaterialsController(ApplicationDbContext context, IExportService exportService)
+        public MaterialsController(
+            ApplicationDbContext context,
+            IExportService exportService,
+            IFileStorageService? storage = null)
         {
             _context = context;
             _exportService = exportService;
+            _storage = storage;
         }
 
         private int GetCurrentClinicId()
         {
-            var clinicClaim = User.FindFirst("ClinicId");
-            if (clinicClaim == null)
-                throw new InvalidOperationException("ClinicId claim is missing.");
+            var clinicClaim = User.FindFirst("ClinicId")
+                ?? throw new InvalidOperationException("ClinicId claim is missing.");
             return int.Parse(clinicClaim.Value);
         }
 
@@ -53,7 +58,7 @@ namespace ClinicApp.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Manager")]
-        public async Task<IActionResult> Add(MaterialsPageViewModel vm)
+        public async Task<IActionResult> Add(MaterialsPageViewModel vm, IFormFile? invoiceImage)
         {
             var clinicId = GetCurrentClinicId();
 
@@ -107,9 +112,10 @@ namespace ClinicApp.Web.Controllers
             _context.MaterialHistories.Add(history);
             await _context.SaveChangesAsync();
 
-            // Optional purchase invoice
             if (vm.Invoice.CreateInvoice && vm.Invoice.UnitPrice > 0 && addedQty > 0)
             {
+                var imagePath = await TryUploadInvoiceImageAsync(invoiceImage, clinicId);
+
                 var invoice = new MaterialInvoice
                 {
                     InvoiceNumber = await GenerateInvoiceNumberAsync(clinicId),
@@ -122,6 +128,7 @@ namespace ClinicApp.Web.Controllers
                     PaymentMethod = vm.Invoice.PaymentMethod,
                     InvoiceDate = DateTime.UtcNow,
                     Notes = vm.Invoice.Notes,
+                    InvoiceImageObjectPath = imagePath,
                     CreatedAt = DateTime.UtcNow
                 };
                 _context.MaterialInvoices.Add(invoice);
@@ -140,7 +147,9 @@ namespace ClinicApp.Web.Controllers
         public async Task<IActionResult> UpdateQuantity(
             int id, int change, string? note,
             bool createInvoice = false, decimal unitPrice = 0,
-            PaymentMethod paymentMethod = PaymentMethod.Cash, string? invoiceNotes = null)
+            PaymentMethod paymentMethod = PaymentMethod.Cash,
+            string? invoiceNotes = null,
+            IFormFile? invoiceImage = null)
         {
             var clinicId = GetCurrentClinicId();
 
@@ -157,15 +166,15 @@ namespace ClinicApp.Web.Controllers
                 MaterialId = material.Id,
                 QuantityChange = change,
                 NewQuantity = material.Quantity,
-                Supplier = null,
                 Note = note ?? (change > 0 ? "Quantity increased" : "Quantity decreased")
             };
             _context.MaterialHistories.Add(history);
             await _context.SaveChangesAsync();
 
-            // Optional purchase invoice (only for positive changes)
             if (createInvoice && unitPrice > 0 && change > 0)
             {
+                var imagePath = await TryUploadInvoiceImageAsync(invoiceImage, clinicId);
+
                 var invoice = new MaterialInvoice
                 {
                     InvoiceNumber = await GenerateInvoiceNumberAsync(clinicId),
@@ -178,6 +187,7 @@ namespace ClinicApp.Web.Controllers
                     PaymentMethod = paymentMethod,
                     InvoiceDate = DateTime.UtcNow,
                     Notes = invoiceNotes,
+                    InvoiceImageObjectPath = imagePath,
                     CreatedAt = DateTime.UtcNow
                 };
                 _context.MaterialInvoices.Add(invoice);
@@ -232,7 +242,28 @@ namespace ClinicApp.Web.Controllers
             return View(vm);
         }
 
-        // GET: /Materials/History/{id}  →  JSON (includes invoice info)
+        // GET: /Materials/InvoiceImage/{id}  → redirect to signed URL
+        [HttpGet]
+        public async Task<IActionResult> InvoiceImage(int id, CancellationToken ct)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var invoice = await _context.MaterialInvoices
+                .Include(i => i.Material)
+                .FirstOrDefaultAsync(i => i.Id == id && i.ClinicId == clinicId, ct);
+
+            if (invoice == null || string.IsNullOrEmpty(invoice.InvoiceImageObjectPath))
+                return NotFound();
+
+            if (_storage == null) return StatusCode(503);
+
+            var url = await _storage.GenerateSignedReadUrlAsync(
+                invoice.InvoiceImageObjectPath, TimeSpan.FromMinutes(20), ct);
+
+            return Redirect(url);
+        }
+
+        // GET: /Materials/History/{id}
         [HttpGet]
         public async Task<IActionResult> History(int id)
         {
@@ -259,7 +290,8 @@ namespace ClinicApp.Web.Controllers
                 h.Note,
                 InvoiceId = h.MaterialInvoiceId,
                 InvoiceNumber = h.MaterialInvoice?.InvoiceNumber,
-                InvoiceTotal = h.MaterialInvoice?.TotalAmount
+                InvoiceTotal = h.MaterialInvoice?.TotalAmount,
+                HasImage = h.MaterialInvoice?.InvoiceImageObjectPath != null
             });
 
             return Json(result);
@@ -301,7 +333,6 @@ namespace ClinicApp.Web.Controllers
 
             if (material == null) return NotFound();
 
-            // Remove invoices first, then history, then material
             var invoiceIds = await _context.MaterialHistories
                 .Where(h => h.MaterialId == id && h.MaterialInvoiceId != null)
                 .Select(h => h.MaterialInvoiceId!.Value)
@@ -311,10 +342,8 @@ namespace ClinicApp.Web.Controllers
             _context.MaterialHistories.RemoveRange(histories);
 
             if (invoiceIds.Any())
-            {
-                var invoices = _context.MaterialInvoices.Where(i => invoiceIds.Contains(i.Id));
-                _context.MaterialInvoices.RemoveRange(invoices);
-            }
+                _context.MaterialInvoices.RemoveRange(
+                    _context.MaterialInvoices.Where(i => invoiceIds.Contains(i.Id)));
 
             _context.Materials.Remove(material);
             await _context.SaveChangesAsync();
@@ -349,13 +378,30 @@ namespace ClinicApp.Web.Controllers
                 $"Inventory_Report_{DateTime.Now:yyyyMMdd}.xlsx");
         }
 
-        private async Task<string> GenerateInvoiceNumberAsync(int clinicId)
+        // ── Helpers ───────────────────────────────────────────────────────────────
+
+        public async Task<string> GenerateInvoiceNumberAsync(int clinicId)
         {
             var prefix = $"MAT-{DateTime.UtcNow:yyyyMM}-";
             var count = await _context.MaterialInvoices
                 .Where(i => i.ClinicId == clinicId && i.InvoiceNumber.StartsWith(prefix))
                 .CountAsync();
             return $"{prefix}{(count + 1):D4}";
+        }
+
+        private async Task<string?> TryUploadInvoiceImageAsync(IFormFile? file, int clinicId)
+        {
+            if (_storage == null || file == null || file.Length == 0) return null;
+
+            try
+            {
+                var result = await _storage.UploadAsync(file, $"material-invoices/{clinicId}");
+                return result.ObjectPath;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
