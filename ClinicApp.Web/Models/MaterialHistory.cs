@@ -18,5 +18,8 @@ public class MaterialHistory
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public string? Note { get; set; }
+
+    public int? MaterialInvoiceId { get; set; }
+    public MaterialInvoice? MaterialInvoice { get; set; }
 }
 }

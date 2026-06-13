@@ -20,6 +20,9 @@
         </div>
 
         <div class="materials-header-actions">
+            <a href="/Materials/Invoices" class="btn-ghost" style="text-decoration: none;">
+                🧾 Purchase Invoices
+            </a>
             @if (isManager)
             {
                 <a href="/Materials/ExportExcel" class="btn-ghost" style="text-decoration: none;">
@@ -129,7 +132,7 @@
 
 @if (isManager)
 {
-<!-- ✅ Modal: Add Material -->
+<!-- Modal: Add Material -->
 <div id="addMaterialModal" class="modal" style="display: none;">
     <div class="modal-overlay" onclick="closeAddMaterialModal()"></div>
     <div class="modal-content">
@@ -137,7 +140,7 @@
             <h2>Add New Material</h2>
             <button class="modal-close" onclick="closeAddMaterialModal()">&times;</button>
         </div>
-        
+
         <form asp-action="Add" asp-controller="Materials" method="post" class="materials-form">
             @Html.AntiForgeryToken()
 
@@ -167,7 +170,7 @@
 
                 <div class="materials-field">
                     <label class="materials-label" asp-for="NewMaterial.Quantity"></label>
-                    <input class="materials-input" asp-for="NewMaterial.Quantity" type="number" min="0" required />
+                    <input class="materials-input" asp-for="NewMaterial.Quantity" type="number" min="0" required id="addQty" oninput="updateAddTotal()" />
                 </div>
             </div>
 
@@ -177,8 +180,42 @@
             </div>
 
             <div class="materials-field">
-                <label class="materials-label" asp-for="NewMaterial.Supplier">Supplier</label>
+                <label class="materials-label">Supplier</label>
                 <input class="materials-input" asp-for="NewMaterial.Supplier" placeholder="Supplier name" />
+            </div>
+
+            <!-- Purchase Invoice toggle -->
+            <div style="border-top: 1px solid #e5e7eb; margin-top: .5rem; padding-top: .75rem;">
+                <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-size:.875rem; font-weight:500; color:#374151;">
+                    <input type="checkbox" asp-for="Invoice.CreateInvoice" id="addCreateInvoice" onchange="toggleAddInvoice(this)" style="width:16px;height:16px;accent-color:#10b981;" />
+                    Create a purchase invoice for this stock
+                </label>
+            </div>
+
+            <div id="addInvoiceFields" style="display:none; margin-top:.75rem; padding:.9rem; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0;">
+                <div style="font-size:.78rem; font-weight:600; color:#059669; margin-bottom:.65rem; text-transform:uppercase; letter-spacing:.05em;">Purchase Invoice</div>
+                <div class="materials-field-row">
+                    <div class="materials-field">
+                        <label class="materials-label">Unit Price</label>
+                        <input class="materials-input" asp-for="Invoice.UnitPrice" type="number" min="0.01" step="0.01" placeholder="0.00" id="addUnitPrice" oninput="updateAddTotal()" />
+                    </div>
+                    <div class="materials-field">
+                        <label class="materials-label">Payment Method</label>
+                        <select class="materials-select" asp-for="Invoice.PaymentMethod">
+                            <option value="1">Cash</option>
+                            <option value="2">Credit Card</option>
+                            <option value="3">Bank Transfer</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="materials-field">
+                    <label class="materials-label">Invoice Notes (optional)</label>
+                    <input class="materials-input" asp-for="Invoice.Notes" placeholder="e.g. Batch #123, net 30..." />
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem; color:#374151; padding:.4rem 0 0;">
+                    <span>Total Amount</span>
+                    <strong id="addTotalDisplay" style="color:#059669; font-size:1rem;">—</strong>
+                </div>
             </div>
 
             <div class="materials-form-actions">
@@ -190,7 +227,7 @@
 </div>
 }
 
-<!-- ✅ Modal: Edit Quantity -->
+<!-- Modal: Edit Quantity (+/-) -->
 <div id="editQuantityModal" class="modal" style="display: none;">
     <div class="modal-overlay" onclick="closeEditQuantityModal()"></div>
     <div class="modal-content modal-sm">
@@ -198,11 +235,11 @@
             <h2>Update Quantity</h2>
             <button class="modal-close" onclick="closeEditQuantityModal()">&times;</button>
         </div>
-        
+
         <form asp-action="UpdateQuantity" method="post" id="updateQuantityForm">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" id="editMaterialId" />
-            
+
             <div class="materials-field">
                 <label class="materials-label">Material</label>
                 <input type="text" class="materials-input" id="editMaterialName" readonly />
@@ -218,7 +255,7 @@
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <button type="button" class="btn-ghost" onclick="adjustQuantityChange(-10)">-10</button>
                     <button type="button" class="btn-ghost" onclick="adjustQuantityChange(-1)">-1</button>
-                    <input type="number" class="materials-input" name="change" id="quantityChange" value="0" style="text-align: center; flex: 1;" />
+                    <input type="number" class="materials-input" name="change" id="quantityChange" value="0" style="text-align: center; flex: 1;" oninput="onQtyChangeInput()" />
                     <button type="button" class="btn-ghost" onclick="adjustQuantityChange(1)">+1</button>
                     <button type="button" class="btn-ghost" onclick="adjustQuantityChange(10)">+10</button>
                 </div>
@@ -227,6 +264,40 @@
             <div class="materials-field">
                 <label class="materials-label">Note (optional)</label>
                 <input type="text" class="materials-input" name="note" placeholder="e.g., Received shipment" />
+            </div>
+
+            <!-- Purchase Invoice toggle -->
+            <div id="invoiceToggleWrapper" style="border-top: 1px solid #e5e7eb; margin-top: .5rem; padding-top: .75rem; display:none;">
+                <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-size:.875rem; font-weight:500; color:#374151;">
+                    <input type="checkbox" name="createInvoice" id="editCreateInvoice" onchange="toggleEditInvoice(this)" style="width:16px;height:16px;accent-color:#10b981;" />
+                    Create a purchase invoice for this stock
+                </label>
+            </div>
+
+            <div id="editInvoiceFields" style="display:none; margin-top:.75rem; padding:.9rem; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0;">
+                <div style="font-size:.78rem; font-weight:600; color:#059669; margin-bottom:.65rem; text-transform:uppercase; letter-spacing:.05em;">Purchase Invoice</div>
+                <div class="materials-field-row">
+                    <div class="materials-field">
+                        <label class="materials-label">Unit Price</label>
+                        <input class="materials-input" name="unitPrice" type="number" min="0.01" step="0.01" placeholder="0.00" id="editUnitPrice" oninput="updateEditTotal()" />
+                    </div>
+                    <div class="materials-field">
+                        <label class="materials-label">Payment Method</label>
+                        <select class="materials-select" name="paymentMethod">
+                            <option value="1">Cash</option>
+                            <option value="2">Credit Card</option>
+                            <option value="3">Bank Transfer</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="materials-field">
+                    <label class="materials-label">Invoice Notes (optional)</label>
+                    <input class="materials-input" name="invoiceNotes" placeholder="e.g. Batch #123, net 30..." />
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem; color:#374151; padding:.4rem 0 0;">
+                    <span>Total Amount</span>
+                    <strong id="editTotalDisplay" style="color:#059669; font-size:1rem;">—</strong>
+                </div>
             </div>
 
             <div class="materials-form-actions">
@@ -239,15 +310,25 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    
+
     <script>
     // ===== Add Material Modal =====
     function openAddMaterialModal() {
         document.getElementById('addMaterialModal').style.display = 'flex';
     }
-
     function closeAddMaterialModal() {
         document.getElementById('addMaterialModal').style.display = 'none';
+    }
+
+    function toggleAddInvoice(cb) {
+        document.getElementById('addInvoiceFields').style.display = cb.checked ? 'block' : 'none';
+    }
+
+    function updateAddTotal() {
+        const qty = parseFloat(document.getElementById('addQty')?.value) || 0;
+        const price = parseFloat(document.getElementById('addUnitPrice')?.value) || 0;
+        const total = qty * price;
+        document.getElementById('addTotalDisplay').textContent = total > 0 ? total.toFixed(2) : '—';
     }
 
     // ===== Edit Quantity Modal =====
@@ -256,9 +337,11 @@
         document.getElementById('editMaterialName').value = name;
         document.getElementById('editCurrentQuantity').value = currentQty;
         document.getElementById('quantityChange').value = 0;
+        document.getElementById('invoiceToggleWrapper').style.display = 'none';
+        document.getElementById('editInvoiceFields').style.display = 'none';
+        if (document.getElementById('editCreateInvoice')) document.getElementById('editCreateInvoice').checked = false;
         document.getElementById('editQuantityModal').style.display = 'flex';
     }
-
     function closeEditQuantityModal() {
         document.getElementById('editQuantityModal').style.display = 'none';
     }
@@ -266,6 +349,30 @@
     function adjustQuantityChange(amount) {
         const input = document.getElementById('quantityChange');
         input.value = parseInt(input.value || 0) + amount;
+        onQtyChangeInput();
+    }
+
+    function onQtyChangeInput() {
+        const change = parseInt(document.getElementById('quantityChange').value) || 0;
+        // Only show invoice toggle for positive (purchasing) changes
+        document.getElementById('invoiceToggleWrapper').style.display = change > 0 ? 'block' : 'none';
+        if (change <= 0) {
+            document.getElementById('editInvoiceFields').style.display = 'none';
+            if (document.getElementById('editCreateInvoice')) document.getElementById('editCreateInvoice').checked = false;
+        }
+        updateEditTotal();
+    }
+
+    function toggleEditInvoice(cb) {
+        document.getElementById('editInvoiceFields').style.display = cb.checked ? 'block' : 'none';
+    }
+
+    function updateEditTotal() {
+        const qty = Math.max(0, parseInt(document.getElementById('quantityChange')?.value) || 0);
+        const price = parseFloat(document.getElementById('editUnitPrice')?.value) || 0;
+        const total = qty * price;
+        const el = document.getElementById('editTotalDisplay');
+        if (el) el.textContent = total > 0 ? total.toFixed(2) : '—';
     }
 
     // ===== History Toggle =====
@@ -292,15 +399,27 @@
                         contentDiv.innerHTML = '<p>No history found.</p>';
                     } else {
                         let html = '<table>';
-                        html += '<thead><tr><th>Date</th><th>Change</th><th>New Quantity</th><th>Note</th></tr></thead><tbody>';
+                        html += '<thead><tr><th>Date</th><th>Change</th><th>New Qty</th><th>Note</th><th>Invoice</th></tr></thead><tbody>';
 
                         history.forEach(h => {
                             const date = new Date(h.createdAt || h.CreatedAt).toLocaleString();
+                            const changeColor = h.quantityChange > 0 ? 'green' : 'red';
+                            const changeSign = h.quantityChange > 0 ? '+' : '';
+
+                            let invoiceCell = '<span style="color:#9ca3af;">—</span>';
+                            if (h.invoiceId) {
+                                invoiceCell = `<a href="/Materials/Invoices" style="color:#10b981;font-weight:500;font-size:.78rem;text-decoration:none;"
+                                    title="Total: ${h.invoiceTotal?.toFixed(2)}">
+                                    🧾 ${h.invoiceNumber}
+                                </a>`;
+                            }
+
                             html += `<tr>
                                 <td>${date}</td>
-                                <td style="color: ${h.quantityChange > 0 ? 'green' : 'red'};">${h.quantityChange > 0 ? '+' : ''}${h.quantityChange}</td>
+                                <td style="color:${changeColor};">${changeSign}${h.quantityChange}</td>
                                 <td><strong>${h.newQuantity}</strong></td>
                                 <td>${h.note || '-'}</td>
+                                <td>${invoiceCell}</td>
                             </tr>`;
                         });
 
@@ -323,13 +442,11 @@
         alert('Edit functionality coming soon for material ID: ' + id);
     }
 
-    // Close modals on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeAddMaterialModal();
             closeEditQuantityModal();
         }
     });
-</script>
-
+    </script>
 }

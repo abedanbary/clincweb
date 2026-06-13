@@ -24,6 +24,7 @@ namespace ClinicApp.Web.Data
         public DbSet<PatientTooth> PatientTeeth { get; set; }
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
         public DbSet<PatientFile> PatientFiles { get; set; }
+        public DbSet<MaterialInvoice> MaterialInvoices { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

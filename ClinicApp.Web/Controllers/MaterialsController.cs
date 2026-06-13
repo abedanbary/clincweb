@@ -26,11 +26,10 @@ namespace ClinicApp.Web.Controllers
             var clinicClaim = User.FindFirst("ClinicId");
             if (clinicClaim == null)
                 throw new InvalidOperationException("ClinicId claim is missing.");
-
             return int.Parse(clinicClaim.Value);
         }
 
-        // 🟦 GET: /Materials
+        // GET: /Materials
         public async Task<IActionResult> Index()
         {
             var clinicId = GetCurrentClinicId();
@@ -50,7 +49,7 @@ namespace ClinicApp.Web.Controllers
             return View(vm);
         }
 
-        // 🟩 POST: /Materials/Add
+        // POST: /Materials/Add
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Manager")]
@@ -64,7 +63,6 @@ namespace ClinicApp.Web.Controllers
                     .Where(m => m.ClinicId == clinicId)
                     .OrderBy(m => m.Name)
                     .ToListAsync();
-
                 return View("Index", vm);
             }
 
@@ -74,9 +72,10 @@ namespace ClinicApp.Web.Controllers
             var existing = await _context.Materials
                 .FirstOrDefaultAsync(m => m.ClinicId == clinicId && m.Name == input.Name);
 
+            Material material;
             if (existing == null)
             {
-                var newMaterial = new Material
+                material = new Material
                 {
                     Name = input.Name,
                     Description = input.Description,
@@ -86,47 +85,154 @@ namespace ClinicApp.Web.Controllers
                     Quantity = addedQty,
                     ClinicId = clinicId
                 };
-
-                _context.Materials.Add(newMaterial);
-                await _context.SaveChangesAsync();
-
-                _context.MaterialHistories.Add(new MaterialHistory
-                {
-                    MaterialId = newMaterial.Id,
-                    QuantityChange = addedQty,
-                    NewQuantity = newMaterial.Quantity,
-                    Supplier = input.Supplier,
-                    Note = "First stock added"
-                });
-
+                _context.Materials.Add(material);
                 await _context.SaveChangesAsync();
             }
             else
             {
+                material = existing;
                 existing.Quantity += addedQty;
+                if (!string.IsNullOrWhiteSpace(input.Description)) existing.Description = input.Description;
+                if (!string.IsNullOrWhiteSpace(input.Supplier))    existing.Supplier = input.Supplier;
+            }
 
-                if (!string.IsNullOrWhiteSpace(input.Description))
-                    existing.Description = input.Description;
+            var history = new MaterialHistory
+            {
+                MaterialId = material.Id,
+                QuantityChange = addedQty,
+                NewQuantity = material.Quantity,
+                Supplier = input.Supplier,
+                Note = existing == null ? "First stock added" : "Restock"
+            };
+            _context.MaterialHistories.Add(history);
+            await _context.SaveChangesAsync();
 
-                if (!string.IsNullOrWhiteSpace(input.Supplier))
-                    existing.Supplier = input.Supplier;
-
-                _context.MaterialHistories.Add(new MaterialHistory
+            // Optional purchase invoice
+            if (vm.Invoice.CreateInvoice && vm.Invoice.UnitPrice > 0 && addedQty > 0)
+            {
+                var invoice = new MaterialInvoice
                 {
-                    MaterialId = existing.Id,
-                    QuantityChange = addedQty,
-                    NewQuantity = existing.Quantity,
+                    InvoiceNumber = await GenerateInvoiceNumberAsync(clinicId),
+                    MaterialId = material.Id,
+                    ClinicId = clinicId,
                     Supplier = input.Supplier,
-                    Note = "Restock"
-                });
+                    Quantity = addedQty,
+                    UnitPrice = vm.Invoice.UnitPrice,
+                    TotalAmount = addedQty * vm.Invoice.UnitPrice,
+                    PaymentMethod = vm.Invoice.PaymentMethod,
+                    InvoiceDate = DateTime.UtcNow,
+                    Notes = vm.Invoice.Notes,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.MaterialInvoices.Add(invoice);
+                await _context.SaveChangesAsync();
 
+                history.MaterialInvoiceId = invoice.Id;
                 await _context.SaveChangesAsync();
             }
 
             return RedirectToAction(nameof(Index));
         }
 
-        // 🔵 GET: /Materials/History/{id}
+        // POST: /Materials/UpdateQuantity
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateQuantity(
+            int id, int change, string? note,
+            bool createInvoice = false, decimal unitPrice = 0,
+            PaymentMethod paymentMethod = PaymentMethod.Cash, string? invoiceNotes = null)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var material = await _context.Materials
+                .FirstOrDefaultAsync(m => m.Id == id && m.ClinicId == clinicId);
+
+            if (material == null) return NotFound();
+
+            material.Quantity += change;
+            if (material.Quantity < 0) material.Quantity = 0;
+
+            var history = new MaterialHistory
+            {
+                MaterialId = material.Id,
+                QuantityChange = change,
+                NewQuantity = material.Quantity,
+                Supplier = null,
+                Note = note ?? (change > 0 ? "Quantity increased" : "Quantity decreased")
+            };
+            _context.MaterialHistories.Add(history);
+            await _context.SaveChangesAsync();
+
+            // Optional purchase invoice (only for positive changes)
+            if (createInvoice && unitPrice > 0 && change > 0)
+            {
+                var invoice = new MaterialInvoice
+                {
+                    InvoiceNumber = await GenerateInvoiceNumberAsync(clinicId),
+                    MaterialId = material.Id,
+                    ClinicId = clinicId,
+                    Supplier = material.Supplier,
+                    Quantity = change,
+                    UnitPrice = unitPrice,
+                    TotalAmount = change * unitPrice,
+                    PaymentMethod = paymentMethod,
+                    InvoiceDate = DateTime.UtcNow,
+                    Notes = invoiceNotes,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.MaterialInvoices.Add(invoice);
+                await _context.SaveChangesAsync();
+
+                history.MaterialInvoiceId = invoice.Id;
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /Materials/Invoices
+        public async Task<IActionResult> Invoices(int? materialId)
+        {
+            var clinicId = GetCurrentClinicId();
+            var now = DateTime.UtcNow;
+
+            var query = _context.MaterialInvoices
+                .Include(i => i.Material)
+                .Where(i => i.ClinicId == clinicId);
+
+            if (materialId.HasValue)
+                query = query.Where(i => i.MaterialId == materialId.Value);
+
+            var invoices = await query
+                .OrderByDescending(i => i.InvoiceDate)
+                .ToListAsync();
+
+            var all = await _context.MaterialInvoices
+                .Where(i => i.ClinicId == clinicId)
+                .ToListAsync();
+
+            var vm = new MaterialInvoicesViewModel
+            {
+                Invoices = invoices,
+                FilterMaterialId = materialId,
+                Materials = await _context.Materials
+                    .Where(m => m.ClinicId == clinicId)
+                    .OrderBy(m => m.Name)
+                    .ToListAsync(),
+                TotalThisMonth = all
+                    .Where(i => i.InvoiceDate.Year == now.Year && i.InvoiceDate.Month == now.Month)
+                    .Sum(i => i.TotalAmount),
+                TotalThisYear = all
+                    .Where(i => i.InvoiceDate.Year == now.Year)
+                    .Sum(i => i.TotalAmount),
+                TotalAllTime = all.Sum(i => i.TotalAmount)
+            };
+
+            ViewData["Title"] = "Material Purchase Invoices";
+            return View(vm);
+        }
+
+        // GET: /Materials/History/{id}  →  JSON (includes invoice info)
         [HttpGet]
         public async Task<IActionResult> History(int id)
         {
@@ -135,18 +241,31 @@ namespace ClinicApp.Web.Controllers
             var material = await _context.Materials
                 .FirstOrDefaultAsync(m => m.Id == id && m.ClinicId == clinicId);
 
-            if (material == null)
-                return NotFound();
+            if (material == null) return NotFound();
 
             var history = await _context.MaterialHistories
                 .Where(h => h.MaterialId == id)
+                .Include(h => h.MaterialInvoice)
                 .OrderByDescending(h => h.CreatedAt)
                 .ToListAsync();
 
-            return Json(history);
+            var result = history.Select(h => new
+            {
+                h.Id,
+                h.CreatedAt,
+                h.QuantityChange,
+                h.NewQuantity,
+                h.Supplier,
+                h.Note,
+                InvoiceId = h.MaterialInvoiceId,
+                InvoiceNumber = h.MaterialInvoice?.InvoiceNumber,
+                InvoiceTotal = h.MaterialInvoice?.TotalAmount
+            });
+
+            return Json(result);
         }
 
-        // 🟡 POST: /Materials/Edit/{id}
+        // POST: /Materials/Edit/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Manager")]
@@ -157,8 +276,7 @@ namespace ClinicApp.Web.Controllers
             var material = await _context.Materials
                 .FirstOrDefaultAsync(m => m.Id == id && m.ClinicId == clinicId);
 
-            if (material == null)
-                return NotFound();
+            if (material == null) return NotFound();
 
             material.Name = name;
             material.Description = description;
@@ -167,11 +285,10 @@ namespace ClinicApp.Web.Controllers
             material.Supplier = supplier;
 
             await _context.SaveChangesAsync();
-
             return RedirectToAction(nameof(Index));
         }
 
-        // 🔴 POST: /Materials/Delete/{id}
+        // POST: /Materials/Delete/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Manager")]
@@ -182,86 +299,63 @@ namespace ClinicApp.Web.Controllers
             var material = await _context.Materials
                 .FirstOrDefaultAsync(m => m.Id == id && m.ClinicId == clinicId);
 
-            if (material == null)
-                return NotFound();
+            if (material == null) return NotFound();
 
-            // حذف التاريخ أولاً
+            // Remove invoices first, then history, then material
+            var invoiceIds = await _context.MaterialHistories
+                .Where(h => h.MaterialId == id && h.MaterialInvoiceId != null)
+                .Select(h => h.MaterialInvoiceId!.Value)
+                .ToListAsync();
+
             var histories = _context.MaterialHistories.Where(h => h.MaterialId == id);
             _context.MaterialHistories.RemoveRange(histories);
 
-            // ثم حذف المادة
+            if (invoiceIds.Any())
+            {
+                var invoices = _context.MaterialInvoices.Where(i => invoiceIds.Contains(i.Id));
+                _context.MaterialInvoices.RemoveRange(invoices);
+            }
+
             _context.Materials.Remove(material);
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }
 
-
-
-        // 🟢 POST: /Materials/UpdateQuantity
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateQuantity(int id, int change, string? note)
-        {
-             var clinicId = GetCurrentClinicId();
-
-             var material = await _context.Materials
-             .FirstOrDefaultAsync(m => m.Id == id && m.ClinicId == clinicId);
-
-             if (material == null)
-               return NotFound();
-
-             // Update quantity
-             material.Quantity += change;
-
-             // Prevent negative quantity
-             if (material.Quantity < 0)
-             material.Quantity = 0;
-
-              // Save history
-              _context.MaterialHistories.Add(new MaterialHistory
-             {
-                MaterialId = material.Id,
-                QuantityChange = change,
-                NewQuantity = material.Quantity,
-                Supplier = null,
-                Note = note ?? (change > 0 ? "Quantity increased" : "Quantity decreased")
-                });
-
-         await _context.SaveChangesAsync();
-
-        return RedirectToAction(nameof(Index));
-        }
-        // 🟣 GET: /Materials/Export
-        // 📊 Export to Excel
+        // GET: /Materials/ExportExcel
         [HttpGet]
         [Authorize(Roles = "Manager")]
-         public async Task<IActionResult> ExportExcel()
-         {  var clinicId = GetCurrentClinicId();
-    
-    var materials = await _context.Materials
-        .Where(m => m.ClinicId == clinicId)
-        .OrderBy(m => m.Name)
-        .ToListAsync();
-    
-    var materialIds = materials.Select(m => m.Id).ToList();
-    
-    var allHistory = await _context.MaterialHistories
-        .Where(h => materialIds.Contains(h.MaterialId))
-        .ToListAsync();
-    
-    Console.WriteLine($"Materials count: {materials.Count}");
-    Console.WriteLine($"History count: {allHistory.Count}");
-    
-    var clinic = await _context.Clinics.FindAsync(clinicId);
-    var clinicName = clinic?.Name ?? "Clinic";
-    
-    var fileBytes = _exportService.ExportInventoryToExcel(materials, clinicName, allHistory);
-    
-    return File(fileBytes, 
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        $"Inventory_Report_{DateTime.Now:yyyyMMdd}.xlsx");
-   
-         }
+        public async Task<IActionResult> ExportExcel()
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var materials = await _context.Materials
+                .Where(m => m.ClinicId == clinicId)
+                .OrderBy(m => m.Name)
+                .ToListAsync();
+
+            var materialIds = materials.Select(m => m.Id).ToList();
+            var allHistory = await _context.MaterialHistories
+                .Where(h => materialIds.Contains(h.MaterialId))
+                .ToListAsync();
+
+            var clinic = await _context.Clinics.FindAsync(clinicId);
+            var clinicName = clinic?.Name ?? "Clinic";
+
+            var fileBytes = _exportService.ExportInventoryToExcel(materials, clinicName, allHistory);
+
+            return File(fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"Inventory_Report_{DateTime.Now:yyyyMMdd}.xlsx");
+        }
+
+        private async Task<string> GenerateInvoiceNumberAsync(int clinicId)
+        {
+            var prefix = $"MAT-{DateTime.UtcNow:yyyyMM}-";
+            var count = await _context.MaterialInvoices
+                .Where(i => i.ClinicId == clinicId && i.InvoiceNumber.StartsWith(prefix))
+                .CountAsync();
+            return $"{prefix}{(count + 1):D4}";
+        }
     }
 }
