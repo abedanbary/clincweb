@@ -4,15 +4,35 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace ClinicApp.Web.ViewModels
 {
+    public class PatientBalanceSummary
+    {
+        public int PatientId { get; set; }
+        public string PatientName { get; set; } = string.Empty;
+        public decimal TotalPaid { get; set; }
+        public decimal TotalPending { get; set; }
+        public int PendingCount { get; set; }
+    }
+
     public class PaymentsPageViewModel
     {
         public List<Payment> Payments { get; set; } = new();
 
+        // All-time stats
         public decimal TotalRevenue { get; set; }
         public decimal PendingAmount { get; set; }
         public decimal RefundedAmount { get; set; }
         public int PaidCount { get; set; }
         public int PendingCount { get; set; }
+
+        // This-month stats
+        public decimal RevenueThisMonth { get; set; }
+        public int PaidCountThisMonth { get; set; }
+
+        // Per-patient pending lookup: PatientId → total pending amount
+        public Dictionary<int, decimal> PatientPendingAmounts { get; set; } = new();
+
+        // Patients with outstanding balances (pending > 0)
+        public List<PatientBalanceSummary> OutstandingBalances { get; set; } = new();
 
         public int? FilterPatientId { get; set; }
         public PaymentStatus? FilterStatus { get; set; }

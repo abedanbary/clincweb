@@ -362,3 +362,100 @@
     padding: 5px 12px !important;
     font-size: 13px !important;
 }
+
+/* Empty state without emoji */
+.pay-empty-icon-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+}
+
+/* Outstanding balances panel */
+.pay-outstanding-card {
+    background: var(--color-surface);
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.pay-outstanding-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    background: #fff7ed;
+    border-bottom: 1px solid #fed7aa;
+}
+
+.pay-outstanding-header:hover { background: #ffedd5; }
+
+.pay-outstanding-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #9a3412;
+}
+
+.pay-outstanding-badge {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 12px;
+    background: #fed7aa;
+    color: #9a3412;
+    font-weight: 600;
+}
+
+.pay-out-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.pay-out-table th {
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left;
+}
+
+.pay-out-table td {
+    padding: 11px 16px;
+    border-bottom: 1px solid #f9f9f9;
+    vertical-align: middle;
+}
+
+.pay-out-table tr:last-child td { border-bottom: none; }
+
+.pay-out-name { font-weight: 500; color: #111827; }
+
+.pay-out-link {
+    font-size: 12px;
+    color: #10b981;
+    text-decoration: none;
+    padding: 3px 10px;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    background: #f0fdf4;
+}
+
+.pay-out-link:hover { background: #dcfce7; }
+
+/* Owes badge in table */
+.pay-owes-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #fed7aa;
+}

@@ -39,32 +39,80 @@
         <div class="pay-stat-card pay-stat-green">
             <div class="pay-stat-icon">$</div>
             <div>
+                <div class="pay-stat-value">$@Model.RevenueThisMonth.ToString("N2")</div>
+                <div class="pay-stat-label">Revenue This Month (@Model.PaidCountThisMonth paid)</div>
+            </div>
+        </div>
+        <div class="pay-stat-card pay-stat-green">
+            <div class="pay-stat-icon">$</div>
+            <div>
                 <div class="pay-stat-value">$@Model.TotalRevenue.ToString("N2")</div>
-                <div class="pay-stat-label">Total Revenue (@Model.PaidCount paid)</div>
+                <div class="pay-stat-label">All-Time Revenue (@Model.PaidCount paid)</div>
             </div>
         </div>
         <div class="pay-stat-card pay-stat-orange">
-            <div class="pay-stat-icon">⏳</div>
+            <div class="pay-stat-icon">!</div>
             <div>
                 <div class="pay-stat-value">$@Model.PendingAmount.ToString("N2")</div>
-                <div class="pay-stat-label">Pending (@Model.PendingCount invoices)</div>
+                <div class="pay-stat-label">Outstanding (@Model.PendingCount pending)</div>
             </div>
         </div>
         <div class="pay-stat-card pay-stat-red">
-            <div class="pay-stat-icon">↩</div>
+            <div class="pay-stat-icon">R</div>
             <div>
                 <div class="pay-stat-value">$@Model.RefundedAmount.ToString("N2")</div>
                 <div class="pay-stat-label">Refunded</div>
             </div>
         </div>
-        <div class="pay-stat-card pay-stat-blue">
-            <div class="pay-stat-icon">#</div>
-            <div>
-                <div class="pay-stat-value">@Model.Payments.Count</div>
-                <div class="pay-stat-label">Filtered Results</div>
+    </div>
+
+    <!-- Outstanding Balances Panel -->
+    @if (Model.OutstandingBalances.Any())
+    {
+        <div class="pay-outstanding-card">
+            <div class="pay-outstanding-header" onclick="toggleOutstanding()">
+                <div>
+                    <span class="pay-outstanding-title">Outstanding Balances</span>
+                    <span class="pay-outstanding-badge">@Model.OutstandingBalances.Count patient(s)</span>
+                </div>
+                <span id="outstandingChevron" style="font-size:.85rem;color:#6b7280;">&#9660;</span>
+            </div>
+            <div id="outstandingBody">
+                <table class="pay-out-table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th style="text-align:right;">Paid (All Time)</th>
+                            <th style="text-align:right;">Still Owes</th>
+                            <th style="text-align:right;">Pending Invoices</th>
+                            @if (isManager)
+                            {
+                                <th></th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in Model.OutstandingBalances)
+                        {
+                            <tr>
+                                <td class="pay-out-name">@b.PatientName</td>
+                                <td style="text-align:right;color:#6b7280;">$@b.TotalPaid.ToString("N2")</td>
+                                <td style="text-align:right;font-weight:700;color:#ea580c;">$@b.TotalPending.ToString("N2")</td>
+                                <td style="text-align:right;color:#6b7280;">@b.PendingCount</td>
+                                @if (isManager)
+                                {
+                                    <td style="text-align:right;">
+                                        <a asp-action="Index" asp-route-patientId="@b.PatientId" asp-route-status="@((int)PaymentStatus.Pending)"
+                                           class="pay-out-link">View</a>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
+    }
 
     <!-- Filters -->
     <div class="pay-filters-card">
@@ -123,8 +171,8 @@
         @if (!Model.Payments.Any())
         {
             <div class="pay-empty">
-                <div class="pay-empty-icon">💳</div>
-                <p class="pay-empty-text">No payments found.</p>
+                <div class="pay-empty-icon-text">No payments found</div>
+                <p class="pay-empty-text">No payment records match your current filters.</p>
                 @if (isManager)
                 {
                     <button class="btn-primary" onclick="openCreateModal()">Create First Payment</button>
@@ -142,6 +190,7 @@
                             <th>Doctor</th>
                             <th>Treatment</th>
                             <th>Amount</th>
+                            <th>Owes</th>
                             <th>Method</th>
                             <th>Status</th>
                             <th>Date</th>
@@ -154,6 +203,7 @@
                     <tbody>
                         @foreach (var p in Model.Payments)
                         {
+                            var owes = Model.PatientPendingAmounts.TryGetValue(p.PatientId, out var owed) ? owed : 0m;
                             <tr>
                                 <td><span class="pay-invoice">#@p.InvoiceNumber</span></td>
                                 <td>
@@ -164,6 +214,16 @@
                                 <td>Dr. @p.Doctor.FirstName @p.Doctor.LastName</td>
                                 <td>@(p.Treatment != null ? p.Treatment.Title : "—")</td>
                                 <td><strong>$@p.Amount.ToString("N2")</strong></td>
+                                <td>
+                                    @if (owes > 0)
+                                    {
+                                        <span class="pay-owes-badge">$@owes.ToString("N2")</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:#9ca3af;">—</span>
+                                    }
+                                </td>
                                 <td>
                                     <span class="pay-method pay-method-@p.Method.ToString().ToLower()">@p.Method</span>
                                 </td>
@@ -377,11 +437,18 @@
 
 @section Scripts {
     <script>
-        // Auto-hide toasts
         document.querySelectorAll('.pay-toast').forEach(t => {
             setTimeout(() => t.style.opacity = '0', 3500);
             setTimeout(() => t.remove(), 4000);
         });
+
+        function toggleOutstanding() {
+            const body = document.getElementById('outstandingBody');
+            const chevron = document.getElementById('outstandingChevron');
+            const collapsed = body.style.display === 'none';
+            body.style.display = collapsed ? '' : 'none';
+            chevron.innerHTML = collapsed ? '&#9660;' : '&#9650;';
+        }
 
         function openCreateModal() {
             document.getElementById('createModal').style.display = 'flex';
@@ -405,7 +472,7 @@
                     appts.forEach(a => {
                         const opt = document.createElement('option');
                         opt.value = a.value;
-                        opt.text = a.alreadyPaid ? a.text + ' \u2714 PAID' : a.text;
+                        opt.text = a.alreadyPaid ? a.text + ' (PAID)' : a.text;
                         opt.dataset.doctorId = a.doctorId;
                         opt.dataset.doctorName = a.doctorName;
                         opt.dataset.alreadyPaid = a.alreadyPaid;
@@ -426,10 +493,8 @@
             const warning = document.getElementById('createAlreadyPaidWarning');
             const submitBtn = document.querySelector('#createModal button[type="submit"]');
             if (opt && opt.dataset.doctorId) {
-                // Appointment selected: lock doctor to the appointment's doctor
                 showDoctorDropdown(false);
                 document.getElementById('createDoctorName').value = opt.dataset.doctorName;
-                // Add hidden input so the doctorId is still submitted
                 let hiddenDoc = document.getElementById('createDoctorIdHidden');
                 if (!hiddenDoc) {
                     hiddenDoc = document.createElement('input');
@@ -447,7 +512,6 @@
                     submitBtn.disabled = false;
                 }
             } else {
-                // No appointment: show doctor dropdown
                 showDoctorDropdown(true);
                 document.getElementById('createDoctorName').value = '';
                 const hiddenDoc = document.getElementById('createDoctorIdHidden');
@@ -456,6 +520,7 @@
                 submitBtn.disabled = false;
             }
         }
+
         function openEditModal(id) {
             fetch(`/Payments/GetPayment/${id}`)
                 .then(r => r.json())
@@ -512,7 +577,6 @@
             }
         }
 
-        // Close modals on overlay click
         document.addEventListener('click', function(e) {
             if (e.target.id === 'createModal') closeCreateModal();
             if (e.target.id === 'editModal') closeEditModal();

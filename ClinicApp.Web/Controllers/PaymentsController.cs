@@ -46,11 +46,34 @@ namespace ClinicApp.Web.Controllers
 
             var payments = await query.OrderByDescending(p => p.PaymentDate).ToListAsync();
 
-            IQueryable<Payment> statsQuery = _context.Payments.Where(p => p.ClinicId == clinicId);
+            IQueryable<Payment> statsQuery = _context.Payments
+                .Include(p => p.Patient)
+                .Where(p => p.ClinicId == clinicId);
             if (userRole == UserRole.Doctor)
                 statsQuery = statsQuery.Where(p => p.DoctorId == currentUserId);
 
             var allPayments = await statsQuery.ToListAsync();
+
+            var now = DateTime.UtcNow;
+            var paidAll = allPayments.Where(p => p.Status == PaymentStatus.Paid).ToList();
+            var pendingAll = allPayments.Where(p => p.Status == PaymentStatus.Pending).ToList();
+
+            var patientPending = pendingAll
+                .GroupBy(p => p.PatientId)
+                .ToDictionary(g => g.Key, g => g.Sum(p => p.Amount));
+
+            var outstandingBalances = pendingAll
+                .GroupBy(p => p.PatientId)
+                .Select(g => new PatientBalanceSummary
+                {
+                    PatientId = g.Key,
+                    PatientName = $"{g.First().Patient.FirstName} {g.First().Patient.LastName}",
+                    TotalPaid = paidAll.Where(p => p.PatientId == g.Key).Sum(p => p.Amount),
+                    TotalPending = g.Sum(p => p.Amount),
+                    PendingCount = g.Count()
+                })
+                .OrderByDescending(s => s.TotalPending)
+                .ToList();
 
             var vm = new PaymentsPageViewModel
             {
@@ -59,11 +82,15 @@ namespace ClinicApp.Web.Controllers
                 FilterStatus = status,
                 FilterFrom = from,
                 FilterTo = to,
-                TotalRevenue = allPayments.Where(p => p.Status == PaymentStatus.Paid).Sum(p => p.Amount),
-                PendingAmount = allPayments.Where(p => p.Status == PaymentStatus.Pending).Sum(p => p.Amount),
+                TotalRevenue = paidAll.Sum(p => p.Amount),
+                PendingAmount = pendingAll.Sum(p => p.Amount),
                 RefundedAmount = allPayments.Where(p => p.Status == PaymentStatus.Refunded).Sum(p => p.Amount),
-                PaidCount = allPayments.Count(p => p.Status == PaymentStatus.Paid),
-                PendingCount = allPayments.Count(p => p.Status == PaymentStatus.Pending),
+                PaidCount = paidAll.Count,
+                PendingCount = pendingAll.Count,
+                RevenueThisMonth = paidAll.Where(p => p.PaymentDate.Year == now.Year && p.PaymentDate.Month == now.Month).Sum(p => p.Amount),
+                PaidCountThisMonth = paidAll.Count(p => p.PaymentDate.Year == now.Year && p.PaymentDate.Month == now.Month),
+                PatientPendingAmounts = patientPending,
+                OutstandingBalances = outstandingBalances,
                 NewPayment = new CreatePaymentViewModel { PaymentDate = DateTime.Today }
             };
 
