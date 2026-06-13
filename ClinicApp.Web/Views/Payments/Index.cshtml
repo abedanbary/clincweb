@@ -20,7 +20,10 @@
         </div>
         @if (isManager)
         {
-            <button class="btn-primary" onclick="openCreateModal()">+ New Payment</button>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <a asp-action="ExportOutstanding" class="btn-ghost">Export Outstanding</a>
+                <button class="btn-primary" onclick="openCreateModal()">+ New Payment</button>
+            </div>
         }
     </div>
 
@@ -85,10 +88,7 @@
                             <th style="text-align:right;">Paid (All Time)</th>
                             <th style="text-align:right;">Still Owes</th>
                             <th style="text-align:right;">Pending Invoices</th>
-                            @if (isManager)
-                            {
-                                <th></th>
-                            }
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -99,13 +99,15 @@
                                 <td style="text-align:right;color:#6b7280;">$@b.TotalPaid.ToString("N2")</td>
                                 <td style="text-align:right;font-weight:700;color:#ea580c;">$@b.TotalPending.ToString("N2")</td>
                                 <td style="text-align:right;color:#6b7280;">@b.PendingCount</td>
-                                @if (isManager)
-                                {
-                                    <td style="text-align:right;">
-                                        <a asp-action="Index" asp-route-patientId="@b.PatientId" asp-route-status="@((int)PaymentStatus.Pending)"
-                                           class="pay-out-link">View</a>
-                                    </td>
-                                }
+                                <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end;">
+                                    <a onclick="loadPatientTreatments(@b.PatientId)" href="#treatmentSection"
+                                       class="pay-out-link" style="cursor:pointer;">View Treatments</a>
+                                    @if (isManager)
+                                    {
+                                        <a asp-action="ExportPatientReport" asp-route-patientId="@b.PatientId"
+                                           class="pay-out-link">Export</a>
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -114,148 +116,203 @@
         </div>
     }
 
-    <!-- Filters -->
-    <div class="pay-filters-card">
-        <form method="get" asp-action="Index" class="pay-filters-form">
-            <div class="pay-filter-group">
-                <label class="pay-filter-label">Patient</label>
-                <select name="patientId" class="pay-filter-select">
-                    <option value="">All Patients</option>
+    <!-- Treatment Payments Section -->
+    <div class="pay-treatment-section" id="treatmentSection">
+        <div class="pay-treatment-header">
+            <div>
+                <span class="pay-treatment-title">Treatment Payment Manager</span>
+                <span class="pay-treatment-sub">Select a patient to see their treatments and manage installments</span>
+            </div>
+        </div>
+        <div class="pay-treatment-body">
+            <div class="pay-treatment-picker">
+                <label class="pay-filter-label">Select Patient</label>
+                <select id="treatmentPatientPicker" class="pay-filter-select" onchange="loadPatientTreatments(this.value)" style="max-width:320px;">
+                    <option value="">— Choose a patient —</option>
                     @foreach (var p in Model.FilterPatients)
                     {
-                        if (Model.FilterPatientId?.ToString() == p.Value)
-                        {
-                            <option value="@p.Value" selected>@p.Text</option>
-                        }
-                        else
-                        {
-                            <option value="@p.Value">@p.Text</option>
-                        }
+                        <option value="@p.Value">@p.Text</option>
                     }
                 </select>
-            </div>
-            <div class="pay-filter-group">
-                <label class="pay-filter-label">Status</label>
-                <select name="status" class="pay-filter-select">
-                    <option value="">All Statuses</option>
-                    @foreach (PaymentStatus s in Enum.GetValues(typeof(PaymentStatus)))
-                    {
-                        if (Model.FilterStatus == s)
-                        {
-                            <option value="@((int)s)" selected>@s</option>
-                        }
-                        else
-                        {
-                            <option value="@((int)s)">@s</option>
-                        }
-                    }
-                </select>
-            </div>
-            <div class="pay-filter-group">
-                <label class="pay-filter-label">From</label>
-                <input type="date" name="from" class="pay-filter-input" value="@Model.FilterFrom?.ToString("yyyy-MM-dd")" />
-            </div>
-            <div class="pay-filter-group">
-                <label class="pay-filter-label">To</label>
-                <input type="date" name="to" class="pay-filter-input" value="@Model.FilterTo?.ToString("yyyy-MM-dd")" />
-            </div>
-            <div class="pay-filter-actions">
-                <button type="submit" class="btn-primary">Filter</button>
-                <a asp-action="Index" class="btn-ghost">Clear</a>
-            </div>
-        </form>
-    </div>
-
-    <!-- Payments Table -->
-    <div class="pay-table-card">
-        @if (!Model.Payments.Any())
-        {
-            <div class="pay-empty">
-                <div class="pay-empty-icon-text">No payments found</div>
-                <p class="pay-empty-text">No payment records match your current filters.</p>
                 @if (isManager)
                 {
-                    <button class="btn-primary" onclick="openCreateModal()">Create First Payment</button>
+                    <span id="exportPatientBtn" style="display:none;">
+                        <a id="exportPatientLink" href="#" class="btn-ghost" style="font-size:.82rem;">Export Report</a>
+                    </span>
                 }
             </div>
-        }
-        else
-        {
-            <div class="pay-table-wrapper">
-                <table class="pay-table">
-                    <thead>
-                        <tr>
-                            <th>Invoice #</th>
-                            <th>Patient</th>
-                            <th>Doctor</th>
-                            <th>Treatment</th>
-                            <th>Amount</th>
-                            <th>Owes</th>
-                            <th>Method</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            @if (isManager)
+
+            <div id="treatmentCards" class="pay-treatment-cards" style="display:none;"></div>
+            <div id="treatmentLoading" style="display:none;text-align:center;padding:24px;color:#9ca3af;font-size:.9rem;">Loading treatments...</div>
+            <div id="treatmentEmpty" style="display:none;text-align:center;padding:24px;color:#9ca3af;font-size:.9rem;">No treatments found for this patient.</div>
+        </div>
+    </div>
+
+    <!-- All Payments Filter + Table -->
+    <div class="pay-all-section">
+        <div class="pay-all-header" onclick="toggleAllPayments()">
+            <span class="pay-all-title">All Payment Records</span>
+            <span id="allPaymentsChevron" style="font-size:.85rem;color:#6b7280;">&#9660;</span>
+        </div>
+        <div id="allPaymentsBody">
+            <!-- Filters -->
+            <div class="pay-filters-card" style="border-radius:0;border-top:none;border-left:none;border-right:none;">
+                <form method="get" asp-action="Index" class="pay-filters-form">
+                    <div class="pay-filter-group">
+                        <label class="pay-filter-label">Patient</label>
+                        <select name="patientId" class="pay-filter-select">
+                            <option value="">All Patients</option>
+                            @foreach (var p in Model.FilterPatients)
                             {
-                                <th>Actions</th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var p in Model.Payments)
-                        {
-                            var owes = Model.PatientPendingAmounts.TryGetValue(p.PatientId, out var owed) ? owed : 0m;
-                            <tr>
-                                <td><span class="pay-invoice">#@p.InvoiceNumber</span></td>
-                                <td>
-                                    <a asp-controller="Patients" asp-action="Profile" asp-route-id="@p.PatientId" class="pay-patient-link">
-                                        @p.Patient.FirstName @p.Patient.LastName
-                                    </a>
-                                </td>
-                                <td>Dr. @p.Doctor.FirstName @p.Doctor.LastName</td>
-                                <td>@(p.Treatment != null ? p.Treatment.Title : "—")</td>
-                                <td><strong>$@p.Amount.ToString("N2")</strong></td>
-                                <td>
-                                    @if (owes > 0)
-                                    {
-                                        <span class="pay-owes-badge">$@owes.ToString("N2")</span>
-                                    }
-                                    else
-                                    {
-                                        <span style="color:#9ca3af;">—</span>
-                                    }
-                                </td>
-                                <td>
-                                    <span class="pay-method pay-method-@p.Method.ToString().ToLower()">@p.Method</span>
-                                </td>
-                                <td>
-                                    <span class="pay-badge pay-badge-@p.Status.ToString().ToLower()">@p.Status</span>
-                                </td>
-                                <td>@p.PaymentDate.ToLocalTime().ToString("MMM dd, yyyy")</td>
-                                @if (isManager)
+                                if (Model.FilterPatientId?.ToString() == p.Value)
                                 {
-                                    <td class="pay-actions">
-                                        <button class="btn-ghost btn-sm"
-                                                onclick="openEditModal(@p.Id)">Edit</button>
-                                        <form asp-action="Delete" method="post" style="display:inline;"
-                                              onsubmit="return confirm('Delete payment #@p.InvoiceNumber?');">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@p.Id" />
-                                            <button type="submit" class="btn-ghost btn-sm btn-danger">Delete</button>
-                                        </form>
-                                    </td>
+                                    <option value="@p.Value" selected>@p.Text</option>
                                 }
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                                else
+                                {
+                                    <option value="@p.Value">@p.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="pay-filter-group">
+                        <label class="pay-filter-label">Status</label>
+                        <select name="status" class="pay-filter-select">
+                            <option value="">All Statuses</option>
+                            @foreach (PaymentStatus s in Enum.GetValues(typeof(PaymentStatus)))
+                            {
+                                if (Model.FilterStatus == s)
+                                {
+                                    <option value="@((int)s)" selected>@s</option>
+                                }
+                                else
+                                {
+                                    <option value="@((int)s)">@s</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="pay-filter-group">
+                        <label class="pay-filter-label">From</label>
+                        <input type="date" name="from" class="pay-filter-input" value="@Model.FilterFrom?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="pay-filter-group">
+                        <label class="pay-filter-label">To</label>
+                        <input type="date" name="to" class="pay-filter-input" value="@Model.FilterTo?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="pay-filter-actions">
+                        <button type="submit" class="btn-primary">Filter</button>
+                        <a asp-action="Index" class="btn-ghost">Clear</a>
+                    </div>
+                </form>
             </div>
-        }
+
+            <!-- Payments Table -->
+            <div class="pay-table-card" style="border-radius:0 0 12px 12px;border-top:none;">
+                @if (!Model.Payments.Any())
+                {
+                    <div class="pay-empty">
+                        <div class="pay-empty-icon-text">No payments found</div>
+                        <p class="pay-empty-text">No payment records match your current filters.</p>
+                        @if (isManager)
+                        {
+                            <button class="btn-primary" onclick="openCreateModal()">Create First Payment</button>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="pay-table-wrapper">
+                        <table class="pay-table">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Patient</th>
+                                    <th>Doctor</th>
+                                    <th>Treatment</th>
+                                    <th>Amount</th>
+                                    <th>Owes</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    @if (isManager) { <th>Actions</th> }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in Model.Payments)
+                                {
+                                    var owes = Model.PatientPendingAmounts.TryGetValue(p.PatientId, out var owed) ? owed : 0m;
+                                    <tr>
+                                        <td><span class="pay-invoice">#@p.InvoiceNumber</span></td>
+                                        <td>
+                                            <a asp-controller="Patients" asp-action="Profile" asp-route-id="@p.PatientId" class="pay-patient-link">
+                                                @p.Patient.FirstName @p.Patient.LastName
+                                            </a>
+                                        </td>
+                                        <td>Dr. @p.Doctor.FirstName @p.Doctor.LastName</td>
+                                        <td>
+                                            @if (p.TreatmentId.HasValue)
+                                            {
+                                                <a asp-action="Treatment" asp-route-id="@p.TreatmentId"
+                                                   style="color:#10b981;text-decoration:none;font-size:.83rem;">
+                                                    @(p.Treatment?.Title ?? "Treatment")
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span style="color:#9ca3af;">—</span>
+                                            }
+                                        </td>
+                                        <td><strong>$@p.Amount.ToString("N2")</strong></td>
+                                        <td>
+                                            @if (owes > 0)
+                                            {
+                                                <span class="pay-owes-badge">$@owes.ToString("N2")</span>
+                                            }
+                                            else
+                                            {
+                                                <span style="color:#9ca3af;">—</span>
+                                            }
+                                        </td>
+                                        <td><span class="pay-method">@p.Method</span></td>
+                                        <td>
+                                            <span class="pay-badge pay-badge-@p.Status.ToString().ToLower()">@p.Status</span>
+                                        </td>
+                                        <td>@p.PaymentDate.ToLocalTime().ToString("MMM dd, yyyy")</td>
+                                        @if (isManager)
+                                        {
+                                            <td class="pay-actions">
+                                                @if (p.TreatmentId.HasValue)
+                                                {
+                                                    <a asp-action="Treatment" asp-route-id="@p.TreatmentId"
+                                                       class="btn-ghost btn-sm">Manage</a>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn-ghost btn-sm" onclick="openEditModal(@p.Id)">Edit</button>
+                                                }
+                                                <form asp-action="Delete" method="post" style="display:inline;"
+                                                      onsubmit="return confirm('Delete payment #@p.InvoiceNumber?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@p.Id" />
+                                                    <button type="submit" class="btn-ghost btn-sm btn-danger">Delete</button>
+                                                </form>
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
 </div>
 
 @if (isManager)
 {
-    <!-- Create Modal -->
+    <!-- Create Modal (for non-treatment payments) -->
     <div id="createModal" class="pay-modal-overlay" style="display:none;">
         <div class="pay-modal">
             <div class="pay-modal-header">
@@ -366,7 +423,7 @@
                     <div class="pay-form-row">
                         <div class="pay-form-group">
                             <label class="pay-form-label">Patient *</label>
-                            <select name="PatientId" id="editPatientId" class="pay-form-select" required onchange="loadTreatments(this.value, 'editTreatmentId', 'editDoctorId', 'editAmount')">
+                            <select name="PatientId" id="editPatientId" class="pay-form-select" required>
                                 <option value="">Select patient...</option>
                                 @foreach (var p in Model.Patients)
                                 {
@@ -442,6 +499,7 @@
             setTimeout(() => t.remove(), 4000);
         });
 
+        // ── Outstanding panel toggle ──────────────────────────────────────────────
         function toggleOutstanding() {
             const body = document.getElementById('outstandingBody');
             const chevron = document.getElementById('outstandingChevron');
@@ -450,12 +508,113 @@
             chevron.innerHTML = collapsed ? '&#9660;' : '&#9650;';
         }
 
-        function openCreateModal() {
-            document.getElementById('createModal').style.display = 'flex';
+        // ── All-payments panel toggle ─────────────────────────────────────────────
+        function toggleAllPayments() {
+            const body = document.getElementById('allPaymentsBody');
+            const chevron = document.getElementById('allPaymentsChevron');
+            const collapsed = body.style.display === 'none';
+            body.style.display = collapsed ? '' : 'none';
+            chevron.innerHTML = collapsed ? '&#9660;' : '&#9650;';
         }
-        function closeCreateModal() {
-            document.getElementById('createModal').style.display = 'none';
+
+        // ── Treatment cards ───────────────────────────────────────────────────────
+        const isManager = @(isManager ? "true" : "false");
+
+        function loadPatientTreatments(patientId) {
+            // sync dropdown
+            const picker = document.getElementById('treatmentPatientPicker');
+            if (picker && picker.value != patientId) picker.value = patientId;
+
+            const cards   = document.getElementById('treatmentCards');
+            const loading = document.getElementById('treatmentLoading');
+            const empty   = document.getElementById('treatmentEmpty');
+            const expBtn  = document.getElementById('exportPatientBtn');
+            const expLink = document.getElementById('exportPatientLink');
+
+            cards.style.display   = 'none';
+            empty.style.display   = 'none';
+            loading.style.display = 'block';
+            if (expBtn) expBtn.style.display = 'none';
+
+            if (!patientId) { loading.style.display = 'none'; return; }
+
+            fetch(`/Payments/PatientTreatments?patientId=${patientId}`)
+                .then(r => r.json())
+                .then(treatments => {
+                    loading.style.display = 'none';
+                    if (!treatments.length) { empty.style.display = 'block'; return; }
+
+                    if (expBtn && expLink) {
+                        expLink.href = `/Payments/ExportPatientReport/${patientId}`;
+                        expBtn.style.display = 'inline';
+                    }
+
+                    cards.innerHTML = treatments.map(t => buildTreatmentCard(t)).join('');
+                    cards.style.display = 'grid';
+                })
+                .catch(() => { loading.style.display = 'none'; empty.style.display = 'block'; });
         }
+
+        function buildTreatmentCard(t) {
+            const statusColor = {
+                'Planned': '#64748b', 'InProgress': '#854d0e',
+                'Completed': '#15803d', 'Cancelled': '#b91c1c'
+            }[t.status] || '#64748b';
+            const statusBg = {
+                'Planned': '#f1f5f9', 'InProgress': '#fef9c3',
+                'Completed': '#dcfce7', 'Cancelled': '#fee2e2'
+            }[t.status] || '#f1f5f9';
+
+            const pct  = t.progressPct;
+            const filled = pct >= 100;
+            const barColor = filled ? '#059669' : '#10b981';
+
+            const remainColor = t.remaining > 0 ? '#ea580c' : '#059669';
+
+            const manageBtn = isManager
+                ? `<a href="/Payments/Treatment/${t.treatmentId}" class="btn-primary" style="font-size:.8rem;padding:7px 16px;">Manage Payments</a>`
+                : `<a href="/Payments/Treatment/${t.treatmentId}" class="btn-ghost" style="font-size:.8rem;padding:7px 16px;">View Payments</a>`;
+
+            return `
+            <div class="pay-tx-card">
+                <div class="pay-tx-card-top">
+                    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;">
+                        <span class="pay-tx-badge" style="background:#eff6ff;color:#1d4ed8;">${t.type}</span>
+                        <span class="pay-tx-badge" style="background:${statusBg};color:${statusColor};">${t.status}</span>
+                    </div>
+                    <div class="pay-tx-title">${t.title}</div>
+                    <div class="pay-tx-doctor">${t.doctorName}</div>
+                </div>
+                <div class="pay-tx-financials">
+                    <div class="pay-tx-fin-row">
+                        <span class="pay-tx-fin-label">Total Cost</span>
+                        <span class="pay-tx-fin-value">$${t.totalCost.toFixed(2)}</span>
+                    </div>
+                    <div class="pay-tx-fin-row">
+                        <span class="pay-tx-fin-label">Paid</span>
+                        <span class="pay-tx-fin-value" style="color:#059669;">$${t.totalPaid.toFixed(2)}</span>
+                    </div>
+                    <div class="pay-tx-fin-row">
+                        <span class="pay-tx-fin-label">Remaining</span>
+                        <span class="pay-tx-fin-value" style="color:${remainColor};font-weight:700;">$${t.remaining.toFixed(2)}</span>
+                    </div>
+                </div>
+                <div class="pay-tx-progress">
+                    <div class="pay-tx-progress-label">
+                        <span>${t.paidCount} paid, ${t.pendingCount} pending</span>
+                        <span>${pct}%</span>
+                    </div>
+                    <div class="pay-tx-progress-track">
+                        <div style="width:${pct}%;height:100%;border-radius:99px;background:${barColor};transition:width .4s;"></div>
+                    </div>
+                </div>
+                <div class="pay-tx-footer">${manageBtn}</div>
+            </div>`;
+        }
+
+        // ── Modals ────────────────────────────────────────────────────────────────
+        function openCreateModal()  { document.getElementById('createModal').style.display = 'flex'; }
+        function closeCreateModal() { document.getElementById('createModal').style.display = 'none'; }
 
         function onCreatePatientChange(patientId) {
             document.getElementById('createAppointmentId').innerHTML = '<option value="">No specific appointment</option>';
@@ -473,7 +632,7 @@
                         const opt = document.createElement('option');
                         opt.value = a.value;
                         opt.text = a.alreadyPaid ? a.text + ' (PAID)' : a.text;
-                        opt.dataset.doctorId = a.doctorId;
+                        opt.dataset.doctorId   = a.doctorId;
                         opt.dataset.doctorName = a.doctorName;
                         opt.dataset.alreadyPaid = a.alreadyPaid;
                         if (a.alreadyPaid) opt.style.color = '#c0392b';
@@ -490,7 +649,7 @@
 
         function onAppointmentChange(sel) {
             const opt = sel.options[sel.selectedIndex];
-            const warning = document.getElementById('createAlreadyPaidWarning');
+            const warning   = document.getElementById('createAlreadyPaidWarning');
             const submitBtn = document.querySelector('#createModal button[type="submit"]');
             if (opt && opt.dataset.doctorId) {
                 showDoctorDropdown(false);
@@ -500,7 +659,7 @@
                     hiddenDoc = document.createElement('input');
                     hiddenDoc.type = 'hidden';
                     hiddenDoc.name = 'NewPayment.DoctorId';
-                    hiddenDoc.id = 'createDoctorIdHidden';
+                    hiddenDoc.id   = 'createDoctorIdHidden';
                     sel.closest('form').appendChild(hiddenDoc);
                 }
                 hiddenDoc.value = opt.dataset.doctorId;
@@ -525,44 +684,34 @@
             fetch(`/Payments/GetPayment/${id}`)
                 .then(r => r.json())
                 .then(p => {
-                    document.getElementById('editId').value = p.id;
-                    document.getElementById('editAmount').value = p.amount;
+                    document.getElementById('editId').value          = p.id;
+                    document.getElementById('editAmount').value      = p.amount;
                     document.getElementById('editPaymentDate').value = p.paymentDate;
-                    document.getElementById('editMethod').value = p.method;
-                    document.getElementById('editStatus').value = p.status;
-                    document.getElementById('editNotes').value = p.notes || '';
-
-                    const patSel = document.getElementById('editPatientId');
-                    patSel.value = p.patientId;
-
-                    const docSel = document.getElementById('editDoctorId');
-                    docSel.value = p.doctorId;
-
+                    document.getElementById('editMethod').value      = p.method;
+                    document.getElementById('editStatus').value      = p.status;
+                    document.getElementById('editNotes').value       = p.notes || '';
+                    document.getElementById('editPatientId').value   = p.patientId;
+                    document.getElementById('editDoctorId').value    = p.doctorId;
                     loadTreatments(p.patientId, 'editTreatmentId', null, null, () => {
                         document.getElementById('editTreatmentId').value = p.treatmentId || '';
                     });
-
                     document.getElementById('editModal').style.display = 'flex';
                 });
         }
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
+        function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
 
         function loadTreatments(patientId, treatmentSelectId, doctorSelectId, amountId, callback) {
             const treatSel = document.getElementById(treatmentSelectId);
             treatSel.innerHTML = '<option value="">No specific treatment</option>';
-
             if (!patientId) return;
-
             fetch(`/Payments/GetPatientTreatments?patientId=${patientId}`)
                 .then(r => r.json())
                 .then(treatments => {
                     treatments.forEach(t => {
                         const opt = document.createElement('option');
                         opt.value = t.value;
-                        opt.text = t.text;
-                        opt.dataset.cost = t.cost;
+                        opt.text  = t.text;
+                        opt.dataset.cost     = t.cost;
                         opt.dataset.doctorId = t.doctorId;
                         treatSel.appendChild(opt);
                     });
@@ -572,14 +721,13 @@
 
         function fillAmount(selectEl, amountId) {
             const opt = selectEl.options[selectEl.selectedIndex];
-            if (opt && opt.dataset.cost) {
+            if (opt && opt.dataset.cost)
                 document.getElementById(amountId).value = opt.dataset.cost;
-            }
         }
 
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', e => {
             if (e.target.id === 'createModal') closeCreateModal();
-            if (e.target.id === 'editModal') closeEditModal();
+            if (e.target.id === 'editModal')   closeEditModal();
         });
     </script>
 }

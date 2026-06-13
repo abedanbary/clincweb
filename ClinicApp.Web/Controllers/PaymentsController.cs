@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ClinicApp.Web.Data;
 using ClinicApp.Web.Models;
+using ClinicApp.Web.Services;
 using ClinicApp.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +14,12 @@ namespace ClinicApp.Web.Controllers
     public class PaymentsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IExportService _exportService;
 
-        public PaymentsController(ApplicationDbContext context)
+        public PaymentsController(ApplicationDbContext context, IExportService exportService)
         {
             _context = context;
+            _exportService = exportService;
         }
 
         // GET: /Payments
@@ -297,6 +300,273 @@ namespace ClinicApp.Web.Controllers
 
             TempData["Success"] = "Payment deleted successfully!";
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /Payments/Treatment/{treatmentId}
+        [HttpGet]
+        public async Task<IActionResult> Treatment(int id)
+        {
+            var clinicId = GetCurrentClinicId();
+            var userRole = GetCurrentUserRole();
+            var currentUserId = GetCurrentUserId();
+
+            var treatment = await _context.Treatments
+                .Include(t => t.Patient)
+                .Include(t => t.Doctor)
+                .FirstOrDefaultAsync(t => t.Id == id && t.ClinicId == clinicId);
+
+            if (treatment == null) return NotFound();
+
+            if (userRole == UserRole.Doctor && treatment.DoctorId != currentUserId)
+                return Forbid();
+
+            var payments = await _context.Payments
+                .Include(p => p.Doctor)
+                .Where(p => p.TreatmentId == id && p.ClinicId == clinicId)
+                .OrderBy(p => p.PaymentDate)
+                .ToListAsync();
+
+            var totalPaid    = payments.Where(p => p.Status == PaymentStatus.Paid).Sum(p => p.Amount);
+            var totalPending = payments.Where(p => p.Status == PaymentStatus.Pending).Sum(p => p.Amount);
+
+            var vm = new TreatmentPaymentsPageViewModel
+            {
+                Treatment    = treatment,
+                Patient      = treatment.Patient,
+                Payments     = payments,
+                TotalCost    = treatment.Cost,
+                TotalPaid    = totalPaid,
+                TotalPending = totalPending,
+                NewInstallment = new AddInstallmentViewModel
+                {
+                    TreatmentId = treatment.Id,
+                    PatientId   = treatment.PatientId,
+                    DoctorId    = treatment.DoctorId,
+                    PaymentDate = DateTime.Today
+                }
+            };
+
+            if (userRole == UserRole.Manager)
+            {
+                vm.Doctors = await _context.AppUsers
+                    .Where(u => u.ClinicId == clinicId && u.Role == UserRole.Doctor)
+                    .OrderBy(u => u.FirstName)
+                    .Select(u => new SelectListItem { Value = u.Id.ToString(), Text = $"Dr. {u.FirstName} {u.LastName}" })
+                    .ToListAsync();
+            }
+
+            ViewData["Title"] = $"Payments — {treatment.Title}";
+            return View(vm);
+        }
+
+        // POST: /Payments/AddInstallment
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Manager")]
+        public async Task<IActionResult> AddInstallment(AddInstallmentViewModel model)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            if (!ModelState.IsValid || model.Amount <= 0 || model.PatientId == 0 || model.DoctorId == 0)
+            {
+                TempData["Error"] = "Please fill all required fields correctly.";
+                return RedirectToAction(nameof(Treatment), new { id = model.TreatmentId });
+            }
+
+            // Overpayment guard
+            var treatment = await _context.Treatments
+                .FirstOrDefaultAsync(t => t.Id == model.TreatmentId && t.ClinicId == clinicId);
+            if (treatment == null) return NotFound();
+
+            if (model.Status == PaymentStatus.Paid)
+            {
+                var alreadyPaid = await _context.Payments
+                    .Where(p => p.TreatmentId == model.TreatmentId && p.Status == PaymentStatus.Paid)
+                    .SumAsync(p => p.Amount);
+                var remaining = treatment.Cost - alreadyPaid;
+                if (model.Amount > remaining + 0.01m)
+                {
+                    TempData["Error"] = $"Amount exceeds the remaining balance of {remaining:N2}. Payment not saved.";
+                    return RedirectToAction(nameof(Treatment), new { id = model.TreatmentId });
+                }
+            }
+
+            var lastInvoice = await _context.Payments
+                .Where(p => p.ClinicId == clinicId)
+                .MaxAsync(p => (int?)p.InvoiceNumber) ?? 1000;
+
+            var payment = new Payment
+            {
+                InvoiceNumber = lastInvoice + 1,
+                PatientId     = model.PatientId,
+                DoctorId      = model.DoctorId,
+                TreatmentId   = model.TreatmentId,
+                Amount        = model.Amount,
+                Method        = model.Method,
+                Status        = model.Status,
+                PaymentDate   = DateTime.SpecifyKind(model.PaymentDate, DateTimeKind.Utc),
+                Notes         = model.Notes,
+                ClinicId      = clinicId
+            };
+
+            _context.Payments.Add(payment);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Payment of {model.Amount:N2} recorded successfully.";
+            return RedirectToAction(nameof(Treatment), new { id = model.TreatmentId });
+        }
+
+        // POST: /Payments/EditInstallment
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Manager")]
+        public async Task<IActionResult> EditInstallment(int id, decimal amount, PaymentMethod method,
+            PaymentStatus status, DateTime paymentDate, string? notes, int treatmentId)
+        {
+            var clinicId = GetCurrentClinicId();
+            var payment = await _context.Payments
+                .FirstOrDefaultAsync(p => p.Id == id && p.ClinicId == clinicId);
+            if (payment == null) return NotFound();
+
+            payment.Amount      = amount;
+            payment.Method      = method;
+            payment.Status      = status;
+            payment.PaymentDate = DateTime.SpecifyKind(paymentDate, DateTimeKind.Utc);
+            payment.Notes       = notes;
+
+            await _context.SaveChangesAsync();
+            TempData["Success"] = "Payment updated.";
+            return RedirectToAction(nameof(Treatment), new { id = treatmentId });
+        }
+
+        // POST: /Payments/DeleteInstallment
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Manager")]
+        public async Task<IActionResult> DeleteInstallment(int id, int treatmentId)
+        {
+            var clinicId = GetCurrentClinicId();
+            var payment = await _context.Payments
+                .FirstOrDefaultAsync(p => p.Id == id && p.ClinicId == clinicId);
+            if (payment != null)
+            {
+                _context.Payments.Remove(payment);
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Payment deleted.";
+            }
+            return RedirectToAction(nameof(Treatment), new { id = treatmentId });
+        }
+
+        // GET: /Payments/PatientTreatments?patientId=5  (AJAX)
+        [HttpGet]
+        public async Task<IActionResult> PatientTreatments(int patientId)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var treatments = await _context.Treatments
+                .Include(t => t.Doctor)
+                .Where(t => t.PatientId == patientId && t.ClinicId == clinicId
+                         && t.Status != TreatmentStatus.Cancelled)
+                .OrderByDescending(t => t.TreatmentDate)
+                .ToListAsync();
+
+            var treatmentIds = treatments.Select(t => t.Id).ToList();
+            var allPayments = await _context.Payments
+                .Where(p => treatmentIds.Contains(p.TreatmentId ?? 0) && p.ClinicId == clinicId)
+                .ToListAsync();
+
+            var result = treatments.Select(t =>
+            {
+                var txPay = allPayments.Where(p => p.TreatmentId == t.Id).ToList();
+                var paid  = txPay.Where(p => p.Status == PaymentStatus.Paid).Sum(p => p.Amount);
+                var pend  = txPay.Where(p => p.Status == PaymentStatus.Pending).Sum(p => p.Amount);
+                var rem   = Math.Max(0, t.Cost - paid);
+                var pct   = t.Cost > 0 ? (int)Math.Min(100, paid / t.Cost * 100) : 0;
+                return new
+                {
+                    treatmentId    = t.Id,
+                    title          = t.Title,
+                    type           = t.Type.ToString(),
+                    status         = t.Status.ToString(),
+                    doctorName     = $"Dr. {t.Doctor.FirstName} {t.Doctor.LastName}",
+                    totalCost      = t.Cost,
+                    totalPaid      = paid,
+                    totalPending   = pend,
+                    remaining      = rem,
+                    progressPct    = pct,
+                    paidCount      = txPay.Count(p => p.Status == PaymentStatus.Paid),
+                    pendingCount   = txPay.Count(p => p.Status == PaymentStatus.Pending)
+                };
+            });
+
+            return Json(result);
+        }
+
+        // GET: /Payments/ExportPatientReport/{patientId}
+        [HttpGet]
+        [Authorize(Roles = "Manager")]
+        public async Task<IActionResult> ExportPatientReport(int patientId)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var patient = await _context.Patients
+                .FirstOrDefaultAsync(p => p.Id == patientId && p.ClinicId == clinicId);
+            if (patient == null) return NotFound();
+
+            var treatments = await _context.Treatments
+                .Where(t => t.PatientId == patientId && t.ClinicId == clinicId)
+                .OrderByDescending(t => t.TreatmentDate)
+                .ToListAsync();
+
+            var treatmentIds = treatments.Select(t => t.Id).ToList();
+            var payments = await _context.Payments
+                .Where(p => p.PatientId == patientId && p.ClinicId == clinicId)
+                .ToListAsync();
+
+            var clinic = await _context.Clinics.FindAsync(clinicId);
+            var fileBytes = _exportService.ExportPatientPaymentReport(
+                patient, treatments, payments, clinic?.Name ?? "Clinic");
+
+            return File(fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"PaymentReport_{patient.FirstName}_{patient.LastName}_{DateTime.Now:yyyyMMdd}.xlsx");
+        }
+
+        // GET: /Payments/ExportOutstanding
+        [HttpGet]
+        [Authorize(Roles = "Manager")]
+        public async Task<IActionResult> ExportOutstanding()
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var pending = await _context.Payments
+                .Include(p => p.Patient)
+                .Where(p => p.ClinicId == clinicId && p.Status == PaymentStatus.Pending)
+                .ToListAsync();
+
+            var paid = await _context.Payments
+                .Where(p => p.ClinicId == clinicId && p.Status == PaymentStatus.Paid)
+                .ToListAsync();
+
+            var balances = pending
+                .GroupBy(p => p.PatientId)
+                .Select(g => new PatientBalanceSummary
+                {
+                    PatientId   = g.Key,
+                    PatientName = $"{g.First().Patient.FirstName} {g.First().Patient.LastName}",
+                    TotalPaid   = paid.Where(p => p.PatientId == g.Key).Sum(p => p.Amount),
+                    TotalPending = g.Sum(p => p.Amount),
+                    PendingCount = g.Count()
+                })
+                .OrderByDescending(b => b.TotalPending)
+                .ToList();
+
+            var clinic = await _context.Clinics.FindAsync(clinicId);
+            var fileBytes = _exportService.ExportOutstandingBalances(balances, clinic?.Name ?? "Clinic");
+
+            return File(fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"OutstandingBalances_{DateTime.Now:yyyyMMdd}.xlsx");
         }
 
         private int GetCurrentClinicId() =>

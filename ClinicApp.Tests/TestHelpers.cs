@@ -27,7 +27,7 @@ public static class TestHelpers
         int userId = 10,
         UserRole role = UserRole.Manager)
     {
-        var controller = new ClinicApp.Web.Controllers.PaymentsController(db);
+        var controller = new ClinicApp.Web.Controllers.PaymentsController(db, new Mock<IExportService>().Object);
         var http = new DefaultHttpContext();
 
         var claims = new[]

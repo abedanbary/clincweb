@@ -13,6 +13,62 @@ namespace ClinicApp.Web.ViewModels
         public int PendingCount { get; set; }
     }
 
+    public class TreatmentPaymentSummary
+    {
+        public int TreatmentId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public TreatmentType Type { get; set; }
+        public TreatmentStatus TreatmentStatus { get; set; }
+        public string DoctorName { get; set; } = string.Empty;
+        public decimal TotalCost { get; set; }
+        public decimal TotalPaid { get; set; }
+        public int PaidCount { get; set; }
+        public int PendingCount { get; set; }
+        public decimal Remaining => Math.Max(0, TotalCost - TotalPaid);
+        public int ProgressPercent => TotalCost > 0 ? (int)Math.Min(100, TotalPaid / TotalCost * 100) : 0;
+    }
+
+    public class TreatmentPaymentsPageViewModel
+    {
+        public Treatment Treatment { get; set; } = null!;
+        public Patient Patient { get; set; } = null!;
+        public List<Payment> Payments { get; set; } = new();
+        public decimal TotalCost { get; set; }
+        public decimal TotalPaid { get; set; }
+        public decimal TotalPending { get; set; }
+        public decimal Remaining => Math.Max(0, TotalCost - TotalPaid);
+        public int ProgressPercent => TotalCost > 0 ? (int)Math.Min(100, TotalPaid / TotalCost * 100) : 0;
+        public AddInstallmentViewModel NewInstallment { get; set; } = new();
+        public List<SelectListItem> Doctors { get; set; } = new();
+    }
+
+    public class AddInstallmentViewModel
+    {
+        [Required]
+        public int TreatmentId { get; set; }
+
+        [Required]
+        public int PatientId { get; set; }
+
+        [Required]
+        public int DoctorId { get; set; }
+
+        [Required]
+        [Range(0.01, 9_999_999, ErrorMessage = "Amount must be greater than 0")]
+        public decimal Amount { get; set; }
+
+        [Required]
+        public PaymentMethod Method { get; set; }
+
+        [Required]
+        public PaymentStatus Status { get; set; } = PaymentStatus.Paid;
+
+        [Required]
+        public DateTime PaymentDate { get; set; } = DateTime.Today;
+
+        public string? Notes { get; set; }
+    }
+
     public class PaymentsPageViewModel
     {
         public List<Payment> Payments { get; set; } = new();

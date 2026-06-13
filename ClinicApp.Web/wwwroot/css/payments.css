@@ -363,6 +363,136 @@
     font-size: 13px !important;
 }
 
+/* Treatment Payment Manager section */
+.pay-treatment-section {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.pay-treatment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-alt, #f9fafb);
+}
+
+.pay-treatment-title {
+    font-weight: 700;
+    font-size: 15px;
+    color: #0f172a;
+    display: block;
+}
+
+.pay-treatment-sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+    display: block;
+}
+
+.pay-treatment-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pay-treatment-picker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pay-treatment-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+/* Individual treatment card */
+.pay-tx-card {
+    background: var(--color-bg, #fff);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: box-shadow .15s;
+}
+
+.pay-tx-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+
+.pay-tx-card-top { }
+
+.pay-tx-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.pay-tx-title  { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+.pay-tx-doctor { font-size: 12px; color: #64748b; }
+
+.pay-tx-financials { display: flex; flex-direction: column; gap: 6px; }
+
+.pay-tx-fin-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+.pay-tx-fin-label { color: #6b7280; }
+.pay-tx-fin-value { font-weight: 600; color: #0f172a; }
+
+.pay-tx-progress { }
+
+.pay-tx-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #9ca3af;
+    margin-bottom: 5px;
+}
+
+.pay-tx-progress-track {
+    height: 7px;
+    background: #e5e7eb;
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.pay-tx-footer { margin-top: 4px; }
+
+/* All-payments collapsible */
+.pay-all-section {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.pay-all-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    background: var(--color-surface-alt, #f9fafb);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.pay-all-header:hover { background: #f3f4f6; }
+.pay-all-title { font-weight: 600; font-size: 14px; color: #0f172a; }
+
 /* Empty state without emoji */
 .pay-empty-icon-text {
     font-size: 18px;
