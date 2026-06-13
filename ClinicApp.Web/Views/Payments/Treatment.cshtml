@@ -151,12 +151,19 @@
                 Dr. @Model.Treatment.Doctor.FirstName @Model.Treatment.Doctor.LastName
             </p>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
             @if (isManager)
             {
-                <button class="btn-primary" onclick="openAddModal()">+ Add Payment</button>
-                <a asp-action="ExportPatientReport" asp-route-patientId="@Model.Patient.Id"
-                   class="btn-ghost" title="Export all payments for this patient">Export Report</a>
+                @if (Model.Remaining <= 0)
+                {
+                    <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#dcfce7;color:#15803d;border-radius:8px;font-size:.85rem;font-weight:600;border:1px solid #bbf7d0;">
+                        Treatment Fully Paid
+                    </span>
+                }
+                else
+                {
+                    <button class="btn-primary" onclick="openAddModal()">+ Add Payment</button>
+                }
             }
         </div>
     </div>

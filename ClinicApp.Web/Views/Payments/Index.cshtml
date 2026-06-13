@@ -20,10 +20,7 @@
         </div>
         @if (isManager)
         {
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                <a asp-action="ExportOutstanding" class="btn-ghost">Export Outstanding</a>
-                <button class="btn-primary" onclick="openCreateModal()">+ New Payment</button>
-            </div>
+            <button class="btn-primary" onclick="openCreateModal()">+ New Payment</button>
         }
     </div>
 
@@ -99,14 +96,9 @@
                                 <td style="text-align:right;color:#6b7280;">$@b.TotalPaid.ToString("N2")</td>
                                 <td style="text-align:right;font-weight:700;color:#ea580c;">$@b.TotalPending.ToString("N2")</td>
                                 <td style="text-align:right;color:#6b7280;">@b.PendingCount</td>
-                                <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end;">
+                                <td style="text-align:right;">
                                     <a onclick="loadPatientTreatments(@b.PatientId)" href="#treatmentSection"
                                        class="pay-out-link" style="cursor:pointer;">View Treatments</a>
-                                    @if (isManager)
-                                    {
-                                        <a asp-action="ExportPatientReport" asp-route-patientId="@b.PatientId"
-                                           class="pay-out-link">Export</a>
-                                    }
                                 </td>
                             </tr>
                         }
@@ -134,12 +126,6 @@
                         <option value="@p.Value">@p.Text</option>
                     }
                 </select>
-                @if (isManager)
-                {
-                    <span id="exportPatientBtn" style="display:none;">
-                        <a id="exportPatientLink" href="#" class="btn-ghost" style="font-size:.82rem;">Export Report</a>
-                    </span>
-                }
             </div>
 
             <div id="treatmentCards" class="pay-treatment-cards" style="display:none;"></div>
@@ -528,13 +514,10 @@
             const cards   = document.getElementById('treatmentCards');
             const loading = document.getElementById('treatmentLoading');
             const empty   = document.getElementById('treatmentEmpty');
-            const expBtn  = document.getElementById('exportPatientBtn');
-            const expLink = document.getElementById('exportPatientLink');
 
             cards.style.display   = 'none';
             empty.style.display   = 'none';
             loading.style.display = 'block';
-            if (expBtn) expBtn.style.display = 'none';
 
             if (!patientId) { loading.style.display = 'none'; return; }
 
@@ -543,11 +526,6 @@
                 .then(treatments => {
                     loading.style.display = 'none';
                     if (!treatments.length) { empty.style.display = 'block'; return; }
-
-                    if (expBtn && expLink) {
-                        expLink.href = `/Payments/ExportPatientReport/${patientId}`;
-                        expBtn.style.display = 'inline';
-                    }
 
                     cards.innerHTML = treatments.map(t => buildTreatmentCard(t)).join('');
                     cards.style.display = 'grid';
@@ -569,11 +547,18 @@
             const filled = pct >= 100;
             const barColor = filled ? '#059669' : '#10b981';
 
-            const remainColor = t.remaining > 0 ? '#ea580c' : '#059669';
+            const remainColor  = t.remaining > 0 ? '#ea580c' : '#059669';
+            const isFullyPaid  = t.remaining <= 0 && t.totalCost > 0;
 
-            const manageBtn = isManager
-                ? `<a href="/Payments/Treatment/${t.treatmentId}" class="btn-primary" style="font-size:.8rem;padding:7px 16px;">Manage Payments</a>`
-                : `<a href="/Payments/Treatment/${t.treatmentId}" class="btn-ghost" style="font-size:.8rem;padding:7px 16px;">View Payments</a>`;
+            const manageBtn = isFullyPaid
+                ? `<a href="/Payments/Treatment/${t.treatmentId}" class="btn-ghost" style="font-size:.8rem;padding:7px 16px;">View History</a>`
+                : isManager
+                    ? `<a href="/Payments/Treatment/${t.treatmentId}" class="btn-primary" style="font-size:.8rem;padding:7px 16px;">Manage Payments</a>`
+                    : `<a href="/Payments/Treatment/${t.treatmentId}" class="btn-ghost" style="font-size:.8rem;padding:7px 16px;">View Payments</a>`;
+
+            const fullyPaidBadge = isFullyPaid
+                ? `<span class="pay-tx-badge" style="background:#dcfce7;color:#15803d;">Fully Paid</span>`
+                : '';
 
             return `
             <div class="pay-tx-card">
@@ -581,6 +566,7 @@
                     <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;">
                         <span class="pay-tx-badge" style="background:#eff6ff;color:#1d4ed8;">${t.type}</span>
                         <span class="pay-tx-badge" style="background:${statusBg};color:${statusColor};">${t.status}</span>
+                        ${fullyPaidBadge}
                     </div>
                     <div class="pay-tx-title">${t.title}</div>
                     <div class="pay-tx-doctor">${t.doctorName}</div>

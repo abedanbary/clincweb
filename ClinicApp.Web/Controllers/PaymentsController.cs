@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using ClinicApp.Web.Data;
 using ClinicApp.Web.Models;
-using ClinicApp.Web.Services;
 using ClinicApp.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,12 +13,10 @@ namespace ClinicApp.Web.Controllers
     public class PaymentsController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly IExportService _exportService;
 
-        public PaymentsController(ApplicationDbContext context, IExportService exportService)
+        public PaymentsController(ApplicationDbContext context)
         {
             _context = context;
-            _exportService = exportService;
         }
 
         // GET: /Payments
@@ -500,73 +497,6 @@ namespace ClinicApp.Web.Controllers
             });
 
             return Json(result);
-        }
-
-        // GET: /Payments/ExportPatientReport/{patientId}
-        [HttpGet]
-        [Authorize(Roles = "Manager")]
-        public async Task<IActionResult> ExportPatientReport(int patientId)
-        {
-            var clinicId = GetCurrentClinicId();
-
-            var patient = await _context.Patients
-                .FirstOrDefaultAsync(p => p.Id == patientId && p.ClinicId == clinicId);
-            if (patient == null) return NotFound();
-
-            var treatments = await _context.Treatments
-                .Where(t => t.PatientId == patientId && t.ClinicId == clinicId)
-                .OrderByDescending(t => t.TreatmentDate)
-                .ToListAsync();
-
-            var treatmentIds = treatments.Select(t => t.Id).ToList();
-            var payments = await _context.Payments
-                .Where(p => p.PatientId == patientId && p.ClinicId == clinicId)
-                .ToListAsync();
-
-            var clinic = await _context.Clinics.FindAsync(clinicId);
-            var fileBytes = _exportService.ExportPatientPaymentReport(
-                patient, treatments, payments, clinic?.Name ?? "Clinic");
-
-            return File(fileBytes,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"PaymentReport_{patient.FirstName}_{patient.LastName}_{DateTime.Now:yyyyMMdd}.xlsx");
-        }
-
-        // GET: /Payments/ExportOutstanding
-        [HttpGet]
-        [Authorize(Roles = "Manager")]
-        public async Task<IActionResult> ExportOutstanding()
-        {
-            var clinicId = GetCurrentClinicId();
-
-            var pending = await _context.Payments
-                .Include(p => p.Patient)
-                .Where(p => p.ClinicId == clinicId && p.Status == PaymentStatus.Pending)
-                .ToListAsync();
-
-            var paid = await _context.Payments
-                .Where(p => p.ClinicId == clinicId && p.Status == PaymentStatus.Paid)
-                .ToListAsync();
-
-            var balances = pending
-                .GroupBy(p => p.PatientId)
-                .Select(g => new PatientBalanceSummary
-                {
-                    PatientId   = g.Key,
-                    PatientName = $"{g.First().Patient.FirstName} {g.First().Patient.LastName}",
-                    TotalPaid   = paid.Where(p => p.PatientId == g.Key).Sum(p => p.Amount),
-                    TotalPending = g.Sum(p => p.Amount),
-                    PendingCount = g.Count()
-                })
-                .OrderByDescending(b => b.TotalPending)
-                .ToList();
-
-            var clinic = await _context.Clinics.FindAsync(clinicId);
-            var fileBytes = _exportService.ExportOutstandingBalances(balances, clinic?.Name ?? "Clinic");
-
-            return File(fileBytes,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"OutstandingBalances_{DateTime.Now:yyyyMMdd}.xlsx");
         }
 
         private int GetCurrentClinicId() =>
