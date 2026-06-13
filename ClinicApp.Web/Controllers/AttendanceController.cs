@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ClinicApp.Web.Controllers
 {
-    [Authorize(Roles = "Manager,Doctor")]
+    [Authorize(Roles = "Manager,Doctor,Assistant")]
     public class AttendanceController : Controller
     {
         private readonly ApplicationDbContext _context;

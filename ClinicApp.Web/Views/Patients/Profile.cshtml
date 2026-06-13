@@ -3,7 +3,7 @@
 @model PatientProfileViewModel
 
 @{
-    Layout = "_DoctorLayout";
+    Layout = User.IsInRole("Manager") ? "_ManagerLayout" : "_DoctorLayout";
     ViewData["Title"] = $"{Model.FirstName} {Model.LastName}";
 }
 

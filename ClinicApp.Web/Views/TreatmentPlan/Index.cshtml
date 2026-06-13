@@ -5,7 +5,7 @@
 @using System.Security.Claims
 @{
     var userRole = User.FindFirstValue(ClaimTypes.Role);
-    Layout = userRole == "Doctor" ? "_DoctorLayout" : "_ManagerLayout";
+    Layout = userRole == "Doctor" ? "_DoctorLayout" : userRole == "Assistant" ? "_AssistantLayout" : "_ManagerLayout";
     ViewData["Title"] = "Treatment Plans";
 }
 

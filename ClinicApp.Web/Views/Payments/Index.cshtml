@@ -3,9 +3,11 @@
 @model PaymentsPageViewModel
 
 @{
-    Layout = User.IsInRole("Manager") ? "_ManagerLayout" : "_DoctorLayout";
+    var isManager   = User.IsInRole("Manager");
+    var isAssistant = User.IsInRole("Assistant");
+    var isStaff     = isManager || isAssistant;
+    Layout = isManager ? "_ManagerLayout" : isAssistant ? "_AssistantLayout" : "_DoctorLayout";
     ViewData["Title"] = "Payments";
-    var isManager = User.IsInRole("Manager");
 }
 
 <link rel="stylesheet" href="~/css/payments.css" />
@@ -16,9 +18,9 @@
     <div class="pay-header">
         <div>
             <h1 class="pay-title">Payments</h1>
-            <p class="pay-subtitle">@(isManager ? "Manage all clinic payments and invoices" : "View patient payments for your practice")</p>
+            <p class="pay-subtitle">@(isStaff ? "Manage all clinic payments and invoices" : "View patient payments for your practice")</p>
         </div>
-        @if (isManager)
+        @if (isStaff)
         {
             <button class="btn-primary" onclick="openCreateModal()">+ New Payment</button>
         }
@@ -200,7 +202,7 @@
                     <div class="pay-empty">
                         <div class="pay-empty-icon-text">No payments found</div>
                         <p class="pay-empty-text">No payment records match your current filters.</p>
-                        @if (isManager)
+                        @if (isStaff)
                         {
                             <button class="btn-primary" onclick="openCreateModal()">Create First Payment</button>
                         }
@@ -221,7 +223,7 @@
                                     <th>Method</th>
                                     <th>Status</th>
                                     <th>Date</th>
-                                    @if (isManager) { <th>Actions</th> }
+                                    @if (isStaff) { <th>Actions</th> }
                                 </tr>
                             </thead>
                             <tbody>
@@ -265,7 +267,7 @@
                                             <span class="pay-badge pay-badge-@p.Status.ToString().ToLower()">@p.Status</span>
                                         </td>
                                         <td>@p.PaymentDate.ToLocalTime().ToString("MMM dd, yyyy")</td>
-                                        @if (isManager)
+                                        @if (isStaff)
                                         {
                                             <td class="pay-actions">
                                                 @if (p.TreatmentId.HasValue)
@@ -277,12 +279,15 @@
                                                 {
                                                     <button class="btn-ghost btn-sm" onclick="openEditModal(@p.Id)">Edit</button>
                                                 }
-                                                <form asp-action="Delete" method="post" style="display:inline;"
-                                                      onsubmit="return confirm('Delete payment #@p.InvoiceNumber?');">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="id" value="@p.Id" />
-                                                    <button type="submit" class="btn-ghost btn-sm btn-danger">Delete</button>
-                                                </form>
+                                                @if (isManager)
+                                                {
+                                                    <form asp-action="Delete" method="post" style="display:inline;"
+                                                          onsubmit="return confirm('Delete payment #@p.InvoiceNumber?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@p.Id" />
+                                                        <button type="submit" class="btn-ghost btn-sm btn-danger">Delete</button>
+                                                    </form>
+                                                }
                                             </td>
                                         }
                                     </tr>
@@ -296,7 +301,7 @@
     </div>
 </div>
 
-@if (isManager)
+@if (isStaff)
 {
     <!-- Create Modal (for non-treatment payments) -->
     <div id="createModal" class="pay-modal-overlay" style="display:none;">
@@ -504,7 +509,7 @@
         }
 
         // ── Treatment cards ───────────────────────────────────────────────────────
-        const isManager = @(isManager ? "true" : "false");
+        const isManager = @(isStaff ? "true" : "false");
 
         function loadPatientTreatments(patientId) {
             // sync dropdown

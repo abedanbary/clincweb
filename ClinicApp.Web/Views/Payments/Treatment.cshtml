@@ -3,9 +3,11 @@
 @model TreatmentPaymentsPageViewModel
 
 @{
-    Layout = User.IsInRole("Manager") ? "_ManagerLayout" : "_DoctorLayout";
+    var isManager   = User.IsInRole("Manager");
+    var isAssistant = User.IsInRole("Assistant");
+    var isStaff     = isManager || isAssistant;
+    Layout = isManager ? "_ManagerLayout" : isAssistant ? "_AssistantLayout" : "_DoctorLayout";
     ViewData["Title"] = $"Payments — {Model.Treatment.Title}";
-    var isManager = User.IsInRole("Manager");
     var today = DateTime.UtcNow.Date;
 }
 
@@ -152,7 +154,7 @@
             </p>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            @if (isManager)
+            @if (isStaff)
             {
                 @if (Model.Remaining <= 0)
                 {
@@ -260,7 +262,7 @@
         {
             <div class="tp-empty">
                 No payments recorded yet.
-                @if (isManager)
+                @if (isStaff)
                 {
                     <br /><small>Click "+ Add Payment" to record the first installment.</small>
                 }
@@ -278,7 +280,7 @@
                         <th>Status</th>
                         <th>Doctor</th>
                         <th>Notes</th>
-                        @if (isManager) { <th style="text-align:right;">Actions</th> }
+                        @if (isStaff) { <th style="text-align:right;">Actions</th> }
                     </tr>
                 </thead>
                 <tbody>
@@ -300,20 +302,23 @@
                             <td style="color:#9ca3af;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@p.Notes">
                                 @(p.Notes ?? "—")
                             </td>
-                            @if (isManager)
+                            @if (isStaff)
                             {
                                 <td style="text-align:right;white-space:nowrap;">
                                     <button class="btn-ghost btn-sm"
                                             onclick="openEditModal(@p.Id, @p.Amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture), @((int)p.Method), @((int)p.Status), '@p.PaymentDate.ToLocalTime().ToString("yyyy-MM-dd")', '@(p.Notes?.Replace("'","\\'")??"")' )">
                                         Edit
                                     </button>
-                                    <form asp-action="DeleteInstallment" method="post" style="display:inline;"
-                                          onsubmit="return confirm('Delete this payment record?')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@p.Id" />
-                                        <input type="hidden" name="treatmentId" value="@Model.Treatment.Id" />
-                                        <button type="submit" class="btn-ghost btn-sm btn-danger">Delete</button>
-                                    </form>
+                                    @if (isManager)
+                                    {
+                                        <form asp-action="DeleteInstallment" method="post" style="display:inline;"
+                                              onsubmit="return confirm('Delete this payment record?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@p.Id" />
+                                            <input type="hidden" name="treatmentId" value="@Model.Treatment.Id" />
+                                            <button type="submit" class="btn-ghost btn-sm btn-danger">Delete</button>
+                                        </form>
+                                    }
                                 </td>
                             }
                         </tr>
@@ -323,7 +328,7 @@
                     <tr style="background:#f9fafb;">
                         <td colspan="2" style="padding:11px 16px;font-weight:600;font-size:.82rem;color:#374151;">Total paid</td>
                         <td style="text-align:right;padding:11px 16px;font-weight:700;color:#059669;">$@Model.TotalPaid.ToString("N2")</td>
-                        <td colspan="@(isManager ? 5 : 4)"></td>
+                        <td colspan="@(isStaff ? 5 : 4)"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -331,7 +336,7 @@
     </div>
 </div>
 
-@if (isManager)
+@if (isStaff)
 {
     <!-- Add Payment Modal -->
     <div id="addModal" class="tp-modal-overlay" style="display:none;">

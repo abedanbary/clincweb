@@ -3,7 +3,7 @@
 @model MaterialInvoicesViewModel
 
 @{
-    Layout = User.IsInRole("Doctor") ? "_DoctorLayout" : "_ManagerLayout";
+    Layout = User.IsInRole("Doctor") ? "_DoctorLayout" : User.IsInRole("Assistant") ? "_AssistantLayout" : "_ManagerLayout";
     ViewData["Title"] = "Material Purchase Invoices";
 }
 

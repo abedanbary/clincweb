@@ -149,7 +149,7 @@ namespace ClinicApp.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-      [Authorize(Roles ="Doctor")]
+      [Authorize(Roles = "Manager,Doctor")]
         public async Task<IActionResult> Profile(int id)
         {
             var clinicId = GetCurrentClinicId();

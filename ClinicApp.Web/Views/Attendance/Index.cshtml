@@ -3,7 +3,7 @@
 @model AttendancePageViewModel
 
 @{
-    Layout = "_ManagerLayout";
+    Layout = User.IsInRole("Assistant") ? "_AssistantLayout" : "_ManagerLayout";
     ViewData["Title"] = "Doctor Attendance";
     var today = DateTime.UtcNow.Date;
     var months = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.MonthNames

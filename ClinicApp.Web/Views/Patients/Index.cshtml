@@ -5,7 +5,9 @@
 @using System.Security.Claims
 @{
     var userRole = User.FindFirstValue(ClaimTypes.Role);
-    Layout = userRole == "Doctor" ? "_DoctorLayout" : "_ManagerLayout";
+    Layout = userRole == "Doctor" ? "_DoctorLayout"
+           : userRole == "Assistant" ? "_AssistantLayout"
+           : "_ManagerLayout";
     ViewData["Title"] = "Patients";
 }
 
@@ -84,10 +86,10 @@
                                         <span class="badge @genderClass">@patient.Gender</span>
                                     </td>
                                     <td>
-                                        <!-- رابط للـ Profile -->
-                                        <a asp-action="Profile" asp-route-id="@patient.Id" class="btn-ghost">
-                                             View
-                                        </a>
+                                        @if (!User.IsInRole("Assistant"))
+                                        {
+                                            <a asp-action="Profile" asp-route-id="@patient.Id" class="btn-ghost">View</a>
+                                        }
                                         
                                         <button class="btn-ghost" onclick="editPatient(@patient.Id)"> Edit</button>
                                         

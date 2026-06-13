@@ -1,0 +1,115 @@
+@{
+    Layout = null;
+    var title = ViewData["Title"] ?? "Assistant Panel";
+    var ctrl   = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    string Nav(string controller, string act = "Index")
+        => (ctrl.Equals(controller, StringComparison.OrdinalIgnoreCase) &&
+            action.Equals(act,       StringComparison.OrdinalIgnoreCase))
+           ? "sidebar-link is-active" : "sidebar-link";
+
+    string NavDash = (ctrl == "Assistant" && action == "Index") ? "sidebar-link is-active" : "sidebar-link";
+
+    var firstName = User.FindFirst("FirstName")?.Value ?? "Assistant";
+    var lastName  = User.FindFirst("LastName")?.Value  ?? "";
+    var avatarChar = firstName.Length > 0 ? firstName[0].ToString() : "A";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@title - Clinic Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="stylesheet" href="~/css/manager.css" />
+    <link rel="stylesheet" href="~/css/materials.css" />
+    <link rel="stylesheet" href="~/css/patients.css" />
+    <link rel="stylesheet" href="~/css/patient-profile.css" />
+    <link rel="stylesheet" href="~/css/doctor-dashboard.css" />
+    <link rel="stylesheet" href="~/css/payments.css" />
+    <link rel="stylesheet" href="~/css/attendance.css" />
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+</head>
+<body>
+    <div class="manager-shell">
+        <!-- Sidebar -->
+        <aside class="manager-sidebar">
+            <div class="sidebar-header">
+                <div class="brand-logo">CA</div>
+                <div class="brand-text">
+                    <span class="brand-title">Clinic Assistant</span>
+                    <span class="brand-subtitle">Assistant Portal</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Overview</div>
+                    <a class="@NavDash" asp-controller="Assistant" asp-action="Index">
+                        <span class="sidebar-link-text">Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Management</div>
+                    <a class="@Nav("Patients")" asp-controller="Patients" asp-action="Index">
+                        <span class="sidebar-link-text">Patients</span>
+                    </a>
+                    <a class="@Nav("Appointments")" asp-controller="Appointments" asp-action="Index">
+                        <span class="sidebar-link-text">Appointments</span>
+                    </a>
+                    <a class="@Nav("Materials")" asp-controller="Materials" asp-action="Index">
+                        <span class="sidebar-link-text">Materials</span>
+                    </a>
+                    <a class="@Nav("Payments")" asp-controller="Payments" asp-action="Index">
+                        <span class="sidebar-link-text">Payments</span>
+                    </a>
+                    <a class="@Nav("Attendance")" asp-controller="Attendance" asp-action="Index">
+                        <span class="sidebar-link-text">Attendance</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main area -->
+        <div class="manager-main">
+            <!-- Top bar -->
+            <header class="manager-topbar">
+                <div class="topbar-left">
+                    <span class="topbar-page-title">@title</span>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="topbar-user">
+                        <div class="user-avatar">@avatarChar</div>
+                        <div class="user-info">
+                            <span class="user-name">@firstName @lastName</span>
+                            <span class="user-role">Clinic Assistant</span>
+                        </div>
+                    </div>
+                    <select class="lang-select" onchange="setLanguage(this.value)" style="border:1px solid rgba(0,0,0,0.15);background:#fff;color:var(--color-text);padding:4px 8px;border-radius:6px;font-size:13px;cursor:pointer;outline:none;">
+                        <option value="en">🌐 English</option>
+                        <option value="he">🌐 עברית</option>
+                        <option value="ar">🌐 العربية</option>
+                    </select>
+                    <form asp-controller="Auth" asp-action="Logout" method="post" style="display:inline;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="topbar-button">Logout</button>
+                    </form>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <main class="manager-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+    <script src="~/js/simple-image-viewer.js"></script>
+    <script src="~/js/i18n.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
