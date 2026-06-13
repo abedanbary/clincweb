@@ -99,7 +99,6 @@
                                         <button class="btn-ghost btn-sm" onclick="openEditQuantityModal(@item.Id, '@item.Name', @item.Quantity)">+/-</button>
                                         @if (isManager)
                                         {
-                                            <button class="btn-ghost btn-sm" onclick="editMaterial(@item.Id)">Edit</button>
                                             <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display: inline;" onsubmit="return confirm('Delete this material?')">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn-ghost btn-danger btn-sm">Remove</button>
@@ -276,7 +275,7 @@
             <!-- Purchase Invoice toggle -->
             <div id="invoiceToggleWrapper" style="border-top: 1px solid #e5e7eb; margin-top: .5rem; padding-top: .75rem; display:none;">
                 <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-size:.875rem; font-weight:500; color:#374151;">
-                    <input type="checkbox" name="createInvoice" id="editCreateInvoice" onchange="toggleEditInvoice(this)" style="width:16px;height:16px;accent-color:#10b981;" />
+                    <input type="checkbox" name="createInvoice" value="true" id="editCreateInvoice" onchange="toggleEditInvoice(this)" style="width:16px;height:16px;accent-color:#10b981;" />
                     Create a purchase invoice for this stock
                 </label>
             </div>
@@ -422,7 +421,7 @@
 
                             let invoiceCell = '<span style="color:#9ca3af;">—</span>';
                             if (h.invoiceId) {
-                                invoiceCell = `<a href="/Materials/Invoices" style="color:#10b981;font-weight:500;font-size:.78rem;text-decoration:none;"
+                                invoiceCell = `<a href="/Materials/Invoices?materialId=${materialId}" style="color:#10b981;font-weight:500;font-size:.78rem;text-decoration:none;"
                                     title="Total: ${h.invoiceTotal?.toFixed(2)}">
                                     🧾 ${h.invoiceNumber}
                                 </a>`;
@@ -450,10 +449,6 @@
             historyRow.style.display = 'none';
             buttonEl.setAttribute('aria-expanded', 'false');
         }
-    }
-
-    function editMaterial(id) {
-        alert('Edit functionality coming soon for material ID: ' + id);
     }
 
     document.addEventListener('keydown', function(e) {
