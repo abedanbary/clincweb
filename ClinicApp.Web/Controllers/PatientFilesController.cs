@@ -218,6 +218,37 @@ public class PatientFilesController : Controller
         return View(vm);
     }
 
+    // GET /patients/{patientId}/files/{fileId}/pano-viewer
+    [HttpGet("{fileId}/pano-viewer")]
+    public async Task<IActionResult> PanoViewer(int patientId, int fileId, CancellationToken ct)
+    {
+        var file = await GetFileAsync(patientId, fileId, ct);
+        if (file == null) return NotFound();
+
+        if (!PatientFileHelper.IsImage(file.Extension))
+            return BadRequest("This file is not a supported image format.");
+
+        var clinicId = GetCurrentClinicId();
+        var patient = await GetPatientAsync(patientId, clinicId, ct);
+
+        var vm = new PatientFileViewerViewModel
+        {
+            PatientId = patientId,
+            FileId = fileId,
+            OriginalFileName = file.OriginalFileName,
+            Extension = file.Extension,
+            Category = file.Category,
+            Size = file.Size,
+            UploadedAtUtc = file.UploadedAtUtc,
+            Notes = file.Notes,
+            PatientFirstName = patient?.FirstName ?? "",
+            PatientLastName = patient?.LastName ?? ""
+        };
+
+        ViewData["Title"] = $"Panoramic Viewer — {file.OriginalFileName}";
+        return View(vm);
+    }
+
     // GET /patients/{patientId}/files/{fileId}/stream  (safe backend proxy — used by 3D viewer)
     [HttpGet("{fileId}/stream")]
     public async Task<IActionResult> Stream(int patientId, int fileId, CancellationToken ct)

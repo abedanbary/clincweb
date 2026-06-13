@@ -174,7 +174,14 @@
                                 @if (isImage)
                                 {
                                     <button onclick="previewImage(@f.Id)" class="btn-action btn-view">Preview</button>
-                                    <a href="/patients/@Model.PatientId/files/@f.Id/xray-viewer" class="btn-action btn-3d">X-ray View</a>
+                                    @if (f.Category == PatientFileCategory.PanoramicXray)
+                                    {
+                                        <a href="/patients/@Model.PatientId/files/@f.Id/pano-viewer" class="btn-action btn-3d">Pano View</a>
+                                    }
+                                    else
+                                    {
+                                        <a href="/patients/@Model.PatientId/files/@f.Id/xray-viewer" class="btn-action btn-3d">X-ray View</a>
+                                    }
                                 }
                                 @if (isPdf)
                                 {
