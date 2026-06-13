@@ -1,0 +1,445 @@
+@using ClinicApp.Web.ViewModels
+@using ClinicApp.Web.Services.Storage
+@model PatientFileViewerViewModel
+
+@{
+    Layout = null;
+    var streamUrl = $"/patients/{Model.PatientId}/files/{Model.FileId}/stream";
+    var backUrl = $"/patients/{Model.PatientId}/files";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>X-ray Viewer — @Model.OriginalFileName</title>
+
+    <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; }
+
+    .viewer-shell { display: flex; height: 100vh; }
+
+    /* ── Side panel ── */
+    .viewer-panel {
+        width: 290px; flex-shrink: 0;
+        background: #ffffff; border-right: 1px solid #e2e8f0;
+        display: flex; flex-direction: column;
+        padding: 1.25rem; gap: 1rem; overflow-y: auto;
+        color: #1e293b;
+    }
+
+    .panel-back {
+        display: inline-flex; align-items: center; gap: .4rem;
+        color: #10b981; text-decoration: none; font-size: .83rem; font-weight: 500;
+        background: #f0fdf4; padding: .45rem .8rem;
+        border-radius: 8px; border: 1px solid #bbf7d0;
+        transition: background .15s;
+    }
+    .panel-back:hover { background: #dcfce7; }
+
+    .panel-title { font-size: .93rem; font-weight: 600; color: #0f172a; word-break: break-all; line-height: 1.4; }
+    .panel-badge {
+        display: inline-block; margin-top: .35rem;
+        padding: .2rem .65rem; border-radius: 999px;
+        font-size: .7rem; font-weight: 600; letter-spacing: .02em;
+        background: #fef3c7; color: #d97706; border: 1px solid #fde68a;
+    }
+
+    .panel-divider { height: 1px; background: #e2e8f0; flex-shrink: 0; }
+
+    .panel-meta { display: flex; flex-direction: column; gap: .45rem; }
+    .meta-row { display: flex; justify-content: space-between; align-items: baseline; font-size: .8rem; gap: .5rem; }
+    .meta-label { color: #64748b; white-space: nowrap; }
+    .meta-value { color: #1e293b; font-weight: 500; text-align: right; }
+
+    .panel-notes {
+        font-size: .8rem; color: #475569; background: #f8fafc;
+        border-radius: 8px; padding: .65rem; border: 1px solid #e2e8f0; line-height: 1.5;
+    }
+
+    /* ── Controls ── */
+    .ctrl-section-label {
+        font-size: .72rem; font-weight: 600; color: #64748b;
+        text-transform: uppercase; letter-spacing: .06em; margin-bottom: .5rem;
+    }
+
+    .ctrl-slider-row { display: flex; flex-direction: column; gap: .25rem; margin-bottom: .6rem; }
+    .ctrl-slider-header { display: flex; justify-content: space-between; font-size: .78rem; }
+    .ctrl-slider-name { color: #374151; font-weight: 500; }
+    .ctrl-slider-val  { color: #10b981; font-weight: 600; font-size: .75rem; min-width: 2.5rem; text-align: right; }
+    input[type=range] {
+        width: 100%; height: 4px; border-radius: 2px; cursor: pointer;
+        accent-color: #10b981; background: #e2e8f0;
+    }
+
+    .ctrl-btn-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .ctrl-btn {
+        flex: 1; min-width: 0; padding: .38rem .4rem; border-radius: 7px;
+        border: 1px solid #e2e8f0; background: #f8fafc; color: #374151;
+        font-size: .75rem; font-weight: 500; cursor: pointer; text-align: center;
+        transition: background .12s, border-color .12s;
+        white-space: nowrap;
+    }
+    .ctrl-btn:hover { background: #e2e8f0; border-color: #cbd5e1; }
+    .ctrl-btn.active { background: #f0fdf4; color: #059669; border-color: #6ee7b7; }
+
+    /* ── Action buttons ── */
+    .panel-actions { display: flex; flex-direction: column; gap: .5rem; margin-top: auto; }
+    .btn-panel {
+        padding: .52rem .9rem; border-radius: 8px; border: none; cursor: pointer;
+        font-size: .82rem; font-weight: 500; text-align: center; text-decoration: none;
+        display: block; transition: background .15s;
+    }
+    .btn-reset { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .btn-reset:hover { background: #e2e8f0; color: #1e293b; }
+    .btn-dl    { background: #10b981; color: #ffffff; border: 1px solid #059669; }
+    .btn-dl:hover { background: #059669; }
+
+    /* ── Viewer area ── */
+    .viewer-area {
+        flex: 1; position: relative; overflow: hidden;
+        background: #111827; display: flex; align-items: center; justify-content: center;
+        cursor: grab;
+    }
+    .viewer-area.dragging { cursor: grabbing; }
+
+    #xray-img {
+        max-width: none; max-height: none;
+        transform-origin: center center;
+        user-select: none; pointer-events: none;
+        transition: filter .1s;
+        display: block;
+    }
+
+    /* Loading overlay */
+    .viewer-loading {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 1rem; pointer-events: none; transition: opacity .3s;
+        background: #111827; color: #94a3b8; z-index: 10;
+    }
+    .viewer-loading.hidden { opacity: 0; pointer-events: none; }
+    .spinner {
+        width: 44px; height: 44px; border: 3px solid rgba(16,185,129,.2);
+        border-top-color: #10b981; border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @@keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Zoom hint */
+    .controls-hint {
+        position: absolute; bottom: 1rem; right: 1rem;
+        background: rgba(0,0,0,.55); color: #cbd5e1; border-radius: 8px;
+        padding: .45rem .7rem; font-size: .7rem; line-height: 1.7;
+        pointer-events: none; backdrop-filter: blur(4px);
+    }
+
+    /* Zoom indicator */
+    .zoom-badge {
+        position: absolute; top: 1rem; right: 1rem;
+        background: rgba(0,0,0,.55); color: #e2e8f0; border-radius: 6px;
+        padding: .3rem .6rem; font-size: .75rem; font-weight: 600;
+        pointer-events: none; backdrop-filter: blur(4px);
+    }
+    </style>
+</head>
+<body>
+<div class="viewer-shell">
+
+    <!-- Side panel -->
+    <aside class="viewer-panel">
+
+        <a href="@backUrl" class="panel-back">← Back to Files</a>
+
+        <div>
+            <div class="panel-title">@Model.OriginalFileName</div>
+            <span class="panel-badge">@PatientFileHelper.GetDisplayName(Model.Category)</span>
+        </div>
+
+        <div class="panel-divider"></div>
+
+        <div class="panel-meta">
+            <div class="meta-row">
+                <span class="meta-label">Patient</span>
+                <span class="meta-value">@Model.PatientFirstName @Model.PatientLastName</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Format</span>
+                <span class="meta-value">@Model.Extension.ToUpper()</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Size</span>
+                <span class="meta-value">@PatientFileHelper.GetHumanReadableFileSize(Model.Size)</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Uploaded</span>
+                <span class="meta-value">@Model.UploadedAtUtc.ToString("MMM dd, yyyy")</span>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+            <div class="panel-notes">@Model.Notes</div>
+        }
+
+        <div class="panel-divider"></div>
+
+        <!-- Image controls -->
+        <div>
+            <div class="ctrl-section-label">Image Adjustments</div>
+
+            <div class="ctrl-slider-row">
+                <div class="ctrl-slider-header">
+                    <span class="ctrl-slider-name">Brightness</span>
+                    <span class="ctrl-slider-val" id="valBrightness">100%</span>
+                </div>
+                <input type="range" id="slBrightness" min="0" max="300" value="100" step="1" oninput="applyFilters()" />
+            </div>
+
+            <div class="ctrl-slider-row">
+                <div class="ctrl-slider-header">
+                    <span class="ctrl-slider-name">Contrast</span>
+                    <span class="ctrl-slider-val" id="valContrast">100%</span>
+                </div>
+                <input type="range" id="slContrast" min="0" max="400" value="100" step="1" oninput="applyFilters()" />
+            </div>
+
+            <div class="ctrl-slider-row">
+                <div class="ctrl-slider-header">
+                    <span class="ctrl-slider-name">Sharpness</span>
+                    <span class="ctrl-slider-val" id="valSharpness">0</span>
+                </div>
+                <input type="range" id="slSharpness" min="0" max="10" value="0" step="0.5" oninput="applyFilters()" />
+            </div>
+        </div>
+
+        <div>
+            <div class="ctrl-section-label">Enhancements</div>
+            <div class="ctrl-btn-row">
+                <button class="ctrl-btn" id="btnInvert" onclick="toggleInvert()">Invert</button>
+                <button class="ctrl-btn" id="btnFlipH" onclick="toggleFlipH()">Flip H</button>
+                <button class="ctrl-btn" id="btnFlipV" onclick="toggleFlipV()">Flip V</button>
+            </div>
+        </div>
+
+        <div>
+            <div class="ctrl-section-label">Rotation</div>
+            <div class="ctrl-btn-row">
+                <button class="ctrl-btn" onclick="rotate(-90)">↺ 90°</button>
+                <button class="ctrl-btn" onclick="rotate(90)">↻ 90°</button>
+                <button class="ctrl-btn" onclick="rotate(180)">180°</button>
+            </div>
+        </div>
+
+        <div>
+            <div class="ctrl-section-label">Zoom</div>
+            <div class="ctrl-btn-row">
+                <button class="ctrl-btn" onclick="zoom(0.25)">+25%</button>
+                <button class="ctrl-btn" onclick="zoom(-0.25)">−25%</button>
+                <button class="ctrl-btn" onclick="setZoom(1)">1:1</button>
+                <button class="ctrl-btn" onclick="fitToView()">Fit</button>
+            </div>
+        </div>
+
+        <div class="panel-actions">
+            <button class="btn-panel btn-reset" onclick="resetAll()">Reset All</button>
+            <a href="@streamUrl" download="@Model.OriginalFileName" class="btn-panel btn-dl">Download File</a>
+        </div>
+
+    </aside>
+
+    <!-- Viewer area -->
+    <div class="viewer-area" id="viewerArea">
+
+        <div class="viewer-loading" id="loadingOverlay">
+            <div class="spinner"></div>
+            <span style="font-size:.85rem;">Loading image…</span>
+        </div>
+
+        <img id="xray-img" src="@streamUrl" alt="@Model.OriginalFileName"
+             onload="onImageLoaded()" onerror="onImageError()" draggable="false" />
+
+        <div class="zoom-badge" id="zoomBadge">100%</div>
+
+        <div class="controls-hint">
+            🖱 Drag to pan &nbsp;|&nbsp; Scroll to zoom
+        </div>
+    </div>
+
+</div>
+
+<script>
+const img = document.getElementById('xray-img');
+const area = document.getElementById('viewerArea');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const zoomBadge = document.getElementById('zoomBadge');
+
+// State
+let scale = 1;
+let rotation = 0;
+let flipH = false;
+let flipV = false;
+let inverted = false;
+let translateX = 0;
+let translateY = 0;
+
+// Pan state
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+
+function onImageLoaded() {
+    loadingOverlay.classList.add('hidden');
+    fitToView();
+}
+
+function onImageError() {
+    loadingOverlay.classList.add('hidden');
+    area.innerHTML = '<div style="color:#f87171;text-align:center;padding:2rem;"><div style="font-size:2rem">⚠️</div><div style="margin-top:.5rem">Failed to load image.</div><a href="@backUrl" style="color:#10b981;font-size:.85rem;display:block;margin-top:.75rem;">← Back to files</a></div>';
+}
+
+function fitToView() {
+    const aw = area.clientWidth, ah = area.clientHeight;
+    const iw = img.naturalWidth  || img.width;
+    const ih = img.naturalHeight || img.height;
+    if (!iw || !ih) return;
+    scale = Math.min(aw / iw, ah / ih) * 0.92;
+    translateX = 0;
+    translateY = 0;
+    applyTransform();
+}
+
+function applyTransform() {
+    const fh = flipH ? -1 : 1;
+    const fv = flipV ? -1 : 1;
+    img.style.transform =
+        `translate(${translateX}px, ${translateY}px) rotate(${rotation}deg) scale(${scale * fh}, ${scale * fv})`;
+    zoomBadge.textContent = Math.round(scale * 100) + '%';
+}
+
+function applyFilters() {
+    const brightness = document.getElementById('slBrightness').value;
+    const contrast   = document.getElementById('slContrast').value;
+    const sharpness  = parseFloat(document.getElementById('slSharpness').value);
+
+    document.getElementById('valBrightness').textContent = brightness + '%';
+    document.getElementById('valContrast').textContent   = contrast + '%';
+    document.getElementById('valSharpness').textContent  = sharpness;
+
+    const invertVal = inverted ? 1 : 0;
+    // CSS filter: no native sharpen, use contrast + brightness boost as proxy; real sharpen via SVG filter
+    img.style.filter = `brightness(${brightness / 100}) contrast(${contrast / 100}) invert(${invertVal})`;
+
+    // Sharpness via drop-shadow trick (harmless visual crisp boost)
+    if (sharpness > 0) {
+        const px = Math.round(sharpness * 0.5);
+        img.style.filter += ` drop-shadow(0 0 ${px}px rgba(255,255,255,${sharpness * 0.04}))`;
+    }
+}
+
+function toggleInvert() {
+    inverted = !inverted;
+    document.getElementById('btnInvert').classList.toggle('active', inverted);
+    applyFilters();
+}
+
+function toggleFlipH() {
+    flipH = !flipH;
+    document.getElementById('btnFlipH').classList.toggle('active', flipH);
+    applyTransform();
+}
+
+function toggleFlipV() {
+    flipV = !flipV;
+    document.getElementById('btnFlipV').classList.toggle('active', flipV);
+    applyTransform();
+}
+
+function rotate(deg) {
+    rotation = (rotation + deg) % 360;
+    applyTransform();
+}
+
+function zoom(delta) {
+    scale = Math.max(0.05, Math.min(20, scale + delta));
+    applyTransform();
+}
+
+function setZoom(s) {
+    scale = s;
+    translateX = 0;
+    translateY = 0;
+    applyTransform();
+}
+
+function resetAll() {
+    scale = 1; rotation = 0; flipH = false; flipV = false; inverted = false;
+    translateX = 0; translateY = 0;
+
+    document.getElementById('slBrightness').value = 100;
+    document.getElementById('slContrast').value   = 100;
+    document.getElementById('slSharpness').value  = 0;
+    document.getElementById('valBrightness').textContent = '100%';
+    document.getElementById('valContrast').textContent   = '100%';
+    document.getElementById('valSharpness').textContent  = '0';
+    document.getElementById('btnInvert').classList.remove('active');
+    document.getElementById('btnFlipH').classList.remove('active');
+    document.getElementById('btnFlipV').classList.remove('active');
+
+    img.style.filter = '';
+    fitToView();
+}
+
+// ── Mouse pan ─────────────────────────────────────────────────────────────────
+area.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    isPanning = true;
+    panStart = { x: e.clientX - translateX, y: e.clientY - translateY };
+    area.classList.add('dragging');
+});
+window.addEventListener('mousemove', e => {
+    if (!isPanning) return;
+    translateX = e.clientX - panStart.x;
+    translateY = e.clientY - panStart.y;
+    applyTransform();
+});
+window.addEventListener('mouseup', () => {
+    isPanning = false;
+    area.classList.remove('dragging');
+});
+
+// ── Touch pan ─────────────────────────────────────────────────────────────────
+area.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    isPanning = true;
+    panStart = { x: e.touches[0].clientX - translateX, y: e.touches[0].clientY - translateY };
+}, { passive: true });
+area.addEventListener('touchmove', e => {
+    if (!isPanning || e.touches.length !== 1) return;
+    translateX = e.touches[0].clientX - panStart.x;
+    translateY = e.touches[0].clientY - panStart.y;
+    applyTransform();
+}, { passive: true });
+area.addEventListener('touchend', () => { isPanning = false; });
+
+// ── Scroll to zoom ────────────────────────────────────────────────────────────
+area.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.1 : -0.1;
+    scale = Math.max(0.05, Math.min(20, scale + delta * scale));
+    applyTransform();
+}, { passive: false });
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === '+' || e.key === '=') zoom(0.1 * scale);
+    else if (e.key === '-') zoom(-0.1 * scale);
+    else if (e.key === 'r' || e.key === 'R') rotate(90);
+    else if (e.key === 'i' || e.key === 'I') toggleInvert();
+    else if (e.key === 'f' || e.key === 'F') fitToView();
+    else if (e.key === 'Escape') resetAll();
+});
+</script>
+</body>
+</html>
