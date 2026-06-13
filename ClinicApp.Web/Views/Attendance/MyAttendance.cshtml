@@ -1,0 +1,327 @@
+@using ClinicApp.Web.Models
+@using ClinicApp.Web.ViewModels
+@model AttendancePageViewModel
+
+@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = "My Attendance";
+    var today    = DateTime.UtcNow.Date;
+    var todayRec = Model.Records.FirstOrDefault(r => r.Date.Date == today);
+    var isCurrentMonth = Model.Year == today.Year && Model.Month == today.Month;
+}
+
+<link rel="stylesheet" href="~/css/attendance.css" />
+
+<div class="att-page">
+
+    <!-- Toasts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="att-toast att-toast-success">@TempData["Success"]</div>
+    }
+
+    <!-- Header + Month Navigation -->
+    <div class="att-header">
+        <div>
+            <h1 class="att-title">My Attendance</h1>
+            <p class="att-sub">@Model.SelectedDoctorName — @Model.MonthName</p>
+        </div>
+        <div class="att-month-nav">
+            <a asp-action="MyAttendance"
+               asp-route-year="@Model.PrevMonth.Year"
+               asp-route-month="@Model.PrevMonth.Month"
+               class="att-month-btn">&larr;</a>
+            <span class="att-month-name">@Model.MonthName</span>
+            <a asp-action="MyAttendance"
+               asp-route-year="@Model.NextMonth.Year"
+               asp-route-month="@Model.NextMonth.Month"
+               class="att-month-btn">&rarr;</a>
+        </div>
+    </div>
+
+    <!-- Today quick-status banner (only if current month) -->
+    @if (isCurrentMonth)
+    {
+        <div class="att-today-banner">
+            <div>
+                <div class="att-today-status">
+                    Today — @today.ToString("dddd, MMMM dd")
+                </div>
+                <div class="att-today-sub">
+                    @if (todayRec == null)
+                    {
+                        <span style="color:#ea580c;">Not marked yet</span>
+                    }
+                    else if (todayRec.Status == AttendanceStatus.Present)
+                    {
+                        <span style="color:#15803d;">
+                            Present
+                            @if (todayRec.CheckIn.HasValue)
+                            {
+                                <text>&nbsp;&middot; In: @(DateTime.Today.Add(todayRec.CheckIn.Value).ToString("h:mm tt"))</text>
+                            }
+                            @if (todayRec.CheckOut.HasValue)
+                            {
+                                <text>&nbsp;&middot; Out: @(DateTime.Today.Add(todayRec.CheckOut.Value).ToString("h:mm tt"))</text>
+                            }
+                            @if (todayRec.WorkingHours.HasValue)
+                            {
+                                <text>&nbsp;&middot; @todayRec.WorkingHours.Value h</text>
+                            }
+                        </span>
+                    }
+                    else
+                    {
+                        <span style="color:#6b7280;">@todayRec.Status</span>
+                    }
+                </div>
+            </div>
+            <button class="btn-primary" onclick="openModal('@today.ToString("yyyy-MM-dd")', @(todayRec == null ? "null" : $"'{todayRec.Status}','{todayRec.CheckIn?.ToString("hh\\\\:mm")}','{todayRec.CheckOut?.ToString("hh\\\\:mm")}','{todayRec.Notes}'"))">
+                @(todayRec == null ? "Mark Today" : "Edit Today")
+            </button>
+        </div>
+    }
+
+    <!-- Summary cards -->
+    <div class="att-stats">
+        <div class="att-stat-card att-stat-green">
+            <div class="att-stat-icon">P</div>
+            <div>
+                <div class="att-stat-value">@Model.Summary.DaysPresent</div>
+                <div class="att-stat-label">Days Present</div>
+            </div>
+        </div>
+        <div class="att-stat-card att-stat-red">
+            <div class="att-stat-icon">A</div>
+            <div>
+                <div class="att-stat-value">@Model.Summary.DaysAbsent</div>
+                <div class="att-stat-label">Days Absent</div>
+            </div>
+        </div>
+        <div class="att-stat-card att-stat-blue">
+            <div class="att-stat-icon">H</div>
+            <div>
+                <div class="att-stat-value">@Model.Summary.TotalHours</div>
+                <div class="att-stat-label">Total Hours</div>
+            </div>
+        </div>
+        <div class="att-stat-card att-stat-orange">
+            <div class="att-stat-icon">Tx</div>
+            <div>
+                <div class="att-stat-value">@Model.Summary.TotalTreatments</div>
+                <div class="att-stat-label">Treatments (@Model.Summary.AvgTreatmentsPerDay / day)</div>
+            </div>
+        </div>
+        <div class="att-stat-card att-stat-gray">
+            <div class="att-stat-icon">O</div>
+            <div>
+                <div class="att-stat-value">@Model.Summary.DayOff</div>
+                <div class="att-stat-label">Days Off</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="att-calendar-card">
+        <div class="att-cal-header">
+            <span class="att-cal-header-title">Monthly Calendar — click a past or today's cell to mark attendance</span>
+        </div>
+        <div class="att-cal-weekdays">
+            @foreach (var d in new[] { "Mon","Tue","Wed","Thu","Fri","Sat","Sun" })
+            {
+                <div class="att-cal-weekday">@d</div>
+            }
+        </div>
+        <div class="att-cal-grid">
+            @foreach (var day in Model.CalendarDays)
+            {
+                var cellClass = "att-cal-cell";
+                if (!day.IsCurrentMonth) cellClass += " other-month";
+                if (day.IsToday)         cellClass += " is-today";
+                if (day.IsFuture)        cellClass += " is-future";
+
+                var clickable = day.IsCurrentMonth && !day.IsFuture;
+                var onclickAttr = "";
+                if (clickable)
+                {
+                    var recStatus  = day.Record?.Status.ToString() ?? "null";
+                    var recIn      = day.Record?.CheckIn?.ToString(@"hh\:mm")  ?? "";
+                    var recOut     = day.Record?.CheckOut?.ToString(@"hh\:mm") ?? "";
+                    var recNotes   = day.Record?.Notes?.Replace("'", "\\'")    ?? "";
+                    onclickAttr = $"openModal('{day.Date:yyyy-MM-dd}', '{recStatus}', '{recIn}', '{recOut}', '{recNotes}')";
+                }
+
+                <div class="@cellClass" @(clickable ? $"onclick=\"{onclickAttr}\"" : "")>
+                    <span class="att-day-num">@day.Date.Day</span>
+
+                    @if (day.Record != null && day.IsCurrentMonth)
+                    {
+                        var sc = day.Record.Status == AttendanceStatus.Present ? "present"
+                               : day.Record.Status == AttendanceStatus.Absent  ? "absent"
+                               : "dayoff";
+                        <span class="att-status-badge att-status-@sc">@day.Record.Status</span>
+
+                        @if (day.Record.Status == AttendanceStatus.Present && day.Record.CheckIn.HasValue)
+                        {
+                            <span class="att-cell-time">
+                                @DateTime.Today.Add(day.Record.CheckIn.Value).ToString("h:mm tt")
+                                @if (day.Record.CheckOut.HasValue)
+                                {
+                                    <text>– @DateTime.Today.Add(day.Record.CheckOut.Value).ToString("h:mm tt")</text>
+                                }
+                            </span>
+                        }
+                    }
+
+                    @if (day.TreatmentsCompleted > 0 && day.IsCurrentMonth)
+                    {
+                        <span class="att-cell-tx">@day.TreatmentsCompleted tx</span>
+                    }
+
+                    @if (clickable && day.Record == null)
+                    {
+                        <span class="att-cell-add">+ Mark</span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Records table -->
+    @if (Model.Records.Any())
+    {
+        <div class="att-table-card">
+            <div class="att-table-header">
+                <span class="att-table-title">All Records — @Model.MonthName</span>
+                <span style="font-size:12px;color:#6b7280;">@Model.Records.Count record(s)</span>
+            </div>
+            <table class="att-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Check-In</th>
+                        <th>Check-Out</th>
+                        <th>Hours</th>
+                        <th>Treatments</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Records)
+                    {
+                        var sc = r.Status == AttendanceStatus.Present ? "present"
+                               : r.Status == AttendanceStatus.Absent  ? "absent"
+                               : "dayoff";
+                        var dayTx = Model.CalendarDays
+                            .FirstOrDefault(d => d.Date.Date == r.Date.Date)?.TreatmentsCompleted ?? 0;
+                        <tr onclick="openModal('@r.Date.ToString("yyyy-MM-dd")', '@r.Status', '@(r.CheckIn?.ToString(@"hh\:mm")??"")','@(r.CheckOut?.ToString(@"hh\:mm")??"")','@(r.Notes?.Replace("'","\\'")??"")' )"
+                            style="cursor:pointer;">
+                            <td>@r.Date.ToString("ddd, MMM dd")</td>
+                            <td><span class="att-status-badge att-status-@sc">@r.Status</span></td>
+                            <td>@(r.CheckIn.HasValue  ? DateTime.Today.Add(r.CheckIn.Value).ToString("h:mm tt")  : "—")</td>
+                            <td>@(r.CheckOut.HasValue ? DateTime.Today.Add(r.CheckOut.Value).ToString("h:mm tt") : "—")</td>
+                            <td>
+                                @if (r.WorkingHours.HasValue)
+                                {
+                                    <span class="att-hours-badge">@r.WorkingHours.Value h</span>
+                                }
+                                else { <text>—</text> }
+                            </td>
+                            <td>
+                                @if (dayTx > 0)
+                                {
+                                    <span class="att-tx-count">@dayTx</span>
+                                }
+                                else { <text>—</text> }
+                            </td>
+                            <td style="color:#9ca3af;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(r.Notes ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Attendance Modal -->
+<div id="attModal" class="att-modal-overlay" style="display:none;">
+    <div class="att-modal">
+        <div class="att-modal-header">
+            <h2 class="att-modal-title" id="modalTitle">Mark Attendance</h2>
+            <button class="att-modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form asp-action="Save" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="DoctorId" value="@Model.SelectedDoctorId" />
+            <input type="hidden" name="Date" id="modalDate" />
+            <div class="att-modal-body">
+                <div class="att-form-group">
+                    <label class="att-form-label">Status *</label>
+                    <select name="Status" id="modalStatus" class="att-form-select" onchange="toggleTimeFields(this.value)" required>
+                        <option value="1">Present</option>
+                        <option value="2">Absent</option>
+                        <option value="3">Day Off</option>
+                    </select>
+                </div>
+                <div class="att-time-section" id="timeSection">
+                    <div class="att-form-row">
+                        <div class="att-form-group">
+                            <label class="att-form-label">Check-In Time</label>
+                            <input type="time" name="CheckIn" id="modalCheckIn" class="att-form-input" />
+                        </div>
+                        <div class="att-form-group">
+                            <label class="att-form-label">Check-Out Time</label>
+                            <input type="time" name="CheckOut" id="modalCheckOut" class="att-form-input" />
+                        </div>
+                    </div>
+                </div>
+                <div class="att-form-group">
+                    <label class="att-form-label">Notes (optional)</label>
+                    <input type="text" name="Notes" id="modalNotes" class="att-form-input" placeholder="Optional notes..." />
+                </div>
+            </div>
+            <div class="att-modal-footer">
+                <button type="button" class="btn-ghost" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.att-toast').forEach(t => {
+            setTimeout(() => t.style.opacity = '0', 3500);
+            setTimeout(() => t.remove(), 4000);
+        });
+
+        function openModal(date, status, checkIn, checkOut, notes) {
+            document.getElementById('modalDate').value    = date;
+            document.getElementById('modalCheckIn').value  = checkIn  || '';
+            document.getElementById('modalCheckOut').value = checkOut || '';
+            document.getElementById('modalNotes').value    = notes    || '';
+
+            const statusMap = { 'Present': '1', 'Absent': '2', 'DayOff': '3', 'null': '1' };
+            const sel = document.getElementById('modalStatus');
+            sel.value = statusMap[status] ?? '1';
+            toggleTimeFields(sel.value);
+
+            const d = new Date(date + 'T00:00:00');
+            document.getElementById('modalTitle').textContent =
+                'Attendance — ' + d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+
+            document.getElementById('attModal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('attModal').style.display = 'none'; }
+
+        function toggleTimeFields(val) {
+            document.getElementById('timeSection').style.display = val === '1' ? '' : 'none';
+        }
+
+        document.addEventListener('click', e => {
+            if (e.target.id === 'attModal') closeModal();
+        });
+    </script>
+}

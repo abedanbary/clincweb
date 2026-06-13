@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="~/css/patients.css" />
     <link rel="stylesheet" href="~/css/payments.css" />
     <link rel="stylesheet" href="~/css/materials.css" />
+    <link rel="stylesheet" href="~/css/attendance.css" />
 </head>
 
 
@@ -54,6 +55,13 @@
                     <div class="sidebar-section-title">Finance</div>
                     <a class="sidebar-link" asp-controller="Payments" asp-action="Index">
                         <span class="sidebar-link-text">Payments</span>
+                    </a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">My Work</div>
+                    <a class="sidebar-link" asp-controller="Attendance" asp-action="MyAttendance">
+                        <span class="sidebar-link-text">Attendance</span>
                     </a>
                 </div>
 

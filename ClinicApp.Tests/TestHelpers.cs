@@ -44,6 +44,32 @@ public static class TestHelpers
         return controller;
     }
 
+    public static ClinicApp.Web.Controllers.AttendanceController CreateAttendanceController(
+        ApplicationDbContext db,
+        int clinicId = 1,
+        int userId = 10,
+        UserRole role = UserRole.Manager)
+    {
+        var controller = new ClinicApp.Web.Controllers.AttendanceController(db);
+        var http = new DefaultHttpContext();
+
+        var claims = new List<Claim>
+        {
+            new Claim("ClinicId", clinicId.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+            new Claim(ClaimTypes.Role, role.ToString())
+        };
+
+        if (role == UserRole.Doctor)
+            claims.Add(new Claim("FirstName", "Test"));
+
+        http.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+        controller.ControllerContext = new ControllerContext { HttpContext = http };
+        controller.TempData = new TempDataDictionary(http, Mock.Of<ITempDataProvider>());
+
+        return controller;
+    }
+
     public static ClinicApp.Web.Controllers.AppointmentsController CreateAppointmentsController(
         ApplicationDbContext db,
         int clinicId = 1,

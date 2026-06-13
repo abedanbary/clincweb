@@ -25,6 +25,7 @@ namespace ClinicApp.Web.Data
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
         public DbSet<PatientFile> PatientFiles { get; set; }
         public DbSet<MaterialInvoice> MaterialInvoices { get; set; }
+        public DbSet<DoctorAttendance> DoctorAttendances { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -114,6 +115,24 @@ namespace ClinicApp.Web.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(s => new { s.DoctorId, s.DayOfWeek }).IsUnique();
+            });
+
+            modelBuilder.Entity<DoctorAttendance>(entity =>
+            {
+                entity.HasOne(a => a.Doctor)
+                    .WithMany()
+                    .HasForeignKey(a => a.DoctorId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(a => a.Clinic)
+                    .WithMany()
+                    .HasForeignKey(a => a.ClinicId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(a => a.CheckIn).HasColumnType("time without time zone");
+                entity.Property(a => a.CheckOut).HasColumnType("time without time zone");
+
+                entity.HasIndex(a => new { a.DoctorId, a.Date }).IsUnique();
             });
         }
     }

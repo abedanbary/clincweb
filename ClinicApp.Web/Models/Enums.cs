@@ -30,9 +30,16 @@ namespace ClinicApp.Web.Models
     }
        public enum AppointmentStatus
     {
-        Scheduled = 1,   
-        Completed = 2,   
-        Cancelled = 3,   
-        NoShow = 4       
+        Scheduled = 1,
+        Completed = 2,
+        Cancelled = 3,
+        NoShow = 4
+    }
+
+    public enum AttendanceStatus
+    {
+        Present = 1,
+        Absent  = 2,
+        DayOff  = 3
     }
 }
