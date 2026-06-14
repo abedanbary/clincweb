@@ -99,7 +99,6 @@
                     }
                 </select>
             </div>
-            <input type="hidden" name="doctorId" value="@Model.SelectedDoctorId" />
         </form>
 
         @if (Model.SelectedDoctorId.HasValue)
@@ -314,8 +313,11 @@
         <form asp-action="Save" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" name="DoctorId" value="@Model.SelectedDoctorId" />
-            <input type="hidden" name="Date"     id="modalDate" />
             <div class="att-modal-body">
+                <div class="att-form-group">
+                    <label class="att-form-label">Date *</label>
+                    <input type="date" name="Date" id="modalDate" class="att-form-input" required />
+                </div>
                 <div class="att-form-group">
                     <label class="att-form-label">Status *</label>
                     <select name="Status" id="modalStatus" class="att-form-select" onchange="toggleTimeFields(this.value)" required>
@@ -356,9 +358,11 @@
             setTimeout(() => t.remove(), 4000);
         });
 
+        // Default to first day of the currently viewed month (not necessarily today)
         function openAddModal() {
-            const today = new Date();
-            const iso   = today.toISOString().split('T')[0];
+            const viewedYear  = @Model.Year;
+            const viewedMonth = @Model.Month;
+            const iso = `${viewedYear}-${String(viewedMonth).padStart(2,'0')}-01`;
             openModal(iso, 'null', '', '', '', 0);
         }
 
@@ -373,10 +377,8 @@
             sel.value = statusMap[status] ?? '1';
             toggleTimeFields(sel.value);
 
-            const d = new Date(date + 'T00:00:00');
             document.getElementById('modalTitle').textContent =
-                (recordId > 0 ? 'Edit — ' : 'Add — ') +
-                d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+                recordId > 0 ? 'Edit Attendance Record' : 'Add Attendance Record';
 
             document.getElementById('attModal').style.display = 'flex';
         }
