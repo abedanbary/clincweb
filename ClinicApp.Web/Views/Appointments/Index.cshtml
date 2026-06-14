@@ -365,32 +365,40 @@
             return `${y}-${mo}-${d}T${h}:${mi}`;
         }
 
+        let _lastDocs = [];
+
         function loadAvailableDoctors() {
             const start = startTimeInput.value;
             const end = endTimeInput.value;
             if (!start || !end) return;
 
-            doctorNote.textContent = 'Loading available doctors...';
+            doctorNote.textContent = 'Checking availability...';
+            doctorNote.style.color = '#6b7280';
             doctorSelect.innerHTML = '<option value="">Loading...</option>';
 
             fetch(`/Appointments/GetAvailableDoctors?startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`)
                 .then(r => r.json())
                 .then(doctors => {
-                    doctorSelect.innerHTML = '';
-                    if (doctors.length === 0) {
-                        doctorSelect.innerHTML = '<option value="">No doctors available at this time</option>';
-                        doctorNote.textContent = 'No doctors are available for the selected time slot.';
-                        doctorNote.style.color = '#ef4444';
-                    } else {
-                        doctorSelect.innerHTML = '<option value="">-- Select Doctor --</option>';
-                        doctors.forEach(d => {
-                            const opt = document.createElement('option');
-                            opt.value = d.value;
-                            opt.textContent = d.text;
-                            doctorSelect.appendChild(opt);
-                        });
-                        doctorNote.textContent = `${doctors.length} doctor(s) available at this time.`;
+                    _lastDocs = doctors;
+                    doctorSelect.innerHTML = '<option value="">-- Select Doctor --</option>';
+                    doctors.forEach(d => {
+                        const label = d.hasConflict
+                            ? `${d.text} — already booked`
+                            : !d.worksAtThisTime
+                                ? `${d.text} — not scheduled`
+                                : d.text;
+                        const opt = document.createElement('option');
+                        opt.value = d.value;
+                        opt.textContent = label;
+                        doctorSelect.appendChild(opt);
+                    });
+                    const freeCount = doctors.filter(d => d.worksAtThisTime && !d.hasConflict).length;
+                    if (freeCount > 0) {
+                        doctorNote.textContent = `${freeCount} doctor(s) available at this time.`;
                         doctorNote.style.color = '#10b981';
+                    } else {
+                        doctorNote.textContent = 'No doctors are scheduled at this time — you can still select one.';
+                        doctorNote.style.color = '#f59e0b';
                     }
                 })
                 .catch(() => {
@@ -398,6 +406,23 @@
                     doctorNote.style.color = '#ef4444';
                 });
         }
+
+        doctorSelect.addEventListener('change', function () {
+            const id = this.value;
+            if (!id || !_lastDocs.length) return;
+            const d = _lastDocs.find(x => String(x.value) === String(id));
+            if (!d) return;
+            if (d.hasConflict) {
+                doctorNote.textContent = '⚠ This doctor already has an appointment at this time';
+                doctorNote.style.color = '#ef4444';
+            } else if (!d.worksAtThisTime) {
+                doctorNote.textContent = '⚠ This doctor doesn\'t work at this time — you can still book if needed';
+                doctorNote.style.color = '#f59e0b';
+            } else {
+                doctorNote.textContent = '✓ Doctor is available at this time';
+                doctorNote.style.color = '#10b981';
+            }
+        });
 
         startTimeInput.addEventListener('change', function() {
             if (this.value) {

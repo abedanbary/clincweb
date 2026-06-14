@@ -164,9 +164,9 @@ public class CalendarControllerTests
     // ── GetAvailableDoctors ───────────────────────────────────────
 
     [Fact]
-    public async Task GetAvailableDoctors_WhenDoctorBusy_ExcludesHim()
+    public async Task GetAvailableDoctors_WhenDoctorBusy_FlagsHasConflict()
     {
-        using var db = TestHelpers.CreateDb(nameof(GetAvailableDoctors_WhenDoctorBusy_ExcludesHim));
+        using var db = TestHelpers.CreateDb(nameof(GetAvailableDoctors_WhenDoctorBusy_FlagsHasConflict));
 
         db.AppUsers.AddRange(MakeDoctor(10), MakeDoctor(20));
         db.Patients.Add(MakePatient(5));
@@ -185,12 +185,17 @@ public class CalendarControllerTests
         var result = await controller.GetAvailableDoctors(start, end);
         var root   = ParseJson(result);
 
-        var ids = Enumerable.Range(0, root.GetArrayLength())
-                            .Select(i => root[i].GetProperty("value").GetInt32())
-                            .ToList();
+        // All doctors are returned; doctor 10 is flagged with hasConflict=true
+        Assert.Equal(2, root.GetArrayLength());
+        var doc10 = Enumerable.Range(0, root.GetArrayLength())
+            .Select(i => root[i])
+            .First(d => d.GetProperty("value").GetInt32() == 10);
+        var doc20 = Enumerable.Range(0, root.GetArrayLength())
+            .Select(i => root[i])
+            .First(d => d.GetProperty("value").GetInt32() == 20);
 
-        Assert.DoesNotContain(10, ids);   // busy
-        Assert.Contains(20, ids);         // free
+        Assert.True(doc10.GetProperty("hasConflict").GetBoolean());   // busy — flagged
+        Assert.False(doc20.GetProperty("hasConflict").GetBoolean());  // free
     }
 
     [Fact]

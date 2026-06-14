@@ -810,24 +810,27 @@ function loadAvailableDoctors() {
 
     const url = `${window.appEndpoints.getAvailableDoctors}?startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`;
 
-    // For doctors: check if they themselves are free at the selected time
+    // For doctors: check their own schedule and conflicts
     if (window.currentUser?.role === 'Doctor') {
         if (note) { note.textContent = 'Checking your availability…'; note.className = 'cal-doctor-note loading'; }
         fetch(url).then(r => r.json()).then(docs => {
             if (!note) return;
-            const isFree = docs.some(d => String(d.value) === String(window.currentUser.id));
-            if (isFree) {
-                note.textContent = '✓ You are free at this time';
-                note.className   = 'cal-doctor-note success';
-            } else {
+            const me = docs.find(d => String(d.value) === String(window.currentUser.id));
+            if (!me || me.worksAtThisTime === false) {
+                note.textContent = '⚠ You don\'t work at this time — you can still book if needed';
+                note.className   = 'cal-doctor-note warning';
+            } else if (me.hasConflict) {
                 note.textContent = '⚠ You already have an appointment at this time';
                 note.className   = 'cal-doctor-note error';
+            } else {
+                note.textContent = '✓ You are free at this time';
+                note.className   = 'cal-doctor-note success';
             }
         }).catch(() => { if (note) { note.textContent = ''; note.className = 'cal-doctor-note'; } });
         return;
     }
 
-    // Manager / assistant: populate the doctor select
+    // Manager / assistant: populate the doctor select with ALL doctors
     const sel = document.getElementById('DoctorId');
     if (!sel) return;
     note.textContent = 'Checking availability…';
@@ -835,20 +838,44 @@ function loadAvailableDoctors() {
     sel.innerHTML    = '<option value="">Loading…</option>';
 
     fetch(url).then(r => r.json()).then(docs => {
-        if (!docs.length) {
-            sel.innerHTML    = '<option value="">No doctors available</option>';
-            note.textContent = 'No doctors free at this time.';
-            note.className   = 'cal-doctor-note error';
-        } else {
-            sel.innerHTML = '<option value="">— Select Doctor —</option>';
-            docs.forEach(d => {
-                const o = Object.assign(document.createElement('option'), { value: d.value, textContent: d.text });
-                sel.appendChild(o);
-            });
-            note.textContent = `${docs.length} doctor${docs.length > 1 ? 's' : ''} available.`;
+        sel.innerHTML = '<option value="">— Select Doctor —</option>';
+        docs.forEach(d => {
+            const label = d.hasConflict
+                ? `${d.text} — already booked`
+                : !d.worksAtThisTime
+                    ? `${d.text} — not scheduled`
+                    : d.text;
+            const o = Object.assign(document.createElement('option'), { value: d.value, textContent: label });
+            sel.appendChild(o);
+        });
+        const freeCount = docs.filter(d => d.worksAtThisTime && !d.hasConflict).length;
+        if (freeCount > 0) {
+            note.textContent = `${freeCount} doctor${freeCount > 1 ? 's' : ''} available at this time.`;
             note.className   = 'cal-doctor-note success';
+        } else {
+            note.textContent = 'No doctors are scheduled at this time — you can still select one.';
+            note.className   = 'cal-doctor-note warning';
         }
+        // Show per-doctor warning when selection changes
+        sel.onchange = () => showDoctorSelectionWarning(sel, docs, note);
     }).catch(() => { note.textContent = 'Could not load doctors.'; note.className = 'cal-doctor-note error'; });
+}
+
+function showDoctorSelectionWarning(sel, docs, note) {
+    const id = sel.value;
+    if (!id) { note.textContent = ''; note.className = 'cal-doctor-note'; return; }
+    const d = docs.find(x => String(x.value) === String(id));
+    if (!d) return;
+    if (d.hasConflict) {
+        note.textContent = '⚠ This doctor already has an appointment at this time';
+        note.className   = 'cal-doctor-note error';
+    } else if (!d.worksAtThisTime) {
+        note.textContent = '⚠ This doctor doesn\'t work at this time — you can still book if needed';
+        note.className   = 'cal-doctor-note warning';
+    } else {
+        note.textContent = '✓ Doctor is available at this time';
+        note.className   = 'cal-doctor-note success';
+    }
 }
 
 // ── Edit end-time auto-calc ───────────────────────────────────

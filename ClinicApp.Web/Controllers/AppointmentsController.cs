@@ -177,58 +177,59 @@ namespace ClinicApp.Web.Controllers
             return Json(doctors);
         }
 
-        // API: Get doctors available at the given time slot
+        // API: Get all doctors with schedule and conflict flags for the given time slot
         [HttpGet]
         public async Task<IActionResult> GetAvailableDoctors(string startTime, string endTime)
         {
             if (!DateTime.TryParse(startTime, out var start) || !DateTime.TryParse(endTime, out var end))
                 return Json(new List<object>());
 
-            var clinicId = GetCurrentClinicId();
-            var startUtc = DateTime.SpecifyKind(start, DateTimeKind.Utc);
-            var endUtc = DateTime.SpecifyKind(end, DateTimeKind.Utc);
-            var dayOfWeek = startUtc.DayOfWeek;
-            var timeOfDay = startUtc.TimeOfDay;
+            var clinicId     = GetCurrentClinicId();
+            var startUtc     = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+            var endUtc       = DateTime.SpecifyKind(end,   DateTimeKind.Utc);
+            var dayOfWeek    = startUtc.DayOfWeek;
+            var timeOfDay    = startUtc.TimeOfDay;
             var timeOfDayEnd = endUtc.TimeOfDay;
 
             var allDoctors = await _context.AppUsers
                 .Where(u => u.ClinicId == clinicId && u.Role == UserRole.Doctor)
+                .OrderBy(u => u.FirstName)
                 .ToListAsync();
 
             var schedules = await _context.DoctorSchedules
                 .Where(s => s.ClinicId == clinicId && s.DayOfWeek == dayOfWeek && s.IsWorkingDay)
                 .ToListAsync();
 
-            // Doctors with a schedule entry that covers the requested time
-            var scheduledDoctorIds = schedules
-                .Where(s => s.StartTime <= timeOfDay && s.EndTime >= timeOfDayEnd)
-                .Select(s => s.DoctorId)
-                .ToHashSet();
-
-            // If no schedules exist at all for the clinic, fall back to all doctors (not configured yet)
             bool schedulesConfigured = await _context.DoctorSchedules.AnyAsync(s => s.ClinicId == clinicId);
 
-            var candidateDoctors = schedulesConfigured
-                ? allDoctors.Where(d => scheduledDoctorIds.Contains(d.Id)).ToList()
-                : allDoctors;
+            // Doctors whose schedule covers this time slot
+            var scheduledDoctorIds = schedulesConfigured
+                ? schedules
+                    .Where(s => s.StartTime <= timeOfDay && s.EndTime >= timeOfDayEnd)
+                    .Select(s => s.DoctorId)
+                    .ToHashSet()
+                : allDoctors.Select(d => d.Id).ToHashSet(); // no schedules configured → all work
 
-            // Filter out doctors who have a conflicting appointment
-            var busyDoctorIds = await _context.Appointments
+            // Doctors with a conflicting appointment
+            var busyDoctorIds = (await _context.Appointments
                 .Where(a => a.ClinicId == clinicId &&
                             a.StartTime < endUtc &&
-                            a.EndTime > startUtc &&
-                            a.Status != AppointmentStatus.Cancelled)
+                            a.EndTime   > startUtc &&
+                            a.Status    != AppointmentStatus.Cancelled)
                 .Select(a => a.DoctorId)
                 .Distinct()
-                .ToListAsync();
+                .ToListAsync()).ToHashSet();
 
-            var availableDoctors = candidateDoctors
-                .Where(d => !busyDoctorIds.Contains(d.Id))
-                .OrderBy(d => d.FirstName)
-                .Select(d => new { value = d.Id, text = $"Dr. {d.FirstName} {d.LastName}" })
-                .ToList();
+            // Return ALL doctors with flags — UI decides how to display and warn
+            var result = allDoctors.Select(d => new
+            {
+                value          = d.Id,
+                text           = $"Dr. {d.FirstName} {d.LastName}",
+                worksAtThisTime = scheduledDoctorIds.Contains(d.Id),
+                hasConflict    = busyDoctorIds.Contains(d.Id)
+            }).ToList();
 
-            return Json(availableDoctors);
+            return Json(result);
         }
 
         // API: Get Patients List as JSON
