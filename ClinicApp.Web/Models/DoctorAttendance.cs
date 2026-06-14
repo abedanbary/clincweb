@@ -26,6 +26,10 @@ namespace ClinicApp.Web.Models
         public DateTime CreatedAt  { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
+        // Set when a Manager edits the record; cleared when the doctor saves their own
+        public DateTime? AdminEditedAt   { get; set; }
+        public string?   AdminEditedBy   { get; set; }  // manager's display name
+
         // Not mapped — computed on the fly
         public double? WorkingHours =>
             CheckIn.HasValue && CheckOut.HasValue && CheckOut.Value > CheckIn.Value

@@ -80,7 +80,8 @@ namespace ClinicApp.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Save(SaveAttendanceViewModel model)
         {
-            var clinicId = GetCurrentClinicId();
+            var clinicId    = GetCurrentClinicId();
+            var isByManager = User.IsInRole("Manager");
 
             // Doctors can only save their own record
             if (User.IsInRole("Doctor") && model.DoctorId != GetCurrentUserId())
@@ -90,6 +91,10 @@ namespace ClinicApp.Web.Controllers
 
             TimeSpan? checkIn  = ParseTime(model.CheckIn);
             TimeSpan? checkOut = ParseTime(model.CheckOut);
+
+            var managerName = isByManager
+                ? $"{User.FindFirstValue("FirstName")} {User.FindFirstValue("LastName")}".Trim()
+                : null;
 
             // Find existing record for that doctor + date
             var existing = await _context.DoctorAttendances
@@ -101,14 +106,16 @@ namespace ClinicApp.Web.Controllers
             {
                 _context.DoctorAttendances.Add(new DoctorAttendance
                 {
-                    DoctorId  = model.DoctorId,
-                    ClinicId  = clinicId,
-                    Date      = dateUtc,
-                    Status    = model.Status,
-                    CheckIn   = model.Status == AttendanceStatus.Present ? checkIn  : null,
-                    CheckOut  = model.Status == AttendanceStatus.Present ? checkOut : null,
-                    Notes     = model.Notes,
-                    CreatedAt = DateTime.UtcNow
+                    DoctorId       = model.DoctorId,
+                    ClinicId       = clinicId,
+                    Date           = dateUtc,
+                    Status         = model.Status,
+                    CheckIn        = model.Status == AttendanceStatus.Present ? checkIn  : null,
+                    CheckOut       = model.Status == AttendanceStatus.Present ? checkOut : null,
+                    Notes          = model.Notes,
+                    CreatedAt      = DateTime.UtcNow,
+                    AdminEditedAt  = isByManager ? DateTime.UtcNow : null,
+                    AdminEditedBy  = managerName
                 });
             }
             else
@@ -118,6 +125,18 @@ namespace ClinicApp.Web.Controllers
                 existing.CheckOut  = model.Status == AttendanceStatus.Present ? checkOut : null;
                 existing.Notes     = model.Notes;
                 existing.UpdatedAt = DateTime.UtcNow;
+
+                if (isByManager)
+                {
+                    existing.AdminEditedAt = DateTime.UtcNow;
+                    existing.AdminEditedBy = managerName;
+                }
+                else
+                {
+                    // Doctor saving their own record clears the admin-edit mark
+                    existing.AdminEditedAt = null;
+                    existing.AdminEditedBy = null;
+                }
             }
 
             await _context.SaveChangesAsync();

@@ -203,6 +203,10 @@
                                    : day.Record.Status == AttendanceStatus.Absent  ? "absent"
                                    : "dayoff";
                             <span class="att-status-badge att-status-@sc">@day.Record.Status</span>
+                            @if (day.Record.AdminEditedAt.HasValue)
+                            {
+                                <span class="att-admin-badge" title="Edited by @day.Record.AdminEditedBy on @day.Record.AdminEditedAt.Value.ToString("MMM dd, HH:mm") UTC">Admin edited</span>
+                            }
                             @if (day.Record.Status == AttendanceStatus.Present && day.Record.CheckIn.HasValue)
                             {
                                 <span class="att-cell-time">
@@ -267,7 +271,13 @@
                                 .FirstOrDefault(d => d.Date.Date == r.Date.Date)?.TreatmentsCompleted ?? 0;
                             <tr>
                                 <td style="font-weight:500;">@r.Date.ToString("ddd, MMM dd")</td>
-                                <td><span class="att-status-badge att-status-@sc">@r.Status</span></td>
+                                <td>
+                                    <span class="att-status-badge att-status-@sc">@r.Status</span>
+                                    @if (r.AdminEditedAt.HasValue)
+                                    {
+                                        <span class="att-admin-badge" title="Edited by @r.AdminEditedBy on @r.AdminEditedAt.Value.ToString("MMM dd, HH:mm") UTC">Admin edited</span>
+                                    }
+                                </td>
                                 <td>@FmtDisplay(r.CheckIn)</td>
                                 <td>@FmtDisplay(r.CheckOut)</td>
                                 <td>@(r.WorkingHours.HasValue ? $"{r.WorkingHours.Value} h" : "—")</td>
