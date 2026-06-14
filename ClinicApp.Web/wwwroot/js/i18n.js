@@ -70,16 +70,7 @@
             sel.value = lang;
         });
 
-        // Only fix what the flex layout cannot auto-handle: the sidebar border side
-        var styleEl = document.getElementById('__i18n_rtl_style__');
-        if (!styleEl) {
-            styleEl = document.createElement('style');
-            styleEl.id = '__i18n_rtl_style__';
-            document.head.appendChild(styleEl);
-        }
-        styleEl.textContent = isRtl
-            ? '[dir="rtl"] .manager-sidebar { border-right: none; border-left: 1px solid #e2e8f0; }'
-            : '';
+        // rtl.css handles all directional overrides via [dir="rtl"] selectors.
     }
 
     window.setLanguage = function (lang) {

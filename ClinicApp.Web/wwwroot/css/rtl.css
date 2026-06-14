@@ -1,0 +1,364 @@
+/*
+ * rtl.css — Right-to-Left overrides for Arabic & Hebrew
+ * Applied automatically by i18n.js when [dir="rtl"] is set on <html>.
+ *
+ * Rule: only override directional properties (border-left/right, padding-left/right,
+ * margin-left/right, text-align, left/right positioning). Neutral properties stay.
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT — Sidebar & Shell
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .manager-sidebar {
+    border-right: none;
+    border-left: 1px solid var(--color-border, #e2e8f0);
+}
+
+/* Sidebar icon margin */
+[dir="rtl"] .sidebar-link svg,
+[dir="rtl"] .sidebar-link .link-icon {
+    margin-right: 0;
+    margin-left: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLES — all pages
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] th,
+[dir="rtl"] .att-table th,
+[dir="rtl"] .payments-table th,
+[dir="rtl"] .materials-table th,
+[dir="rtl"] .patients-table th,
+[dir="rtl"] .users-table th,
+[dir="rtl"] .appointments-table th,
+[dir="rtl"] .inv-table th {
+    text-align: right;
+}
+
+[dir="rtl"] td:last-child,
+[dir="rtl"] th:last-child {
+    text-align: left;
+}
+
+/* Actions column should stay left (buttons) */
+[dir="rtl"] .appointments-table td:last-child,
+[dir="rtl"] .patients-table td:last-child,
+[dir="rtl"] .materials-table td:last-child,
+[dir="rtl"] .users-table td:last-child,
+[dir="rtl"] .att-table td:last-child {
+    text-align: left;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CALENDAR.CSS
+═══════════════════════════════════════════════════════════════ */
+
+/* View-button separator */
+[dir="rtl"] .cal-view-btn + .cal-view-btn {
+    border-left: none;
+    border-right: 1.5px solid var(--c-border, #e5e7eb);
+}
+
+/* Gutter (time labels column) border */
+[dir="rtl"] .cal-gutter {
+    border-right: none;
+    border-left: 1px solid var(--c-border-2, #e5e7eb);
+}
+
+/* Hour label right-align → left-align in RTL */
+[dir="rtl"] .cal-hour-label {
+    border-right: none;
+    border-left: 1px solid var(--c-border-2, #e5e7eb);
+    padding-right: 0;
+    padding-left: 8px;
+    text-align: left;
+}
+
+/* Day column border */
+[dir="rtl"] .cal-day-col {
+    border-right: none;
+    border-left: 1px solid var(--c-border-2, #e5e7eb);
+}
+
+/* Event left-border accent → right side in RTL */
+[dir="rtl"] .cal-event {
+    border-left-width: 0;
+    border-left-style: none;
+    border-right-width: 3px;
+    border-right-style: solid;
+}
+
+/* Cal-pill margin */
+[dir="rtl"] .cal-pill-dot {
+    margin-left: 0;
+    margin-right: 4px;
+}
+
+/* Now-line dot */
+[dir="rtl"] .cal-now-dot {
+    margin-left: 0;
+    margin-right: -4px;
+}
+
+/* Detail panel — slides in from right → slide from left in RTL */
+[dir="rtl"] .cal-detail-panel {
+    right: auto;
+    left: 0;
+    transform: translateX(-100%);
+}
+[dir="rtl"] .cal-detail-panel.open {
+    transform: translateX(0);
+}
+
+/* Detail close button */
+[dir="rtl"] .cal-detail-close {
+    right: auto;
+    left: 14px;
+}
+
+/* Detail patient/reason padding */
+[dir="rtl"] .cal-detail-patient,
+[dir="rtl"] .cal-detail-reason {
+    padding-right: 0;
+    padding-left: 30px;
+}
+
+/* Toast left-border → right */
+[dir="rtl"] .toast {
+    border-left: none;
+    border-right: 4px solid var(--c-accent, #10b981);
+}
+[dir="rtl"] .toast.error   { border-right-color: #ef4444; }
+[dir="rtl"] .toast.success { border-right-color: var(--c-accent, #10b981); }
+
+/* ═══════════════════════════════════════════════════════════════
+   ATTENDANCE.CSS
+═══════════════════════════════════════════════════════════════ */
+
+/* Calendar cell borders — grid goes right-to-left */
+[dir="rtl"] .att-cal-cell {
+    border-right: none;
+    border-left: 1px solid #f3f4f6;
+}
+[dir="rtl"] .att-cal-cell:nth-child(7n) {
+    border-left: none;
+}
+[dir="rtl"] .att-cal-cell:nth-child(7n+1) {
+    border-left: 1px solid #f3f4f6;
+}
+
+[dir="rtl"] .att-table th {
+    text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PAYMENTS.CSS
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .payments-table th,
+[dir="rtl"] .pay-th {
+    text-align: right;
+}
+
+[dir="rtl"] .pay-installment-label,
+[dir="rtl"] .inst-label {
+    margin-left: 0;
+    margin-right: 10px;
+}
+
+/* Progress bar — fill from right in RTL */
+[dir="rtl"] .pay-progress-bar,
+[dir="rtl"] .progress-bar {
+    direction: ltr; /* keep bar filling left-to-right */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TREATMENT-PLAN.CSS
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .tp-step,
+[dir="rtl"] .treatment-step {
+    border-left: none;
+    border-right: 4px solid #94a3b8;
+}
+[dir="rtl"] .tp-step.status-planned,
+[dir="rtl"] .treatment-step.status-planned   { border-right-color: #94a3b8; }
+[dir="rtl"] .tp-step.status-inprogress,
+[dir="rtl"] .treatment-step.status-inprogress { border-right-color: #f59e0b; }
+[dir="rtl"] .tp-step.status-completed,
+[dir="rtl"] .treatment-step.status-completed  { border-right-color: #10b981; }
+[dir="rtl"] .tp-step.status-cancelled,
+[dir="rtl"] .treatment-step.status-cancelled  { border-right-color: #ef4444; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MATERIALS.CSS
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .materials-table th,
+[dir="rtl"] .mat-th {
+    text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PATIENTS.CSS
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .patients-table th,
+[dir="rtl"] .pat-th {
+    text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   USERS.CSS
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .users-table th,
+[dir="rtl"] .usr-th {
+    text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   APPOINTMENTS.CSS
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .appointments-table th,
+[dir="rtl"] .appt-th {
+    text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FORMS — inputs, selects, textareas
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] input[type="text"],
+[dir="rtl"] input[type="email"],
+[dir="rtl"] input[type="tel"],
+[dir="rtl"] input[type="number"],
+[dir="rtl"] input[type="date"],
+[dir="rtl"] input[type="datetime-local"],
+[dir="rtl"] input[type="time"],
+[dir="rtl"] input[type="search"],
+[dir="rtl"] select,
+[dir="rtl"] textarea {
+    text-align: right;
+    direction: rtl;
+}
+
+/* Search inputs with icon — icon moves to right */
+[dir="rtl"] .search-wrapper,
+[dir="rtl"] .search-box,
+[dir="rtl"] .input-icon-wrap {
+    direction: rtl;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BADGES & CHIPS — inline elements
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .att-admin-badge {
+    margin-left: 0;
+    margin-right: 4px;
+}
+
+[dir="rtl"] .cal-next-slot-chip {
+    direction: rtl;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MODALS — close buttons always top-right in LTR, top-left in RTL
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .att-modal-close,
+[dir="rtl"] .cal-modal-close,
+[dir="rtl"] .modal-close {
+    right: auto;
+    left: 16px;
+}
+
+/* Modal footer buttons — reverse order naturally via flex */
+[dir="rtl"] .att-modal-footer,
+[dir="rtl"] .cal-modal-footer,
+[dir="rtl"] .modal-footer {
+    flex-direction: row-reverse;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD (Manager/Index inline styles)
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .kpi-body {
+    text-align: right;
+}
+
+[dir="rtl"] .kpi-icon {
+    margin-right: 0;
+    margin-left: 14px;
+}
+
+[dir="rtl"] .db-list-info {
+    text-align: right;
+}
+
+[dir="rtl"] .db-card-head {
+    flex-direction: row-reverse;
+}
+
+/* Breakdown bars fill left */
+[dir="rtl"] .db-breakdown-bar {
+    direction: ltr;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DOCTOR DASHBOARD
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .doc-stat-card,
+[dir="rtl"] .doc-list-row {
+    text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PATIENT PROFILE
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .profile-section-title,
+[dir="rtl"] .profile-label,
+[dir="rtl"] .tooth-notes {
+    text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GENERAL UTILITIES
+═══════════════════════════════════════════════════════════════ */
+
+/* Any inline style="text-align:right" becomes left in RTL for action columns */
+[dir="rtl"] [style*="text-align:right"],
+[dir="rtl"] [style*="text-align: right"] {
+    text-align: left !important;
+}
+
+/* Flex rows — browser handles row-reverse automatically with dir=rtl,
+   but icon-text pairs in sidebar need explicit handling */
+[dir="rtl"] .flex-row-icon {
+    flex-direction: row-reverse;
+}
+
+/* Number-only elements (prices, counts) stay LTR even in RTL */
+[dir="rtl"] .kpi-value,
+[dir="rtl"] .att-stat-value,
+[dir="rtl"] .db-stat-value {
+    direction: ltr;
+    text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FONT — use a better Arabic/Hebrew font stack
+═══════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] body,
+[dir="rtl"] * {
+    font-family: "Segoe UI", "Noto Sans Arabic", "Arabic UI Text",
+                 "David Libre", "Noto Sans Hebrew", Arial, sans-serif;
+}
