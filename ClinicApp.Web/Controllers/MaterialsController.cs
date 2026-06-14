@@ -201,6 +201,7 @@ namespace ClinicApp.Web.Controllers
         }
 
         // GET: /Materials/Invoices
+        [Authorize(Roles = "Manager,Assistant")]
         public async Task<IActionResult> Invoices(int? materialId)
         {
             var clinicId = GetCurrentClinicId();
@@ -244,6 +245,7 @@ namespace ClinicApp.Web.Controllers
 
         // GET: /Materials/InvoiceImage/{id}  → redirect to signed URL
         [HttpGet]
+        [Authorize(Roles = "Manager,Assistant")]
         public async Task<IActionResult> InvoiceImage(int id, CancellationToken ct)
         {
             var clinicId = GetCurrentClinicId();
