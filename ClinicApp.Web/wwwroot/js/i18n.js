@@ -15,14 +15,14 @@
         document.documentElement.setAttribute('lang', lang);
         document.documentElement.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
 
-        // Translate all visible text nodes
+        // Translate all visible text nodes (including OPTION elements)
         const walker = document.createTreeWalker(
             document.body,
             NodeFilter.SHOW_TEXT,
             {
                 acceptNode: function (node) {
                     const tag = node.parentElement && node.parentElement.tagName;
-                    if (['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA', 'SELECT'].includes(tag))
+                    if (['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA'].includes(tag))
                         return NodeFilter.FILTER_REJECT;
                     if (node.textContent.trim())
                         return NodeFilter.FILTER_ACCEPT;
@@ -51,6 +51,18 @@
         document.querySelectorAll('[placeholder]').forEach(function (el) {
             if (!el._origPlaceholder) el._origPlaceholder = el.placeholder;
             el.placeholder = dict[el._origPlaceholder] || el._origPlaceholder;
+        });
+
+        // Translate title (tooltip) attributes
+        document.querySelectorAll('[title]').forEach(function (el) {
+            if (!el._origTitle) el._origTitle = el.title;
+            el.title = dict[el._origTitle] || el._origTitle;
+        });
+
+        // Translate button value attributes
+        document.querySelectorAll('input[type="submit"], input[type="button"]').forEach(function (el) {
+            if (!el._origValue) el._origValue = el.value;
+            el.value = dict[el._origValue] || el._origValue;
         });
 
         // Sync the dropdown value
