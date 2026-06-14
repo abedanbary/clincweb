@@ -693,6 +693,11 @@ function openCreateModalWithDate(_dateStr, dateObj) {
 
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+
+    // For doctors, suggest their next free slot on the selected date
+    if (window.currentUser?.role === 'Doctor') {
+        loadNextSlot(window.currentUser.id);
+    }
 }
 
 function resetCreateForm() {
@@ -753,7 +758,15 @@ function setupDoctorAvailability() {
         checkPatientConflict();
     };
 
-    dateEl?.addEventListener('change', onTimeChange);
+    const onDateChange = function () {
+        onTimeChange();
+        // Refresh next-slot suggestion for doctors (who don't have a select to trigger it)
+        if (window.currentUser?.role === 'Doctor') {
+            loadNextSlot(window.currentUser.id);
+        }
+    };
+
+    dateEl?.addEventListener('change', onDateChange);
     timeEl?.addEventListener('change', onTimeChange);
     patientSel?.addEventListener('change', checkPatientConflict);
 
@@ -856,8 +869,8 @@ function loadAvailableDoctors() {
             note.textContent = 'No doctors are scheduled at this time — you can still select one.';
             note.className   = 'cal-doctor-note warning';
         }
-        // Show per-doctor warning when selection changes
-        sel.onchange = () => showDoctorSelectionWarning(sel, docs, note);
+        // Show per-doctor warning + next slot when selection changes
+        sel.onchange = () => { showDoctorSelectionWarning(sel, docs, note); loadNextSlot(sel.value); };
     }).catch(() => { note.textContent = 'Could not load doctors.'; note.className = 'cal-doctor-note error'; });
 }
 
@@ -876,6 +889,52 @@ function showDoctorSelectionWarning(sel, docs, note) {
         note.textContent = '✓ Doctor is available at this time';
         note.className   = 'cal-doctor-note success';
     }
+}
+
+// ── Next available slot suggestion ────────────────────────────
+function loadNextSlot(doctorId) {
+    const box  = document.getElementById('nextSlotSuggestion');
+    const chip = document.getElementById('nextSlotChip');
+    if (!box || !chip || !doctorId) { if (box) box.style.display = 'none'; return; }
+
+    const dateEl = document.getElementById('ApptDate');
+    const date   = dateEl?.value || '';
+    const url    = `${window.appEndpoints.getNextAvailableSlot}?doctorId=${encodeURIComponent(doctorId)}&date=${encodeURIComponent(date)}`;
+
+    chip.textContent = 'Finding next available slot…';
+    box.style.display = '';
+
+    fetch(url).then(r => r.json()).then(data => {
+        if (!data.found) { box.style.display = 'none'; return; }
+        chip.innerHTML = `⚡ Next available: <strong>${data.label}</strong> &nbsp;`;
+        const btn = document.createElement('button');
+        btn.type      = 'button';
+        btn.className = 'cal-use-slot-btn';
+        btn.textContent = 'Use this time';
+        btn.onclick = () => applyNextSlot(data);
+        chip.appendChild(btn);
+    }).catch(() => { box.style.display = 'none'; });
+}
+
+function applyNextSlot(slot) {
+    // Set date picker
+    const dateEl = document.getElementById('ApptDate');
+    if (dateEl) { dateEl.value = slot.dateIso; dateEl.dispatchEvent(new Event('change')); }
+
+    // Set time select — wait a tick for options to repopulate after date change
+    setTimeout(() => {
+        const timeEl = document.getElementById('ApptTime');
+        if (timeEl) {
+            timeEl.value = slot.timeValue;
+            if (!timeEl.value) {
+                // option might not exist yet — add it temporarily
+                const opt = Object.assign(document.createElement('option'), { value: slot.timeValue, textContent: slot.timeValue });
+                timeEl.appendChild(opt);
+                timeEl.value = slot.timeValue;
+            }
+            timeEl.dispatchEvent(new Event('change'));
+        }
+    }, 50);
 }
 
 // ── Edit end-time auto-calc ───────────────────────────────────

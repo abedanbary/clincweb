@@ -239,6 +239,9 @@
                     <option value="">-- Select time first --</option>
                 </select>
                 <span id="doctorAvailabilityNote" style="font-size: 12px; color: #64748b; margin-top: 4px; display: block;"></span>
+                <div id="nextSlotSuggestion" style="display:none;margin-top:6px;">
+                    <span class="cal-next-slot-chip" id="nextSlotChip"></span>
+                </div>
                 <span asp-validation-for="NewAppointment.DoctorId" class="appointments-error"></span>
             </div>
 
@@ -409,7 +412,7 @@
 
         doctorSelect.addEventListener('change', function () {
             const id = this.value;
-            if (!id || !_lastDocs.length) return;
+            if (!id || !_lastDocs.length) { hideIndexNextSlot(); return; }
             const d = _lastDocs.find(x => String(x.value) === String(id));
             if (!d) return;
             if (d.hasConflict) {
@@ -422,7 +425,40 @@
                 doctorNote.textContent = '✓ Doctor is available at this time';
                 doctorNote.style.color = '#10b981';
             }
+            loadIndexNextSlot(id);
         });
+
+        function hideIndexNextSlot() {
+            const box = document.getElementById('nextSlotSuggestion');
+            if (box) box.style.display = 'none';
+        }
+
+        function loadIndexNextSlot(doctorId) {
+            const box  = document.getElementById('nextSlotSuggestion');
+            const chip = document.getElementById('nextSlotChip');
+            if (!box || !chip || !doctorId) { hideIndexNextSlot(); return; }
+
+            chip.textContent = 'Finding next available slot…';
+            box.style.display = '';
+
+            fetch(`/Appointments/GetNextAvailableSlot?doctorId=${encodeURIComponent(doctorId)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.found) { box.style.display = 'none'; return; }
+                    chip.innerHTML = `⚡ Next available: <strong>${data.label}</strong> &nbsp;`;
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'cal-use-slot-btn';
+                    btn.textContent = 'Use this time';
+                    btn.onclick = () => {
+                        startTimeInput.value = data.startIso;
+                        endTimeInput.value   = data.endIso;
+                        startTimeInput.dispatchEvent(new Event('change'));
+                    };
+                    chip.appendChild(btn);
+                })
+                .catch(() => { box.style.display = 'none'; });
+        }
 
         startTimeInput.addEventListener('change', function() {
             if (this.value) {

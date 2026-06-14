@@ -232,6 +232,89 @@ namespace ClinicApp.Web.Controllers
             return Json(result);
         }
 
+        // API: Find the first free 30-min slot for a doctor on or after a given date
+        [HttpGet]
+        public async Task<IActionResult> GetNextAvailableSlot(int doctorId, string? date = null)
+        {
+            var clinicId  = GetCurrentClinicId();
+            var startDate = date != null && DateTime.TryParse(date, out var d)
+                ? d.Date
+                : DateTime.UtcNow.Date;
+
+            // Never suggest slots in the past
+            if (startDate < DateTime.UtcNow.Date)
+                startDate = DateTime.UtcNow.Date;
+
+            bool schedulesConfigured = await _context.DoctorSchedules.AnyAsync(s => s.ClinicId == clinicId);
+
+            for (int dayOffset = 0; dayOffset < 14; dayOffset++)
+            {
+                var day = startDate.AddDays(dayOffset);
+                var dayEnd = day.AddDays(1);
+
+                // Get schedule for this doctor on this day
+                TimeSpan workStart, workEnd;
+                if (schedulesConfigured)
+                {
+                    var sched = await _context.DoctorSchedules.FirstOrDefaultAsync(
+                        s => s.DoctorId == doctorId && s.ClinicId == clinicId
+                          && s.DayOfWeek == day.DayOfWeek && s.IsWorkingDay);
+                    if (sched == null) continue;  // doesn't work this day
+                    workStart = sched.StartTime;
+                    workEnd   = sched.EndTime;
+                }
+                else
+                {
+                    workStart = new TimeSpan(9, 0, 0);
+                    workEnd   = new TimeSpan(17, 0, 0);
+                }
+
+                // Get booked slots for this doctor that day
+                var booked = await _context.Appointments
+                    .Where(a => a.DoctorId  == doctorId
+                             && a.ClinicId  == clinicId
+                             && a.StartTime >= day.ToUniversalTime()
+                             && a.StartTime <  dayEnd.ToUniversalTime()
+                             && a.Status    != AppointmentStatus.Cancelled)
+                    .Select(a => new { a.StartTime, a.EndTime })
+                    .ToListAsync();
+
+                // Iterate in 30-min steps through working hours
+                var cursor = workStart;
+                while (cursor.Add(TimeSpan.FromMinutes(30)) <= workEnd)
+                {
+                    var slotStart = day.Add(cursor);
+                    var slotEnd   = slotStart.AddMinutes(30);
+
+                    // Skip past slots (same day only)
+                    if (slotStart <= DateTime.UtcNow) { cursor = cursor.Add(TimeSpan.FromMinutes(30)); continue; }
+
+                    var slotStartUtc = DateTime.SpecifyKind(slotStart, DateTimeKind.Utc);
+                    var slotEndUtc   = DateTime.SpecifyKind(slotEnd,   DateTimeKind.Utc);
+
+                    bool conflict = booked.Any(b => b.StartTime < slotEndUtc && b.EndTime > slotStartUtc);
+                    if (!conflict)
+                    {
+                        var isToday    = day == DateTime.UtcNow.Date;
+                        var dateLabel  = isToday ? "Today" : day.ToString("ddd, MMM dd");
+                        var timeLabel  = $"{cursor.Hours:D2}:{cursor.Minutes:D2}";
+                        return Json(new
+                        {
+                            found      = true,
+                            startIso   = slotStartUtc.ToString("yyyy-MM-ddTHH:mm"),
+                            endIso     = slotEndUtc.ToString("yyyy-MM-ddTHH:mm"),
+                            dateIso    = day.ToString("yyyy-MM-dd"),
+                            timeValue  = timeLabel,
+                            label      = $"{dateLabel} at {timeLabel}"
+                        });
+                    }
+                    cursor = cursor.Add(TimeSpan.FromMinutes(30));
+                }
+            }
+
+            return Json(new { found = false });
+        }
+
         // API: Get Patients List as JSON
         [HttpGet]
         public async Task<IActionResult> GetPatientsListAsync()

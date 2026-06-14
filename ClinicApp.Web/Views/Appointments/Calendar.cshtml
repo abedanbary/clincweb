@@ -293,6 +293,9 @@
                         </select>
                     }
                     <span class="cal-doctor-note" id="doctorAvailabilityNote"></span>
+                    <div id="nextSlotSuggestion" style="display:none;margin-top:6px;">
+                        <span class="cal-next-slot-chip" id="nextSlotChip"></span>
+                    </div>
                 </div>
 
                 <div class="cal-form-group">
@@ -321,9 +324,10 @@
 @section Scripts {
     <script>
         window.appEndpoints = {
-            getAvailableDoctors:  '@Url.Action("GetAvailableDoctors",  "Appointments")',
-            getAppointment:       '@Url.Action("GetAppointment",        "Appointments")',
-            checkPatientConflict: '@Url.Action("CheckPatientConflict",  "Appointments")'
+            getAvailableDoctors:   '@Url.Action("GetAvailableDoctors",      "Appointments")',
+            getNextAvailableSlot:  '@Url.Action("GetNextAvailableSlot",     "Appointments")',
+            getAppointment:        '@Url.Action("GetAppointment",            "Appointments")',
+            checkPatientConflict:  '@Url.Action("CheckPatientConflict",      "Appointments")'
         };
         window.currentUser = {
             role: '@(userRole ?? "")',
