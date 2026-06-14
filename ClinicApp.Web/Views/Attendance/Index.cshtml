@@ -10,6 +10,13 @@
         .Select((n, i) => new { Name = n, Num = i + 1 })
         .Where(x => x.Num <= 12)
         .ToList();
+
+    // Safe time formatter — avoids TimeSpan custom-format string bugs
+    string FmtTime(TimeSpan? ts) =>
+        ts.HasValue ? $"{ts.Value.Hours:D2}:{ts.Value.Minutes:D2}" : "";
+
+    string FmtDisplay(TimeSpan? ts) =>
+        ts.HasValue ? DateTime.Today.Add(ts.Value).ToString("h:mm tt") : "—";
 }
 
 <link rel="stylesheet" href="~/css/attendance.css" />
@@ -182,10 +189,10 @@
                     if (clickable)
                     {
                         var recStatus = day.Record?.Status.ToString() ?? "null";
-                        var recIn     = day.Record?.CheckIn?.ToString(@"hh\:mm")  ?? "";
-                        var recOut    = day.Record?.CheckOut?.ToString(@"hh\:mm") ?? "";
-                        var recNotes  = day.Record?.Notes?.Replace("'", "\\'")    ?? "";
-                        var recId     = day.Record?.Id.ToString() ?? "0";
+                        var recIn     = FmtTime(day.Record?.CheckIn);
+                        var recOut    = FmtTime(day.Record?.CheckOut);
+                        var recNotes  = day.Record?.Notes?.Replace("'", "\\'") ?? "";
+                        var recId     = day.Record?.Id ?? 0;
                         onclickAttr = $"openModal('{day.Date:yyyy-MM-dd}', '{recStatus}', '{recIn}', '{recOut}', '{recNotes}', {recId})";
                     }
 
@@ -262,8 +269,8 @@
                             <tr>
                                 <td style="font-weight:500;">@r.Date.ToString("ddd, MMM dd")</td>
                                 <td><span class="att-status-badge att-status-@sc">@r.Status</span></td>
-                                <td>@(r.CheckIn.HasValue  ? DateTime.Today.Add(r.CheckIn.Value).ToString("h:mm tt")  : "—")</td>
-                                <td>@(r.CheckOut.HasValue ? DateTime.Today.Add(r.CheckOut.Value).ToString("h:mm tt") : "—")</td>
+                                <td>@FmtDisplay(r.CheckIn)</td>
+                                <td>@FmtDisplay(r.CheckOut)</td>
                                 <td>@(r.WorkingHours.HasValue ? $"{r.WorkingHours.Value} h" : "—")</td>
                                 <td>
                                     @if (dayTx > 0) { <span class="att-tx-count">@dayTx</span> }
@@ -273,8 +280,9 @@
                                     @(r.Notes ?? "—")
                                 </td>
                                 <td style="text-align:right;white-space:nowrap;">
+                                    @{ var rIn = FmtTime(r.CheckIn); var rOut = FmtTime(r.CheckOut); var rNotes = r.Notes?.Replace("'", "\\'") ?? ""; }
                                     <button class="btn-ghost btn-sm"
-                                            onclick="openModal('@r.Date.ToString("yyyy-MM-dd")','@r.Status','@(r.CheckIn?.ToString(@"hh\:mm")??"")','@(r.CheckOut?.ToString(@"hh\:mm")??"")','@(r.Notes?.Replace("'","\\'")??"")' ,@r.Id)">
+                                            onclick="openModal('@r.Date.ToString("yyyy-MM-dd")','@r.Status','@rIn','@rOut','@rNotes',@r.Id)">
                                         Edit
                                     </button>
                                     <form asp-action="Delete" method="post" style="display:inline;"

@@ -5,22 +5,32 @@
 @{
     Layout = "_DoctorLayout";
     ViewData["Title"] = "My Attendance";
-    var today    = DateTime.UtcNow.Date;
-    var todayRec = Model.Records.FirstOrDefault(r => r.Date.Date == today);
+    var today          = DateTime.UtcNow.Date;
+    var todayRec       = Model.Records.FirstOrDefault(r => r.Date.Date == today);
     var isCurrentMonth = Model.Year == today.Year && Model.Month == today.Month;
+
+    // Safe time formatter — avoids TimeSpan custom-format string bugs
+    string FmtTime(TimeSpan? ts) =>
+        ts.HasValue ? $"{ts.Value.Hours:D2}:{ts.Value.Minutes:D2}" : "";
+
+    string FmtDisplay(TimeSpan? ts) =>
+        ts.HasValue ? DateTime.Today.Add(ts.Value).ToString("h:mm tt") : "—";
 }
 
 <link rel="stylesheet" href="~/css/attendance.css" />
 
 <div class="att-page">
 
-    <!-- Toasts -->
     @if (TempData["Success"] != null)
     {
         <div class="att-toast att-toast-success">@TempData["Success"]</div>
     }
+    @if (TempData["Error"] != null)
+    {
+        <div class="att-toast att-toast-error">@TempData["Error"]</div>
+    }
 
-    <!-- Header + Month Navigation -->
+    <!-- Header -->
     <div class="att-header">
         <div>
             <h1 class="att-title">My Attendance</h1>
@@ -39,46 +49,79 @@
         </div>
     </div>
 
-    <!-- Today quick-status banner (only if current month) -->
     @if (isCurrentMonth)
     {
+        <!-- Today's work card -->
         <div class="att-today-banner">
             <div>
-                <div class="att-today-status">
-                    Today — @today.ToString("dddd, MMMM dd")
-                </div>
+                <div class="att-today-status">Today — @today.ToString("dddd, MMMM dd")</div>
                 <div class="att-today-sub">
                     @if (todayRec == null)
                     {
-                        <span style="color:#ea580c;">Not marked yet</span>
+                        <span style="color:#ea580c;font-weight:600;">Not marked yet</span>
                     }
                     else if (todayRec.Status == AttendanceStatus.Present)
                     {
-                        <span style="color:#15803d;">
+                        <span style="color:#15803d;font-weight:600;">
                             Present
                             @if (todayRec.CheckIn.HasValue)
                             {
-                                <text>&nbsp;&middot; In: @(DateTime.Today.Add(todayRec.CheckIn.Value).ToString("h:mm tt"))</text>
+                                <text>&nbsp;&middot; In: @FmtDisplay(todayRec.CheckIn)</text>
                             }
                             @if (todayRec.CheckOut.HasValue)
                             {
-                                <text>&nbsp;&middot; Out: @(DateTime.Today.Add(todayRec.CheckOut.Value).ToString("h:mm tt"))</text>
+                                <text>&nbsp;&middot; Out: @FmtDisplay(todayRec.CheckOut)</text>
                             }
                             @if (todayRec.WorkingHours.HasValue)
                             {
-                                <text>&nbsp;&middot; @todayRec.WorkingHours.Value h</text>
+                                <text>&nbsp;&middot; @todayRec.WorkingHours.Value h worked</text>
+                            }
+                            else if (todayRec.CheckIn.HasValue && !todayRec.CheckOut.HasValue)
+                            {
+                                <text>&nbsp;&middot; <em>Still working…</em></text>
                             }
                         </span>
                     }
                     else
                     {
-                        <span style="color:#6b7280;">@todayRec.Status</span>
+                        <span style="color:#6b7280;font-weight:600;">@todayRec.Status</span>
                     }
                 </div>
             </div>
-            <button class="btn-primary" onclick="openModal('@today.ToString("yyyy-MM-dd")', @(todayRec == null ? "null" : $"'{todayRec.Status}','{todayRec.CheckIn?.ToString("hh\\\\:mm")}','{todayRec.CheckOut?.ToString("hh\\\\:mm")}','{todayRec.Notes}'"))">
-                @(todayRec == null ? "Mark Today" : "Edit Today")
-            </button>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                @if (todayRec == null)
+                {
+                    <!-- Not marked: offer Clock In or quick-status buttons -->
+                    <form asp-action="ClockIn" method="post" style="display:inline;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-primary">Clock In</button>
+                    </form>
+                    <button class="btn-ghost" onclick="openEditModal('@today.ToString("yyyy-MM-dd")', 'null', '', '', '')">
+                        Mark Manually
+                    </button>
+                }
+                else if (todayRec.Status == AttendanceStatus.Present && todayRec.CheckIn.HasValue && !todayRec.CheckOut.HasValue)
+                {
+                    <!-- Clocked in, not out yet -->
+                    <form asp-action="ClockOut" method="post" style="display:inline;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="att-clockout-btn">Clock Out</button>
+                    </form>
+                    <button class="btn-ghost"
+                            onclick="openEditModal('@today.ToString("yyyy-MM-dd")', '@todayRec.Status', '@FmtTime(todayRec.CheckIn)', '@FmtTime(todayRec.CheckOut)', '@(todayRec.Notes?.Replace("'", "\\'") ?? "")')">
+                        Edit
+                    </button>
+                }
+                else
+                {
+                    <!-- Already fully marked -->
+                    <button class="btn-ghost"
+                            onclick="openEditModal('@today.ToString("yyyy-MM-dd")', '@todayRec.Status', '@FmtTime(todayRec.CheckIn)', '@FmtTime(todayRec.CheckOut)', '@(todayRec.Notes?.Replace("'", "\\'") ?? "")')">
+                        Edit Today
+                    </button>
+                }
+            </div>
         </div>
     }
 
@@ -124,7 +167,7 @@
     <!-- Calendar -->
     <div class="att-calendar-card">
         <div class="att-cal-header">
-            <span class="att-cal-header-title">Monthly Calendar — click a past or today's cell to mark attendance</span>
+            <span class="att-cal-header-title">Monthly Calendar — click any past or today's cell to mark attendance</span>
         </div>
         <div class="att-cal-weekdays">
             @foreach (var d in new[] { "Mon","Tue","Wed","Thu","Fri","Sat","Sun" })
@@ -141,17 +184,18 @@
                 if (day.IsFuture)        cellClass += " is-future";
 
                 var clickable = day.IsCurrentMonth && !day.IsFuture;
-                var onclickAttr = "";
-                if (clickable)
-                {
-                    var recStatus  = day.Record?.Status.ToString() ?? "null";
-                    var recIn      = day.Record?.CheckIn?.ToString(@"hh\:mm")  ?? "";
-                    var recOut     = day.Record?.CheckOut?.ToString(@"hh\:mm") ?? "";
-                    var recNotes   = day.Record?.Notes?.Replace("'", "\\'")    ?? "";
-                    onclickAttr = $"openModal('{day.Date:yyyy-MM-dd}', '{recStatus}', '{recIn}', '{recOut}', '{recNotes}')";
-                }
 
-                <div class="@cellClass" @(clickable ? $"onclick=\"{onclickAttr}\"" : "")>
+                // Safe formatting using string interpolation — no TimeSpan custom format strings
+                var safeStatus = day.Record?.Status.ToString() ?? "null";
+                var safeIn     = FmtTime(day.Record?.CheckIn);
+                var safeOut    = FmtTime(day.Record?.CheckOut);
+                var safeNotes  = day.Record?.Notes?.Replace("\"", "&quot;")?.Replace("'", "\\'") ?? "";
+
+                <div class="@cellClass"
+                     @if (clickable)
+                     {
+                         <text>onclick="openEditModal('@day.Date.ToString("yyyy-MM-dd")', '@safeStatus', '@safeIn', '@safeOut', '@safeNotes')"</text>
+                     }>
                     <span class="att-day-num">@day.Date.Day</span>
 
                     @if (day.Record != null && day.IsCurrentMonth)
@@ -164,12 +208,16 @@
                         @if (day.Record.Status == AttendanceStatus.Present && day.Record.CheckIn.HasValue)
                         {
                             <span class="att-cell-time">
-                                @DateTime.Today.Add(day.Record.CheckIn.Value).ToString("h:mm tt")
+                                @FmtDisplay(day.Record.CheckIn)
                                 @if (day.Record.CheckOut.HasValue)
                                 {
-                                    <text>– @DateTime.Today.Add(day.Record.CheckOut.Value).ToString("h:mm tt")</text>
+                                    <text>– @FmtDisplay(day.Record.CheckOut)</text>
                                 }
                             </span>
+                        }
+                        @if (day.Record.WorkingHours.HasValue)
+                        {
+                            <span class="att-cell-time">@day.Record.WorkingHours.Value h</span>
                         }
                     }
 
@@ -210,17 +258,21 @@
                 <tbody>
                     @foreach (var r in Model.Records)
                     {
-                        var sc = r.Status == AttendanceStatus.Present ? "present"
-                               : r.Status == AttendanceStatus.Absent  ? "absent"
-                               : "dayoff";
-                        var dayTx = Model.CalendarDays
+                        var sc     = r.Status == AttendanceStatus.Present ? "present"
+                                   : r.Status == AttendanceStatus.Absent  ? "absent"
+                                   : "dayoff";
+                        var dayTx  = Model.CalendarDays
                             .FirstOrDefault(d => d.Date.Date == r.Date.Date)?.TreatmentsCompleted ?? 0;
-                        <tr onclick="openModal('@r.Date.ToString("yyyy-MM-dd")', '@r.Status', '@(r.CheckIn?.ToString(@"hh\:mm")??"")','@(r.CheckOut?.ToString(@"hh\:mm")??"")','@(r.Notes?.Replace("'","\\'")??"")' )"
-                            style="cursor:pointer;">
+                        var isPast = r.Date.Date <= today;
+                        var rIn    = FmtTime(r.CheckIn);
+                        var rOut   = FmtTime(r.CheckOut);
+                        var rNotes = r.Notes?.Replace("'", "\\'") ?? "";
+
+                        <tr @(isPast ? $"onclick=\"openEditModal('{r.Date:yyyy-MM-dd}', '{r.Status}', '{rIn}', '{rOut}', '{rNotes}')\" style=\"cursor:pointer;\"" : "")>
                             <td>@r.Date.ToString("ddd, MMM dd")</td>
                             <td><span class="att-status-badge att-status-@sc">@r.Status</span></td>
-                            <td>@(r.CheckIn.HasValue  ? DateTime.Today.Add(r.CheckIn.Value).ToString("h:mm tt")  : "—")</td>
-                            <td>@(r.CheckOut.HasValue ? DateTime.Today.Add(r.CheckOut.Value).ToString("h:mm tt") : "—")</td>
+                            <td>@FmtDisplay(r.CheckIn)</td>
+                            <td>@FmtDisplay(r.CheckOut)</td>
                             <td>
                                 @if (r.WorkingHours.HasValue)
                                 {
@@ -229,10 +281,7 @@
                                 else { <text>—</text> }
                             </td>
                             <td>
-                                @if (dayTx > 0)
-                                {
-                                    <span class="att-tx-count">@dayTx</span>
-                                }
+                                @if (dayTx > 0) { <span class="att-tx-count">@dayTx</span> }
                                 else { <text>—</text> }
                             </td>
                             <td style="color:#9ca3af;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(r.Notes ?? "—")</td>
@@ -258,7 +307,8 @@
             <div class="att-modal-body">
                 <div class="att-form-group">
                     <label class="att-form-label">Status *</label>
-                    <select name="Status" id="modalStatus" class="att-form-select" onchange="toggleTimeFields(this.value)" required>
+                    <select name="Status" id="modalStatus" class="att-form-select"
+                            onchange="toggleTimeFields(this.value)" required>
                         <option value="1">Present</option>
                         <option value="2">Absent</option>
                         <option value="3">Day Off</option>
@@ -268,7 +318,7 @@
                     <div class="att-form-row">
                         <div class="att-form-group">
                             <label class="att-form-label">Check-In Time</label>
-                            <input type="time" name="CheckIn" id="modalCheckIn" class="att-form-input" />
+                            <input type="time" name="CheckIn"  id="modalCheckIn"  class="att-form-input" />
                         </div>
                         <div class="att-form-group">
                             <label class="att-form-label">Check-Out Time</label>
@@ -278,7 +328,8 @@
                 </div>
                 <div class="att-form-group">
                     <label class="att-form-label">Notes (optional)</label>
-                    <input type="text" name="Notes" id="modalNotes" class="att-form-input" placeholder="Optional notes..." />
+                    <input type="text" name="Notes" id="modalNotes" class="att-form-input"
+                           placeholder="Optional notes..." />
                 </div>
             </div>
             <div class="att-modal-footer">
@@ -296,20 +347,21 @@
             setTimeout(() => t.remove(), 4000);
         });
 
-        function openModal(date, status, checkIn, checkOut, notes) {
-            document.getElementById('modalDate').value    = date;
+        const statusMap = { 'Present': '1', 'Absent': '2', 'DayOff': '3', 'null': '1' };
+
+        function openEditModal(date, status, checkIn, checkOut, notes) {
+            document.getElementById('modalDate').value     = date;
             document.getElementById('modalCheckIn').value  = checkIn  || '';
             document.getElementById('modalCheckOut').value = checkOut || '';
             document.getElementById('modalNotes').value    = notes    || '';
 
-            const statusMap = { 'Present': '1', 'Absent': '2', 'DayOff': '3', 'null': '1' };
             const sel = document.getElementById('modalStatus');
             sel.value = statusMap[status] ?? '1';
             toggleTimeFields(sel.value);
 
             const d = new Date(date + 'T00:00:00');
             document.getElementById('modalTitle').textContent =
-                'Attendance — ' + d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+                'Attendance — ' + d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
             document.getElementById('attModal').style.display = 'flex';
         }
@@ -325,3 +377,12 @@
         });
     </script>
 }
+
+<style>
+    .att-clockout-btn {
+        padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
+        font-size: 13px; font-weight: 600;
+        background: #f59e0b; color: #fff; transition: background .15s;
+    }
+    .att-clockout-btn:hover { background: #d97706; }
+</style>

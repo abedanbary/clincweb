@@ -128,6 +128,68 @@ namespace ClinicApp.Web.Controllers
                 : RedirectToAction(nameof(Index),        new { doctorId = model.DoctorId, year = model.Date.Year, month = model.Date.Month });
         }
 
+        // POST /Attendance/ClockIn  — doctor records their own clock-in time right now
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Doctor")]
+        public async Task<IActionResult> ClockIn()
+        {
+            var clinicId = GetCurrentClinicId();
+            var doctorId = GetCurrentUserId();
+            var dateUtc  = DateTime.UtcNow.Date;
+            var nowTime  = DateTime.UtcNow.TimeOfDay;
+
+            var existing = await _context.DoctorAttendances
+                .FirstOrDefaultAsync(a => a.DoctorId == doctorId
+                                       && a.Date     == dateUtc
+                                       && a.ClinicId == clinicId);
+            if (existing == null)
+            {
+                _context.DoctorAttendances.Add(new DoctorAttendance
+                {
+                    DoctorId = doctorId, ClinicId = clinicId,
+                    Date = dateUtc, Status = AttendanceStatus.Present,
+                    CheckIn = nowTime, CreatedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                existing.Status    = AttendanceStatus.Present;
+                existing.CheckIn   = nowTime;
+                existing.CheckOut  = null;
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["Success"] = $"Clocked in at {DateTime.UtcNow:HH:mm} UTC.";
+            return RedirectToAction(nameof(MyAttendance));
+        }
+
+        // POST /Attendance/ClockOut  — doctor records their own clock-out time right now
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Doctor")]
+        public async Task<IActionResult> ClockOut()
+        {
+            var clinicId = GetCurrentClinicId();
+            var doctorId = GetCurrentUserId();
+            var dateUtc  = DateTime.UtcNow.Date;
+
+            var existing = await _context.DoctorAttendances
+                .FirstOrDefaultAsync(a => a.DoctorId == doctorId
+                                       && a.Date     == dateUtc
+                                       && a.ClinicId == clinicId);
+            if (existing != null && existing.Status == AttendanceStatus.Present && existing.CheckIn.HasValue)
+            {
+                existing.CheckOut  = DateTime.UtcNow.TimeOfDay;
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Clocked out at {DateTime.UtcNow:HH:mm} UTC.";
+            }
+
+            return RedirectToAction(nameof(MyAttendance));
+        }
+
         // POST /Attendance/Delete/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
