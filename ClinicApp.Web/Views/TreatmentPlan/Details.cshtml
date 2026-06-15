@@ -174,8 +174,9 @@
                     };
                     var pText = treatment.Priority == 1 ? "Urgent" : treatment.Priority == 3 ? "Low" : "Medium";
 
-                    // Safe JSON-encode description for JS
+                    // Safe JSON-encode description for JS; invariant cost avoids comma-decimal cultures
                     var notesJson = System.Text.Json.JsonSerializer.Serialize(treatment.Description ?? "");
+                    var costJs    = treatment.Cost.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
                     <div class="treatment-card @tcls">
 
@@ -270,14 +271,14 @@
                             @if (treatment.Status != TreatmentStatus.Completed && treatment.Status != TreatmentStatus.Cancelled)
                             {
                                 <button class="btn-sm btn-primary"
-                                        onclick="openUpdateTreatmentModal(@treatment.Id, @((int)treatment.Status), @treatment.Cost, @Html.Raw(notesJson))">
+                                        onclick="openUpdateTreatmentModal(@treatment.Id, @((int)treatment.Status), @Html.Raw(costJs), @Html.Raw(notesJson))">
                                     Update
                                 </button>
                             }
                             else
                             {
                                 <button class="btn-sm btn-ghost"
-                                        onclick="openUpdateTreatmentModal(@treatment.Id, @((int)treatment.Status), @treatment.Cost, @Html.Raw(notesJson))">
+                                        onclick="openUpdateTreatmentModal(@treatment.Id, @((int)treatment.Status), @Html.Raw(costJs), @Html.Raw(notesJson))">
                                     Edit Notes
                                 </button>
                             }

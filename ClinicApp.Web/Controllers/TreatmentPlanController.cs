@@ -210,9 +210,8 @@ namespace ClinicApp.Web.Controllers
         if (actualCost.HasValue)
           treatment.Cost = actualCost.Value;
   
-    // تحديث الملاحظات (نستخدمها كتفاصيل إضافية)
-        if (!string.IsNullOrWhiteSpace(notes))
-         treatment.Description = notes;
+        // Always update notes so the user can also clear them
+        treatment.Description = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
 
     // 🔹 رفع صورة "قبل" إن وُجدت
        if (beforeImageFile != null && beforeImageFile.Length > 0)
@@ -234,7 +233,7 @@ namespace ClinicApp.Web.Controllers
 
          await _context.SaveChangesAsync();
 
-          return RedirectToAction(nameof(Details), new { id = treatment.TreatmentPlanId });
+          return RedirectToAction(nameof(Details), new { id = treatment.TreatmentPlanId ?? 0 });
       }
 
         // 🔴 POST: /TreatmentPlan/DeleteTreatment
