@@ -174,9 +174,8 @@
                     };
                     var pText = treatment.Priority == 1 ? "Urgent" : treatment.Priority == 3 ? "Low" : "Medium";
 
-                    // Safe JSON-encode description for JS; invariant cost avoids comma-decimal cultures
+                    var costJs = treatment.Cost.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
                     var notesJson = System.Text.Json.JsonSerializer.Serialize(treatment.Description ?? "");
-                    var costJs    = treatment.Cost.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
                     <div class="treatment-card @tcls">
 
