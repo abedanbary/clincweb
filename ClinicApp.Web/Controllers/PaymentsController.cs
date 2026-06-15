@@ -145,24 +145,42 @@ namespace ClinicApp.Web.Controllers
         }
 
         // GET: /Payments/GetPatientTreatments?patientId=5
+        // Returns only treatments that are not yet fully paid.
         [HttpGet]
         [Authorize(Roles = "Manager")]
         public async Task<IActionResult> GetPatientTreatments(int patientId)
         {
             var clinicId = GetCurrentClinicId();
-            var treatments = await _context.Treatments
+
+            var rows = await _context.Treatments
                 .Where(t => t.PatientId == patientId && t.ClinicId == clinicId)
                 .OrderByDescending(t => t.TreatmentDate)
                 .Select(t => new
                 {
-                    value = t.Id,
-                    text = $"{t.Title} ({t.Type}) - ${t.Cost:F2}",
-                    cost = t.Cost,
-                    doctorId = t.DoctorId
+                    t.Id,
+                    t.Title,
+                    t.Type,
+                    t.Cost,
+                    t.DoctorId,
+                    PaidAmount = _context.Payments
+                        .Where(p => p.TreatmentId == t.Id && p.Status == PaymentStatus.Paid)
+                        .Sum(p => (decimal?)p.Amount) ?? 0m
                 })
                 .ToListAsync();
 
-            return Json(treatments);
+            // Exclude treatments whose cost is fully covered
+            var unpaid = rows
+                .Where(t => t.Cost <= 0 || t.PaidAmount < t.Cost)
+                .Select(t => new
+                {
+                    value     = t.Id,
+                    text      = $"{t.Title} ({t.Type}) — Remaining: ${(t.Cost - t.PaidAmount):N2}",
+                    cost      = t.Cost,
+                    remaining = t.Cost - t.PaidAmount,
+                    doctorId  = t.DoctorId
+                });
+
+            return Json(unpaid);
         }
 
         // GET: /Payments/GetPayment/5
@@ -214,6 +232,30 @@ namespace ClinicApp.Web.Controllers
                 {
                     TempData["Error"] = "This appointment has already been paid.";
                     return RedirectToAction(nameof(Index));
+                }
+            }
+
+            // Guard: prevent adding a paid payment when treatment is already fully paid
+            if (input.TreatmentId.HasValue && input.TreatmentId > 0 && input.Status == PaymentStatus.Paid)
+            {
+                var tr = await _context.Treatments
+                    .FirstOrDefaultAsync(t => t.Id == input.TreatmentId && t.ClinicId == clinicId);
+                if (tr != null)
+                {
+                    var paidSoFar = await _context.Payments
+                        .Where(p => p.TreatmentId == input.TreatmentId && p.Status == PaymentStatus.Paid)
+                        .SumAsync(p => p.Amount);
+                    var remaining = tr.Cost - paidSoFar;
+                    if (remaining <= 0)
+                    {
+                        TempData["Error"] = "This treatment has already been fully paid.";
+                        return RedirectToAction(nameof(Index));
+                    }
+                    if (input.Amount > remaining + 0.01m)
+                    {
+                        TempData["Error"] = $"Amount ${input.Amount:N2} exceeds the remaining balance of ${remaining:N2} for this treatment.";
+                        return RedirectToAction(nameof(Index));
+                    }
                 }
             }
 
@@ -381,9 +423,14 @@ namespace ClinicApp.Web.Controllers
                     .Where(p => p.TreatmentId == model.TreatmentId && p.Status == PaymentStatus.Paid)
                     .SumAsync(p => p.Amount);
                 var remaining = treatment.Cost - alreadyPaid;
+                if (remaining <= 0)
+                {
+                    TempData["Error"] = "This treatment has already been fully paid.";
+                    return RedirectToAction(nameof(Treatment), new { id = model.TreatmentId });
+                }
                 if (model.Amount > remaining + 0.01m)
                 {
-                    TempData["Error"] = $"Amount exceeds the remaining balance of {remaining:N2}. Payment not saved.";
+                    TempData["Error"] = $"Amount ${model.Amount:N2} exceeds the remaining balance of ${remaining:N2}.";
                     return RedirectToAction(nameof(Treatment), new { id = model.TreatmentId });
                 }
             }
