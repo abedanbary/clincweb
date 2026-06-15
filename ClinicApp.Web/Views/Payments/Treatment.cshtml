@@ -305,8 +305,9 @@
                             @if (isStaff)
                             {
                                 <td style="text-align:right;white-space:nowrap;">
+                                    @{ var notesJson = System.Text.Json.JsonSerializer.Serialize(p.Notes ?? ""); }
                                     <button class="btn-ghost btn-sm"
-                                            onclick="openEditModal(@p.Id, @p.Amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture), @((int)p.Method), @((int)p.Status), '@p.PaymentDate.ToLocalTime().ToString("yyyy-MM-dd")', '@(p.Notes?.Replace("'","\\'")??"")' )">
+                                            onclick="openEditModal(@p.Id, @p.Amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture), @((int)p.Method), @((int)p.Status), '@p.PaymentDate.ToLocalTime().ToString("yyyy-MM-dd")', @Html.Raw(notesJson))">
                                         Edit
                                     </button>
                                     @if (isManager)
