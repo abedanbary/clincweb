@@ -977,7 +977,22 @@
 
 .cal-doctor-note.success { color: var(--c-accent); }
 .cal-doctor-note.error   { color: #ef4444; }
+.cal-doctor-note.warning { color: #d97706; }
 .cal-doctor-note.loading { color: var(--c-text-soft); }
+
+/* ── Next available slot suggestion ─────────────────────────── */
+.cal-next-slot-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #f0fdf4; border: 1px solid #bbf7d0;
+    color: #15803d; border-radius: 8px; padding: 5px 10px;
+    font-size: 12px; font-weight: 500;
+}
+.cal-use-slot-btn {
+    background: #15803d; color: #fff; border: none; border-radius: 6px;
+    padding: 3px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
+    white-space: nowrap;
+}
+.cal-use-slot-btn:hover { background: #166534; }
 
 /* ── Patient toggle ─────────────────────────────────────────── */
 .cal-patient-toggle {
