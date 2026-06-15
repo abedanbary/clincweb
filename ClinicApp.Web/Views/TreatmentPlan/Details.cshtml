@@ -270,14 +270,14 @@
                             @if (treatment.Status != TreatmentStatus.Completed && treatment.Status != TreatmentStatus.Cancelled)
                             {
                                 <button class="btn-sm btn-primary"
-                                        onclick="openUpdateTreatmentModal(@treatment.Id, @((int)treatment.Status), @Html.Raw(costJs), @Html.Raw(notesJson))">
+                                        onclick="openUpdateTreatmentModal(@treatment.Id, @((int)treatment.Status), @Html.Raw(costJs), @notesJson)">
                                     Update
                                 </button>
                             }
                             else
                             {
                                 <button class="btn-sm btn-ghost"
-                                        onclick="openUpdateTreatmentModal(@treatment.Id, @((int)treatment.Status), @Html.Raw(costJs), @Html.Raw(notesJson))">
+                                        onclick="openUpdateTreatmentModal(@treatment.Id, @((int)treatment.Status), @Html.Raw(costJs), @notesJson)">
                                     Edit Notes
                                 </button>
                             }
