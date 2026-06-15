@@ -13,75 +13,118 @@
 
 <div class="treatment-plan-details-page">
 
-    <!-- Header -->
+    <!-- ── Header ────────────────────────────────────────────────────────── -->
     <header class="treatment-plan-header">
         <div class="treatment-plan-header-left">
-            <a asp-action="Index" asp-route-id="@Model.Plan.PatientId" class="btn-back">
-                ← Back to Plans
-            </a>
+            <a asp-action="Index" asp-route-id="@Model.Plan.PatientId" class="btn-back">← Back to Plans</a>
             <div class="treatment-plan-header-text">
                 <h1 class="treatment-plan-title">@Model.Plan.Title</h1>
                 <p class="treatment-plan-subtitle">
-                    @Model.Plan.Patient.FirstName @Model.Plan.Patient.LastName • 
-                    Dr. @Model.Plan.Doctor.FirstName @Model.Plan.Doctor.LastName •
+                    @Model.Plan.Patient.FirstName @Model.Plan.Patient.LastName &bull;
+                    Dr. @Model.Plan.Doctor.FirstName @Model.Plan.Doctor.LastName &bull;
                     Created @Model.Plan.CreatedAt.ToString("MMM dd, yyyy")
                 </p>
             </div>
         </div>
-        
+
         <div class="plan-header-actions">
             @{
-                var statusClass = Model.Plan.Status switch
-                {
-                    PlanStatus.Draft => "status-draft",
-                    PlanStatus.Active => "status-active",
-                    PlanStatus.Completed => "status-completed",
-                    PlanStatus.Cancelled => "status-cancelled",
-                    _ => "status-draft"
+                var statusClass = Model.Plan.Status switch {
+                    PlanStatus.Draft      => "status-draft",
+                    PlanStatus.Active     => "status-active",
+                    PlanStatus.Completed  => "status-completed",
+                    PlanStatus.Cancelled  => "status-cancelled",
+                    _                     => "status-draft"
                 };
-
-                var statusText = Model.Plan.Status switch
-                {
-                    PlanStatus.Draft => "Draft",
-                    PlanStatus.Active => "Active",
-                    PlanStatus.Completed => "Completed",
-                    PlanStatus.Cancelled => "Cancelled",
-                    _ => "Draft"
+                var statusText = Model.Plan.Status switch {
+                    PlanStatus.Draft      => "Draft",
+                    PlanStatus.Active     => "Active",
+                    PlanStatus.Completed  => "Completed",
+                    PlanStatus.Cancelled  => "Cancelled",
+                    _                     => "Draft"
                 };
             }
-            
             <span class="plan-status @statusClass">@statusText</span>
+            <button class="btn-ghost btn-sm" onclick="document.getElementById('statusPanel').classList.toggle('hidden')">
+                Change Status
+            </button>
         </div>
     </header>
 
-    <!-- Description -->
+    <!-- ── Change Status panel (hidden by default) ───────────────────────── -->
+    <div id="statusPanel" class="plan-status-panel hidden">
+        <form asp-action="UpdatePlanStatus" method="post" class="plan-status-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="planId" value="@Model.Plan.Id" />
+            <span class="plan-status-label">Set plan status:</span>
+            <select name="status" class="form-input form-input-sm">
+                @{ var ps = Model.Plan.Status; }
+                @if (ps == PlanStatus.Draft)     { <option value="1" selected>Draft</option>     } else { <option value="1">Draft</option>     }
+                @if (ps == PlanStatus.Active)    { <option value="2" selected>Active</option>    } else { <option value="2">Active</option>    }
+                @if (ps == PlanStatus.Completed) { <option value="3" selected>Completed</option> } else { <option value="3">Completed</option> }
+                @if (ps == PlanStatus.Cancelled) { <option value="4" selected>Cancelled</option> } else { <option value="4">Cancelled</option> }
+            </select>
+            <button type="submit" class="btn-primary btn-sm">Save</button>
+        </form>
+    </div>
+
+    <!-- ── Plan timeline row ─────────────────────────────────────────────── -->
+    <div class="plan-timeline-row">
+        <div class="plan-timeline-item">
+            <span class="ptl-label">Created</span>
+            <span class="ptl-value">@Model.Plan.CreatedAt.ToString("dd MMM yyyy")</span>
+        </div>
+        <div class="plan-timeline-sep">→</div>
+        <div class="plan-timeline-item">
+            <span class="ptl-label">Started</span>
+            <span class="ptl-value">@(Model.Plan.StartDate.HasValue ? Model.Plan.StartDate.Value.ToString("dd MMM yyyy") : "—")</span>
+        </div>
+        <div class="plan-timeline-sep">→</div>
+        <div class="plan-timeline-item @(Model.Plan.CompletedAt.HasValue ? "ptl-done" : "")">
+            <span class="ptl-label">Completed</span>
+            <span class="ptl-value">@(Model.Plan.CompletedAt.HasValue ? Model.Plan.CompletedAt.Value.ToString("dd MMM yyyy") : "—")</span>
+        </div>
+    </div>
+
+    <!-- ── Plan Notes ────────────────────────────────────────────────────── -->
     @if (!string.IsNullOrEmpty(Model.Plan.Description))
     {
         <div class="plan-description-card">
+            <div class="plan-notes-label">Plan Notes</div>
             <p>@Model.Plan.Description</p>
         </div>
     }
 
-    <!-- Progress Card -->
+    <!-- ── Progress Card ─────────────────────────────────────────────────── -->
     <div class="progress-card">
         <div class="progress-stats">
             <div class="progress-stat">
-                <span class="progress-stat-label">Treatments</span>
+                <span class="progress-stat-label">Completed</span>
                 <span class="progress-stat-value">@Model.CompletedTreatments / @Model.TotalTreatments</span>
             </div>
             <div class="progress-stat">
+                <span class="progress-stat-label">In Progress</span>
+                <span class="progress-stat-value">@Model.Plan.Treatments.Count(t => t.Status == TreatmentStatus.InProgress)</span>
+            </div>
+            <div class="progress-stat">
+                <span class="progress-stat-label">Planned</span>
+                <span class="progress-stat-value">@Model.Plan.Treatments.Count(t => t.Status == TreatmentStatus.Planned)</span>
+            </div>
+            <div class="progress-stat">
                 <span class="progress-stat-label">Estimated Cost</span>
-                <span class="progress-stat-value">$@Model.Plan.TotalEstimatedCost.ToString("N2")</span>
+                <span class="progress-stat-value">$@Model.Plan.TotalEstimatedCost.ToString("N0")</span>
             </div>
             <div class="progress-stat">
                 <span class="progress-stat-label">Actual Cost</span>
-                <span class="progress-stat-value">$@Model.TotalActualCost.ToString("N2")</span>
+                <span class="progress-stat-value @(Model.TotalActualCost > Model.Plan.TotalEstimatedCost ? "stat-over" : "stat-ok")">
+                    $@Model.TotalActualCost.ToString("N0")
+                </span>
             </div>
         </div>
-        
+
         <div class="progress-bar-container">
             <div class="progress-bar-label">
-                <span>Progress</span>
+                <span>Overall Progress</span>
                 <span>@Model.ProgressPercentage%</span>
             </div>
             <div class="progress-bar">
@@ -90,129 +133,162 @@
         </div>
     </div>
 
-    <!-- Treatments Section -->
+    <!-- ── Treatments Section ────────────────────────────────────────────── -->
     <section class="treatments-section">
         <div class="treatments-header">
             <h2 class="treatments-title">Treatments (@Model.Plan.Treatments.Count)</h2>
-            <button class="btn-primary" onclick="openAddTreatmentModal()">
-                + Add Treatment
-            </button>
+            <button class="btn-primary" onclick="openAddTreatmentModal()">+ Add Treatment</button>
         </div>
 
         @if (Model.Plan.Treatments.Any())
         {
             <div class="treatments-list">
-                @foreach (var treatment in Model.Plan.Treatments.OrderBy(t => t.Priority).ThenBy(t => t.ToothNumber))
+                @foreach (var treatment in Model.Plan.Treatments.OrderBy(t => t.Priority).ThenBy(t => t.TreatmentDate))
                 {
-                    var treatmentStatusClass = treatment.Status switch
-                    {
-                        TreatmentStatus.Planned => "treatment-planned",
+                    var tcls = treatment.Status switch {
+                        TreatmentStatus.Planned    => "treatment-planned",
                         TreatmentStatus.InProgress => "treatment-inprogress",
-                        TreatmentStatus.Completed => "treatment-completed",
-                        TreatmentStatus.Cancelled => "treatment-cancelled",
-                        _ => "treatment-planned"
+                        TreatmentStatus.Completed  => "treatment-completed",
+                        TreatmentStatus.Cancelled  => "treatment-cancelled",
+                        _                          => "treatment-planned"
                     };
-
-                    var statusIcon = treatment.Status switch
-                    {
-                        TreatmentStatus.Planned => "📋",
-                        TreatmentStatus.InProgress => "⏳",
-                        TreatmentStatus.Completed => "✓",
-                        TreatmentStatus.Cancelled => "✕",
-                        _ => "📋"
+                    var tIcon = treatment.Status switch {
+                        TreatmentStatus.Planned    => "◯",
+                        TreatmentStatus.InProgress => "◑",
+                        TreatmentStatus.Completed  => "✓",
+                        TreatmentStatus.Cancelled  => "✕",
+                        _                          => "◯"
                     };
-
-                    var priorityClass = treatment.Priority switch
-                    {
+                    var tStatusText = treatment.Status switch {
+                        TreatmentStatus.Planned    => "Planned",
+                        TreatmentStatus.InProgress => "In Progress",
+                        TreatmentStatus.Completed  => "Completed",
+                        TreatmentStatus.Cancelled  => "Cancelled",
+                        _                          => "Planned"
+                    };
+                    var pcls = treatment.Priority switch {
                         1 => "priority-urgent",
                         2 => "priority-medium",
                         3 => "priority-low",
                         _ => "priority-medium"
                     };
+                    var pText = treatment.Priority == 1 ? "Urgent" : treatment.Priority == 3 ? "Low" : "Medium";
 
-                    <div class="treatment-card @treatmentStatusClass">
+                    // Safe JSON-encode description for JS
+                    var notesJson = System.Text.Json.JsonSerializer.Serialize(treatment.Description ?? "");
+
+                    <div class="treatment-card @tcls">
+
+                        <!-- Card header row -->
                         <div class="treatment-card-header">
                             <div class="treatment-card-title-section">
-                                <span class="treatment-status-icon">@statusIcon</span>
+                                <span class="treatment-status-icon">@tIcon</span>
                                 <h3 class="treatment-card-title">@treatment.Title</h3>
                                 @if (treatment.ToothNumber.HasValue)
                                 {
                                     <span class="treatment-tooth-badge">Tooth @treatment.ToothNumber</span>
                                 }
                             </div>
-                            <span class="treatment-priority @priorityClass">
-                                @(treatment.Priority == 1 ? "Urgent" : treatment.Priority == 2 ? "Medium" : "Low")
-                            </span>
+                            <div class="treatment-header-badges">
+                                <span class="tst-badge tst-@treatment.Status.ToString().ToLower()">@tStatusText</span>
+                                <span class="treatment-priority @pcls">@pText</span>
+                            </div>
                         </div>
-                        
-                        @if (!string.IsNullOrEmpty(treatment.Description))
-                        {
-                            <p class="treatment-description">@treatment.Description</p>
-                        }
-                        
-                        <div class="treatment-info">
-                            <div class="treatment-info-item">
-                                <span class="treatment-info-label">Type:</span>
-                                <span class="treatment-info-value">@treatment.Type.ToString()</span>
+
+                        <!-- Detail grid -->
+                        <div class="treatment-detail-grid">
+                            <div class="tdg-item">
+                                <span class="tdg-label">Type</span>
+                                <span class="tdg-value">@treatment.Type</span>
                             </div>
-                            <div class="treatment-info-item">
-                                <span class="treatment-info-label">Estimated:</span>
-                                <span class="treatment-info-value">
-                                    $@(treatment.EstimatedCost?.ToString("N2") ?? "0.00")
-                                </span>
+                            <div class="tdg-item">
+                                <span class="tdg-label">Scheduled</span>
+                                <span class="tdg-value">@treatment.TreatmentDate.ToString("dd MMM yyyy")</span>
                             </div>
-                            @if (treatment.Status == TreatmentStatus.Completed)
+                            @if (treatment.CompletedAt.HasValue)
                             {
-                                <div class="treatment-info-item">
-                                    <span class="treatment-info-label">Actual:</span>
-                                    <span class="treatment-info-value">$@treatment.Cost.ToString("N2")</span>
+                                <div class="tdg-item">
+                                    <span class="tdg-label">Completed</span>
+                                    <span class="tdg-value tdg-done">@treatment.CompletedAt.Value.ToString("dd MMM yyyy")</span>
+                                </div>
+                            }
+                            <div class="tdg-item">
+                                <span class="tdg-label">Est. Cost</span>
+                                <span class="tdg-value">$@(treatment.EstimatedCost?.ToString("N0") ?? "0")</span>
+                            </div>
+                            @if (treatment.Cost > 0)
+                            {
+                                <div class="tdg-item">
+                                    <span class="tdg-label">Actual Cost</span>
+                                    <span class="tdg-value @(treatment.Cost > (treatment.EstimatedCost ?? 0) ? "tdg-over" : "tdg-done")">
+                                        $@treatment.Cost.ToString("N0")
+                                    </span>
                                 </div>
                             }
                         </div>
 
-                        @* صور قبل / بعد إن وجدت *@
+                        <!-- Notes -->
+                        @if (!string.IsNullOrEmpty(treatment.Description))
+                        {
+                            <div class="treatment-notes-block">
+                                <span class="treatment-notes-label">Notes</span>
+                                <p class="treatment-notes-text">@treatment.Description</p>
+                            </div>
+                        }
+
+                        <!-- Before / After photos -->
                         @if (!string.IsNullOrEmpty(treatment.BeforeImageUrl) || !string.IsNullOrEmpty(treatment.AfterImageUrl))
                         {
                             <div class="treatment-photos">
                                 @if (!string.IsNullOrEmpty(treatment.BeforeImageUrl))
                                 {
                                     <div class="treatment-photo">
-                                        <span class="treatment-info-label">Before</span>
+                                        <span class="photo-label">Before</span>
                                         <img src="@treatment.BeforeImageUrl"
-                                             alt="Before photo"
-                                             style="width:80px;height:80px;object-fit:cover;border-radius:8px;" />
+                                             alt="Before"
+                                             class="photo-thumb"
+                                             onclick="openImageViewer(this)"
+                                             title="Click to view full size" />
                                     </div>
                                 }
-
                                 @if (!string.IsNullOrEmpty(treatment.AfterImageUrl))
                                 {
                                     <div class="treatment-photo">
-                                        <span class="treatment-info-label">After</span>
+                                        <span class="photo-label">After</span>
                                         <img src="@treatment.AfterImageUrl"
-                                             alt="After photo"
-                                             style="width:80px;height:80px;object-fit:cover;border-radius:8px;" />
+                                             alt="After"
+                                             class="photo-thumb"
+                                             onclick="openImageViewer(this)"
+                                             title="Click to view full size" />
                                     </div>
                                 }
                             </div>
                         }
-                        
+
+                        <!-- Actions -->
                         <div class="treatment-actions">
                             @if (treatment.Status != TreatmentStatus.Completed && treatment.Status != TreatmentStatus.Cancelled)
                             {
                                 <button class="btn-sm btn-primary"
-                                        onclick="openUpdateTreatmentModal(@treatment.Id, '@treatment.Status', @treatment.Cost)">
-                                    Update Status
+                                        onclick="openUpdateTreatmentModal(@treatment.Id, @((int)treatment.Status), @treatment.Cost, @Html.Raw(notesJson))">
+                                    Update
                                 </button>
                             }
-                            <form asp-action="DeleteTreatment"
-                                  method="post"
-                                  style="display:inline;"
-                                  onsubmit="return confirm('Are you sure?');">
+                            else
+                            {
+                                <button class="btn-sm btn-ghost"
+                                        onclick="openUpdateTreatmentModal(@treatment.Id, @((int)treatment.Status), @treatment.Cost, @Html.Raw(notesJson))">
+                                    Edit Notes
+                                </button>
+                            }
+                            <form asp-action="DeleteTreatment" method="post" style="display:inline;"
+                                  onsubmit="return confirm('Delete this treatment?');">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="treatmentId" value="@treatment.Id" />
                                 <button type="submit" class="btn-sm btn-danger">Delete</button>
                             </form>
                         </div>
+
                     </div>
                 }
             </div>
@@ -227,65 +303,66 @@
         }
     </section>
 
-    <!-- Add Treatment Modal -->
+    <!-- ── Add Treatment Modal ───────────────────────────────────────────── -->
     <div id="addTreatmentModal" class="modal-overlay hidden">
         <div class="modal-card">
             <div class="modal-header">
                 <h3 class="modal-title">Add Treatment</h3>
                 <button class="modal-close" onclick="closeAddTreatmentModal()">&times;</button>
             </div>
-            
             <form asp-action="AddTreatment" method="post" class="modal-body">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="planId" value="@Model.Plan.Id" />
-                
-                <div class="form-field">
-                    <label class="form-label">Tooth Number (Optional)</label>
-                    <input class="form-input" name="toothNumber" type="number" min="11" max="48" placeholder="e.g., 36" />
+
+                <div class="form-row">
+                    <div class="form-field">
+                        <label class="form-label">Treatment Type *</label>
+                        <select class="form-input" name="type" required>
+                            <option value="1">Cleaning</option>
+                            <option value="2">Filling</option>
+                            <option value="3">Root Canal</option>
+                            <option value="4">Extraction</option>
+                            <option value="5">Crown</option>
+                            <option value="6">Bridge</option>
+                            <option value="7">Implant</option>
+                            <option value="8">Whitening</option>
+                            <option value="9">Orthodontics</option>
+                            <option value="10">Denture</option>
+                            <option value="11">Scaling</option>
+                            <option value="12">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Tooth Number (Optional)</label>
+                        <input class="form-input" name="toothNumber" type="number" min="11" max="48" placeholder="e.g., 36" />
+                    </div>
                 </div>
-                
-                <div class="form-field">
-                    <label class="form-label">Treatment Type *</label>
-                    <select class="form-input" name="type" required>
-                        <option value="1">Cleaning</option>
-                        <option value="2">Filling</option>
-                        <option value="3">Root Canal</option>
-                        <option value="4">Extraction</option>
-                        <option value="5">Crown</option>
-                        <option value="6">Bridge</option>
-                        <option value="7">Implant</option>
-                        <option value="8">Whitening</option>
-                        <option value="9">Orthodontics</option>
-                        <option value="10">Denture</option>
-                        <option value="11">Scaling</option>
-                        <option value="12">Other</option>
-                    </select>
-                </div>
-                
+
                 <div class="form-field">
                     <label class="form-label">Title *</label>
-                    <input class="form-input" name="title" required placeholder="e.g., Filling - Tooth 36" />
+                    <input class="form-input" name="title" required placeholder="e.g., Composite Filling — Tooth 36" />
                 </div>
-                
+
                 <div class="form-field">
-                    <label class="form-label">Description</label>
-                    <textarea class="form-textarea" name="description" rows="3"></textarea>
+                    <label class="form-label">Notes / Description</label>
+                    <textarea class="form-textarea" name="description" rows="3" placeholder="Clinical notes, materials, details…"></textarea>
                 </div>
-                
-                <div class="form-field">
-                    <label class="form-label">Estimated Cost *</label>
-                    <input class="form-input" name="estimatedCost" type="number" step="0.01" required placeholder="0.00" />
+
+                <div class="form-row">
+                    <div class="form-field">
+                        <label class="form-label">Estimated Cost *</label>
+                        <input class="form-input" name="estimatedCost" type="number" step="0.01" required placeholder="0.00" />
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Priority *</label>
+                        <select class="form-input" name="priority" required>
+                            <option value="1">Urgent</option>
+                            <option value="2" selected>Medium</option>
+                            <option value="3">Low</option>
+                        </select>
+                    </div>
                 </div>
-                
-                <div class="form-field">
-                    <label class="form-label">Priority *</label>
-                    <select class="form-input" name="priority" required>
-                        <option value="1">Urgent</option>
-                        <option value="2" selected>Medium</option>
-                        <option value="3">Low</option>
-                    </select>
-                </div>
-                
+
                 <div class="form-actions">
                     <button type="submit" class="btn-primary">Add Treatment</button>
                     <button type="button" class="btn-ghost" onclick="closeAddTreatmentModal()">Cancel</button>
@@ -294,59 +371,52 @@
         </div>
     </div>
 
-    <!-- Update Treatment Modal -->
+    <!-- ── Update Treatment Modal ────────────────────────────────────────── -->
     <div id="updateTreatmentModal" class="modal-overlay hidden">
         <div class="modal-card">
             <div class="modal-header">
                 <h3 class="modal-title">Update Treatment</h3>
                 <button class="modal-close" onclick="closeUpdateTreatmentModal()">&times;</button>
             </div>
-            
-            <form asp-action="UpdateTreatment"
-                  method="post"
-                  enctype="multipart/form-data"
-                  class="modal-body">
+            <form asp-action="UpdateTreatment" method="post" enctype="multipart/form-data" class="modal-body">
                 @Html.AntiForgeryToken()
                 <input type="hidden" id="update-treatment-id" name="treatmentId" />
-                
-                <div class="form-field">
-                    <label class="form-label">Status *</label>
-                    <select class="form-input" id="update-status" name="status" required>
-                        <option value="1">Planned</option>
-                        <option value="2">In Progress</option>
-                        <option value="3">Completed</option>
-                        <option value="4">Cancelled</option>
-                    </select>
+
+                <div class="form-row">
+                    <div class="form-field">
+                        <label class="form-label">Status *</label>
+                        <select class="form-input" id="update-status" name="status" required>
+                            <option value="1">Planned</option>
+                            <option value="2">In Progress</option>
+                            <option value="3">Completed</option>
+                            <option value="4">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Actual Cost</label>
+                        <input class="form-input" id="update-cost" name="actualCost" type="number" step="0.01" placeholder="0.00" />
+                    </div>
                 </div>
-                
-                <div class="form-field">
-                    <label class="form-label">Actual Cost</label>
-                    <input class="form-input" id="update-cost" name="actualCost" type="number" step="0.01" placeholder="0.00" />
-                </div>
-                
+
                 <div class="form-field">
                     <label class="form-label">Notes</label>
-                    <textarea class="form-textarea" name="notes" rows="3"></textarea>
+                    <textarea class="form-textarea" id="update-notes" name="notes" rows="4"
+                              placeholder="Add clinical notes, observations…"></textarea>
                 </div>
 
-                <div class="form-field">
-                    <label class="form-label">Before Photo</label>
-                    <input class="form-input"
-                           type="file"
-                           name="beforeImageFile"
-                           accept="image/*" />
+                <div class="form-row">
+                    <div class="form-field">
+                        <label class="form-label">Before Photo</label>
+                        <input class="form-input" type="file" name="beforeImageFile" accept="image/*" />
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">After Photo</label>
+                        <input class="form-input" type="file" name="afterImageFile" accept="image/*" />
+                    </div>
                 </div>
 
-                <div class="form-field">
-                    <label class="form-label">After Photo</label>
-                    <input class="form-input"
-                           type="file"
-                           name="afterImageFile"
-                           accept="image/*" />
-                </div>
-                
                 <div class="form-actions">
-                    <button type="submit" class="btn-primary">Update</button>
+                    <button type="submit" class="btn-primary">Save</button>
                     <button type="button" class="btn-ghost" onclick="closeUpdateTreatmentModal()">Cancel</button>
                 </div>
             </form>
@@ -355,25 +425,102 @@
 
 </div>
 
+<style>
+/* ── Plan status panel ─────────────────────────────────────────────────── */
+.plan-status-panel { background:#f8fafc; border:1px solid var(--color-border); border-radius:10px; padding:12px 16px; margin-top:4px; }
+.plan-status-form  { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.plan-status-label { font-size:13px; font-weight:600; color:var(--color-text-muted); }
+.form-input-sm     { padding:6px 10px; font-size:13px; border-radius:7px; border:1px solid var(--color-border); }
+.btn-sm            { padding:6px 14px; font-size:12px; border-radius:7px; }
+
+/* ── Plan timeline row ─────────────────────────────────────────────────── */
+.plan-timeline-row {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid var(--color-border);
+    border-radius: 10px; padding: 14px 20px;
+    flex-wrap: wrap;
+}
+.plan-timeline-item { display:flex; flex-direction:column; gap:2px; }
+.plan-timeline-sep  { color: var(--color-text-muted); font-size:18px; margin:0 4px; }
+.ptl-label  { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; color:var(--color-text-muted); }
+.ptl-value  { font-size:14px; font-weight:600; color:var(--color-text); }
+.ptl-done .ptl-value { color: #16a34a; }
+
+/* ── Plan notes card ───────────────────────────────────────────────────── */
+.plan-notes-label {
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+    color:var(--color-text-muted); margin-bottom:6px;
+}
+
+/* ── Progress stats ────────────────────────────────────────────────────── */
+.stat-over { color:#dc2626; font-weight:700; }
+.stat-ok   { color:#16a34a; font-weight:700; }
+
+/* ── Treatment card header badges ──────────────────────────────────────── */
+.treatment-header-badges { display:flex; gap:6px; align-items:center; flex-shrink:0; }
+.tst-badge {
+    padding:2px 9px; border-radius:999px; font-size:11px; font-weight:600;
+}
+.tst-planned    { background:#fef9c3; color:#a16207; border:1px solid #fde047; }
+.tst-inprogress { background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; }
+.tst-completed  { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+.tst-cancelled  { background:#f3f4f6; color:#6b7280; border:1px solid #d1d5db; }
+
+/* ── Treatment detail grid ─────────────────────────────────────────────── */
+.treatment-detail-grid {
+    display: flex; flex-wrap: wrap; gap: 6px 20px;
+    padding: 10px 0; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
+    margin: 10px 0;
+}
+.tdg-item  { display:flex; flex-direction:column; gap:2px; }
+.tdg-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--color-text-muted); }
+.tdg-value { font-size:13px; font-weight:600; color:var(--color-text); }
+.tdg-done  { color:#16a34a; }
+.tdg-over  { color:#dc2626; }
+
+/* ── Treatment notes block ─────────────────────────────────────────────── */
+.treatment-notes-block {
+    background: #f8fafc; border-left: 3px solid #93c5fd;
+    border-radius: 0 6px 6px 0; padding: 8px 12px; margin: 0 0 10px;
+}
+.treatment-notes-label {
+    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+    color:#2563eb; margin-bottom:4px; display:block;
+}
+.treatment-notes-text { font-size:13px; color:var(--color-text); margin:0; line-height:1.55; }
+
+/* ── Photos ────────────────────────────────────────────────────────────── */
+.photo-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--color-text-muted); display:block; margin-bottom:4px; }
+.photo-thumb {
+    width:110px; height:110px; object-fit:cover; border-radius:8px;
+    border:2px solid var(--color-border); cursor:pointer;
+    transition:transform .2s, border-color .2s;
+}
+.photo-thumb:hover { transform:scale(1.05); border-color:#3b82f6; }
+
+/* ── Form rows ─────────────────────────────────────────────────────────── */
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@@media(max-width:500px){ .form-row { grid-template-columns:1fr; } }
+</style>
+
 @section Scripts {
-    <script>
-        function openAddTreatmentModal() {
-            document.getElementById('addTreatmentModal').classList.remove('hidden');
-        }
+<script>
+    function openAddTreatmentModal() {
+        document.getElementById('addTreatmentModal').classList.remove('hidden');
+    }
+    function closeAddTreatmentModal() {
+        document.getElementById('addTreatmentModal').classList.add('hidden');
+    }
 
-        function closeAddTreatmentModal() {
-            document.getElementById('addTreatmentModal').classList.add('hidden');
-        }
-
-        function openUpdateTreatmentModal(id, status, cost) {
-            document.getElementById('update-treatment-id').value = id;
-            document.getElementById('update-status').value = status;
-            document.getElementById('update-cost').value = cost;
-            document.getElementById('updateTreatmentModal').classList.remove('hidden');
-        }
-
-        function closeUpdateTreatmentModal() {
-            document.getElementById('updateTreatmentModal').classList.add('hidden');
-        }
-    </script>
+    function openUpdateTreatmentModal(id, status, cost, notes) {
+        document.getElementById('update-treatment-id').value = id;
+        document.getElementById('update-status').value = status;
+        document.getElementById('update-cost').value = cost > 0 ? cost : '';
+        document.getElementById('update-notes').value = notes || '';
+        document.getElementById('updateTreatmentModal').classList.remove('hidden');
+    }
+    function closeUpdateTreatmentModal() {
+        document.getElementById('updateTreatmentModal').classList.add('hidden');
+    }
+</script>
 }
