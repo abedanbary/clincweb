@@ -300,12 +300,12 @@ namespace ClinicApp.Web.Controllers
                         var timeLabel  = $"{cursor.Hours:D2}:{cursor.Minutes:D2}";
                         return Json(new
                         {
-                            found      = true,
-                            startIso   = slotStartUtc.ToString("yyyy-MM-ddTHH:mm"),
-                            endIso     = slotEndUtc.ToString("yyyy-MM-ddTHH:mm"),
-                            dateIso    = day.ToString("yyyy-MM-dd"),
-                            timeValue  = timeLabel,
-                            label      = $"{dateLabel} at {timeLabel}"
+                            found     = true,
+                            startIso  = slotStartUtc.ToString("yyyy-MM-ddTHH:mm") + "Z",
+                            endIso    = slotEndUtc.ToString("yyyy-MM-ddTHH:mm") + "Z",
+                            dateIso   = day.ToString("yyyy-MM-dd"),
+                            timeValue = timeLabel,
+                            label     = $"{dateLabel} at {timeLabel}"
                         });
                     }
                     cursor = cursor.Add(TimeSpan.FromMinutes(30));

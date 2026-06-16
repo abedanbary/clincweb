@@ -448,14 +448,24 @@
                 .then(r => r.json())
                 .then(data => {
                     if (!data.found) { box.style.display = 'none'; return; }
-                    chip.innerHTML = `⚡ Next available: <strong>${data.label}</strong> &nbsp;`;
+                    const startLocal = new Date(data.startIso);
+                    const endLocal   = new Date(data.endIso);
+                    const now = new Date();
+                    const pad = n => String(n).padStart(2, '0');
+                    const tom = new Date(now); tom.setDate(tom.getDate() + 1);
+                    const dl  = startLocal.toDateString() === now.toDateString() ? 'Today'
+                              : startLocal.toDateString() === tom.toDateString() ? 'Tomorrow'
+                              : startLocal.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+                    const label = `${dl} at ${pad(startLocal.getHours())}:${pad(startLocal.getMinutes())}`;
+                    chip.innerHTML = `⚡ Next available: <strong>${label}</strong> &nbsp;`;
                     const btn = document.createElement('button');
                     btn.type = 'button';
                     btn.className = 'cal-use-slot-btn';
                     btn.textContent = 'Use this time';
                     btn.onclick = () => {
-                        startTimeInput.value = data.startIso;
-                        endTimeInput.value   = data.endIso;
+                        const toLocalIso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                        startTimeInput.value = toLocalIso(startLocal);
+                        endTimeInput.value   = toLocalIso(endLocal);
                         startTimeInput.dispatchEvent(new Event('change'));
                     };
                     chip.appendChild(btn);

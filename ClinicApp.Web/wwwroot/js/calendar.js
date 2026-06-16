@@ -894,6 +894,25 @@ function showDoctorSelectionWarning(sel, docs, note) {
 }
 
 // ── Next available slot suggestion ────────────────────────────
+function _slotLocalLabel(isoZ) {
+    const d   = new Date(isoZ);
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const tom = new Date(now); tom.setDate(tom.getDate() + 1);
+    const dl  = d.toDateString() === now.toDateString() ? 'Today'
+              : d.toDateString() === tom.toDateString() ? 'Tomorrow'
+              : d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    return `${dl} at ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function _toLocalDateStr(d) {
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+function _toLocalTimeStr(d) {
+    const p = n => String(n).padStart(2, '0');
+    return `${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 function loadNextSlot(doctorId) {
     const box  = document.getElementById('nextSlotSuggestion');
     const chip = document.getElementById('nextSlotChip');
@@ -908,7 +927,7 @@ function loadNextSlot(doctorId) {
 
     fetch(url).then(r => r.json()).then(data => {
         if (!data.found) { box.style.display = 'none'; return; }
-        chip.innerHTML = `⚡ Next available: <strong>${data.label}</strong> &nbsp;`;
+        chip.innerHTML = `⚡ Next available: <strong>${_slotLocalLabel(data.startIso)}</strong> &nbsp;`;
         const btn = document.createElement('button');
         btn.type      = 'button';
         btn.className = 'cal-use-slot-btn';
@@ -919,20 +938,19 @@ function loadNextSlot(doctorId) {
 }
 
 function applyNextSlot(slot) {
-    // Set date picker
+    const start  = new Date(slot.startIso);
     const dateEl = document.getElementById('ApptDate');
-    if (dateEl) { dateEl.value = slot.dateIso; dateEl.dispatchEvent(new Event('change')); }
+    if (dateEl) { dateEl.value = _toLocalDateStr(start); dateEl.dispatchEvent(new Event('change')); }
 
-    // Set time select — wait a tick for options to repopulate after date change
     setTimeout(() => {
         const timeEl = document.getElementById('ApptTime');
         if (timeEl) {
-            timeEl.value = slot.timeValue;
+            const t = _toLocalTimeStr(start);
+            timeEl.value = t;
             if (!timeEl.value) {
-                // option might not exist yet — add it temporarily
-                const opt = Object.assign(document.createElement('option'), { value: slot.timeValue, textContent: slot.timeValue });
+                const opt = Object.assign(document.createElement('option'), { value: t, textContent: t });
                 timeEl.appendChild(opt);
-                timeEl.value = slot.timeValue;
+                timeEl.value = t;
             }
             timeEl.dispatchEvent(new Event('change'));
         }
