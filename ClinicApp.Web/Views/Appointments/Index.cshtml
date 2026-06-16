@@ -441,7 +441,10 @@
             chip.textContent = 'Finding next available slot…';
             box.style.display = '';
 
-            fetch(`/Appointments/GetNextAvailableSlot?doctorId=${encodeURIComponent(doctorId)}`)
+            const dateHint = startTimeInput.value ? startTimeInput.value.substring(0, 10) : '';
+            const slotUrl = `/Appointments/GetNextAvailableSlot?doctorId=${encodeURIComponent(doctorId)}` +
+                            (dateHint ? `&date=${encodeURIComponent(dateHint)}` : '');
+            fetch(slotUrl)
                 .then(r => r.json())
                 .then(data => {
                     if (!data.found) { box.style.display = 'none'; return; }

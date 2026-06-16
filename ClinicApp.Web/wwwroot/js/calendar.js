@@ -760,9 +760,11 @@ function setupDoctorAvailability() {
 
     const onDateChange = function () {
         onTimeChange();
-        // Refresh next-slot suggestion for doctors (who don't have a select to trigger it)
         if (window.currentUser?.role === 'Doctor') {
             loadNextSlot(window.currentUser.id);
+        } else {
+            const sel = document.getElementById('DoctorId');
+            if (sel?.value) loadNextSlot(sel.value);
         }
     };
 
