@@ -34,8 +34,10 @@ namespace ClinicApp.Web.Models
 
     // العيادة
     public int ClinicId { get; set; }
-    [ValidateNever] 
+    [ValidateNever]
     public Clinic Clinic { get; set; } = null!;
+
+    public bool WhatsAppReminderSent { get; set; } = false;
  }
 
 }

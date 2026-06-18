@@ -136,6 +136,7 @@ ExcelPackage.License.SetNonCommercialOrganization("Sami Shamoon College of Engin
 builder.Services.AddScoped<IPrintService, PrintService>();
 builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddHttpClient<IWhatsAppService, WhatsAppService>();
+builder.Services.AddHostedService<AppointmentReminderService>();
 
 var app = builder.Build();
 

@@ -20,15 +20,6 @@ namespace ClinicApp.Web.Controllers
             _whatsApp = whatsApp;
         }
 
-        private static string NormalizePhone(string? phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone)) return string.Empty;
-            var digits = new string(phone.Where(char.IsDigit).ToArray());
-            // Israeli local format: 05X → 97205X
-            if (digits.StartsWith("0"))
-                digits = "972" + digits[1..];
-            return digits;
-        }
 
         private int GetCurrentClinicId()
         {
@@ -250,9 +241,9 @@ namespace ClinicApp.Web.Controllers
             if (patient == null)
                 return NotFound();
 
-            var phone = NormalizePhone(patient.Phone);
-            if (string.IsNullOrEmpty(phone))
-                return Json(new { success = false, message = "Patient has no phone number." });
+            var (isValid, phone, formatError) = PhoneNumberHelper.Format(patient.Phone);
+            if (!isValid)
+                return Json(new { success = false, message = formatError });
 
             var (success, message) = await _whatsApp.SendTemplateMessageAsync(phone);
             return Json(new { success, message });
