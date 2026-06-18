@@ -8,7 +8,7 @@ namespace ClinicApp.Web.Services
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<AppointmentReminderService> _logger;
-        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(30);
+        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
 
         public AppointmentReminderService(IServiceScopeFactory scopeFactory, ILogger<AppointmentReminderService> logger)
         {
