@@ -1,6 +1,7 @@
 @using ClinicApp.Web.ViewModels
 @using ClinicApp.Web.Models
 @model DoctorViewModel
+@inject ClinicApp.Web.Services.IAppTimeService TimeService
 
 @{
     Layout = "_DoctorLayout";
@@ -15,7 +16,7 @@
             <h1 class="dashboard-title">Welcome back, Dr. @Model.DoctorName</h1>
             <p class="dashboard-subtitle">@Model.ClinicName</p>
         </div>
-        <p class="dashboard-date">@DateTime.Now.ToString("dddd, MMMM dd, yyyy")</p>
+        <p class="dashboard-date">@TimeService.LocalNow().ToString("dddd, MMMM dd, yyyy")</p>
     </div>
 
     <!-- Stats -->
@@ -79,7 +80,7 @@
                                 <div class="appointment-patient">
                                     @appointment.Patient.FirstName @appointment.Patient.LastName
                                 </div>
-                                <div class="appointment-time">@appointment.StartTime.ToString("HH:mm")</div>
+                                <div class="appointment-time">@TimeService.ToLocal(appointment.StartTime).ToString("HH:mm")</div>
                             </div>
                             <span class="appointment-status @statusClass">@appointment.Status</span>
                         </div>

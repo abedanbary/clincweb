@@ -8,16 +8,14 @@ namespace ClinicApp.Web.Services
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<AppointmentReminderService> _logger;
+        private readonly IAppTimeService _time;
         private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(60);
 
-        private static readonly TimeZoneInfo IsraelTz =
-            TimeZoneInfo.FindSystemTimeZoneById(
-                OperatingSystem.IsWindows() ? "Israel Standard Time" : "Asia/Jerusalem");
-
-        public AppointmentReminderService(IServiceScopeFactory scopeFactory, ILogger<AppointmentReminderService> logger)
+        public AppointmentReminderService(IServiceScopeFactory scopeFactory, ILogger<AppointmentReminderService> logger, IAppTimeService time)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
+            _time = time;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -47,8 +45,8 @@ namespace ClinicApp.Web.Services
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var whatsApp = scope.ServiceProvider.GetRequiredService<IWhatsAppService>();
 
-            var utcNow = DateTime.UtcNow;
-            var localNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, IsraelTz);
+            var utcNow = _time.UtcNow();
+            var localNow = _time.LocalNow();
             var windowStart = utcNow.AddHours(23);
             var windowEnd = utcNow.AddHours(25);
 
@@ -82,11 +80,12 @@ namespace ClinicApp.Web.Services
             {
                 var hasPhone = !string.IsNullOrWhiteSpace(appt.Patient?.Phone);
                 _logger.LogInformation(
-                    "[Reminder] Appointment {Id} | Patient {PatientId} | Start: {Start} | " +
+                    "[Reminder] Appointment {Id} | Patient {PatientId} | Start (UTC): {StartUtc} | Start (Local): {StartLocal} | " +
                     "Phone: {PhoneStatus} | ReminderSent: {Sent} | Status: {Status}",
                     appt.Id,
                     appt.PatientId,
                     appt.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                    _time.ToLocal(appt.StartTime).ToString("yyyy-MM-dd HH:mm:ss"),
                     hasPhone ? "present" : "MISSING",
                     appt.WhatsAppReminderSent,
                     appt.Status);

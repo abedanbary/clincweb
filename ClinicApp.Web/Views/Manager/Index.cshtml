@@ -1,5 +1,6 @@
 @using ClinicApp.Web.Models
 @model ClinicApp.Web.ViewModels.ManagerDashboardViewModel
+@inject ClinicApp.Web.Services.IAppTimeService TimeService
 
 @{
     Layout = "_ManagerLayout";
@@ -18,7 +19,7 @@
     int sparkMax = Model.Last7DayCounts.Any() ? Math.Max(Model.Last7DayCounts.Max(), 1) : 1;
     string[] dayLabels = { "Mon","Tue","Wed","Thu","Fri","Sat","Sun" };
     // Map index 0..6 to day-of-week labels
-    var today = DateTime.UtcNow.Date;
+    var today = TimeService.LocalToday();
     string DayLabel(int offset) {
         var d = today.AddDays(-(6 - offset));
         return d.ToString("ddd");
@@ -36,7 +37,7 @@
         <div>
             <h1 class="db-heading-title">Welcome back, @Model.ManagerName</h1>
             <p class="db-heading-sub">
-                @Model.ClinicName &mdash; @DateTime.Now.ToString("dddd, MMMM dd, yyyy")
+                @Model.ClinicName &mdash; @TimeService.LocalNow().ToString("dddd, MMMM dd, yyyy")
             </p>
         </div>
         <div class="db-heading-meta">
@@ -222,7 +223,7 @@
                                 };
                                 int mins = (int)(apt.EndTime - apt.StartTime).TotalMinutes;
                                 <tr>
-                                    <td class="sched-time">@apt.StartTime.ToString("HH:mm")</td>
+                                    <td class="sched-time">@TimeService.ToLocal(apt.StartTime).ToString("HH:mm")</td>
                                     <td>
                                         <div class="sched-patient">
                                             <div class="db-avatar db-avatar-teal sched-av">@(apt.Patient.FirstName[0])@(apt.Patient.LastName[0])</div>

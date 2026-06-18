@@ -17,12 +17,14 @@ namespace ClinicApp.Web.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IPrintService _printService;
         private readonly IExportService _exportService;
+        private readonly IAppTimeService _time;
 
-        public AppointmentsController(ApplicationDbContext context,IPrintService printService,IExportService exportService)
+        public AppointmentsController(ApplicationDbContext context, IPrintService printService, IExportService exportService, IAppTimeService time)
         {
             _context = context;
-            _printService=printService;
-            _exportService=exportService;
+            _printService = printService;
+            _exportService = exportService;
+            _time = time;
         }
 
         // GET: Appointments (Index with form)
@@ -115,8 +117,8 @@ namespace ClinicApp.Web.Controllers
             {
                 id = a.Id,
                 title = $"{a.Patient.FirstName} {a.Patient.LastName}",
-                start = a.StartTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
-                end = a.EndTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
+                start = _time.ToLocal(a.StartTime).ToString("yyyy-MM-ddTHH:mm:ss"),
+                end = _time.ToLocal(a.EndTime).ToString("yyyy-MM-ddTHH:mm:ss"),
                 color = a.Status switch
                 {
                     AppointmentStatus.Scheduled => "#3b82f6",
@@ -157,8 +159,8 @@ namespace ClinicApp.Web.Controllers
                 id = appointment.Id,
                 patientId = appointment.PatientId,
                 doctorId = appointment.DoctorId,
-                startTime = appointment.StartTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm"),
-                endTime = appointment.EndTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm"),
+                startTime = _time.ToLocal(appointment.StartTime).ToString("yyyy-MM-ddTHH:mm"),
+                endTime = _time.ToLocal(appointment.EndTime).ToString("yyyy-MM-ddTHH:mm"),
                 reasonForVisit = appointment.ReasonForVisit,
                 notes = appointment.Notes,
                 status = (int)appointment.Status,
@@ -185,11 +187,11 @@ namespace ClinicApp.Web.Controllers
                 return Json(new List<object>());
 
             var clinicId     = GetCurrentClinicId();
-            var startUtc     = DateTime.SpecifyKind(start, DateTimeKind.Utc);
-            var endUtc       = DateTime.SpecifyKind(end,   DateTimeKind.Utc);
-            var dayOfWeek    = startUtc.DayOfWeek;
-            var timeOfDay    = startUtc.TimeOfDay;
-            var timeOfDayEnd = endUtc.TimeOfDay;
+            var startUtc     = _time.ToUtc(start);
+            var endUtc       = _time.ToUtc(end);
+            var dayOfWeek    = start.DayOfWeek;
+            var timeOfDay    = start.TimeOfDay;
+            var timeOfDayEnd = end.TimeOfDay;
 
             var allDoctors = await _context.AppUsers
                 .Where(u => u.ClinicId == clinicId && u.Role == UserRole.Doctor)
@@ -239,11 +241,11 @@ namespace ClinicApp.Web.Controllers
             var clinicId  = GetCurrentClinicId();
             var startDate = date != null && DateTime.TryParse(date, out var d)
                 ? d.Date
-                : DateTime.UtcNow.Date;
+                : _time.LocalToday();
 
             // Never suggest slots in the past
-            if (startDate < DateTime.UtcNow.Date)
-                startDate = DateTime.UtcNow.Date;
+            if (startDate < _time.LocalToday())
+                startDate = _time.LocalToday();
 
             bool schedulesConfigured = await _context.DoctorSchedules.AnyAsync(s => s.ClinicId == clinicId);
 
@@ -273,8 +275,8 @@ namespace ClinicApp.Web.Controllers
                 var booked = await _context.Appointments
                     .Where(a => a.DoctorId  == doctorId
                              && a.ClinicId  == clinicId
-                             && a.StartTime >= day.ToUniversalTime()
-                             && a.StartTime <  dayEnd.ToUniversalTime()
+                             && a.StartTime >= _time.ToUtc(day)
+                             && a.StartTime <  _time.ToUtc(dayEnd)
                              && a.Status    != AppointmentStatus.Cancelled)
                     .Select(a => new { a.StartTime, a.EndTime })
                     .ToListAsync();
@@ -287,15 +289,15 @@ namespace ClinicApp.Web.Controllers
                     var slotEnd   = slotStart.AddMinutes(30);
 
                     // Skip past slots (same day only)
-                    if (slotStart <= DateTime.UtcNow) { cursor = cursor.Add(TimeSpan.FromMinutes(30)); continue; }
+                    if (slotStart <= _time.LocalNow()) { cursor = cursor.Add(TimeSpan.FromMinutes(30)); continue; }
 
-                    var slotStartUtc = DateTime.SpecifyKind(slotStart, DateTimeKind.Utc);
-                    var slotEndUtc   = DateTime.SpecifyKind(slotEnd,   DateTimeKind.Utc);
+                    var slotStartUtc = _time.ToUtc(slotStart);
+                    var slotEndUtc   = _time.ToUtc(slotEnd);
 
                     bool conflict = booked.Any(b => b.StartTime < slotEndUtc && b.EndTime > slotStartUtc);
                     if (!conflict)
                     {
-                        var isToday    = day == DateTime.UtcNow.Date;
+                        var isToday    = day == _time.LocalToday();
                         var dateLabel  = isToday ? "Today" : day.ToString("ddd, MMM dd");
                         var timeLabel  = $"{cursor.Hours:D2}:{cursor.Minutes:D2}";
                         return Json(new
@@ -330,8 +332,8 @@ namespace ClinicApp.Web.Controllers
             if (!DateTime.TryParse(startTime, out var start) || !DateTime.TryParse(endTime, out var end))
                 return Json(new { hasConflict = false });
 
-            var startUtc = DateTime.SpecifyKind(start, DateTimeKind.Utc);
-            var endUtc   = DateTime.SpecifyKind(end,   DateTimeKind.Utc);
+            var startUtc = _time.ToUtc(start);
+            var endUtc   = _time.ToUtc(end);
 
             var conflict = await _context.Appointments
                 .Where(a => a.PatientId == patientId &&
@@ -345,8 +347,8 @@ namespace ClinicApp.Web.Controllers
             if (conflict == null)
                 return Json(new { hasConflict = false });
 
-            var localStart = conflict.StartTime.ToLocalTime().ToString("ddd dd MMM, HH:mm");
-            var localEnd   = conflict.EndTime.ToLocalTime().ToString("HH:mm");
+            var localStart = _time.ToLocal(conflict.StartTime).ToString("ddd dd MMM, HH:mm");
+            var localEnd   = _time.ToLocal(conflict.EndTime).ToString("HH:mm");
             return Json(new { hasConflict = true, message = $"Patient already has an appointment {localStart}–{localEnd}" });
         }
 
@@ -436,8 +438,8 @@ namespace ClinicApp.Web.Controllers
             }
 
             // تحويل الأوقات إلى UTC مرة واحدة
-            var startTimeUtc = DateTime.SpecifyKind(appointmentModel.StartTime.Value, DateTimeKind.Utc);
-            var endTimeUtc = DateTime.SpecifyKind(appointmentModel.EndTime.Value, DateTimeKind.Utc);
+            var startTimeUtc = _time.ToUtc(appointmentModel.StartTime.Value);
+            var endTimeUtc = _time.ToUtc(appointmentModel.EndTime.Value);
 
             // Block past appointments (allow up to 5 min in the past for clock drift)
             if (startTimeUtc < DateTime.UtcNow.AddMinutes(-5))
@@ -518,8 +520,8 @@ namespace ClinicApp.Web.Controllers
             }
 
             // تحويل الأوقات إلى UTC
-             var startTimeUtc = DateTime.SpecifyKind(model.StartTime.Value, DateTimeKind.Utc);
-              var endTimeUtc = DateTime.SpecifyKind(model.EndTime.Value, DateTimeKind.Utc);
+            var startTimeUtc = _time.ToUtc(model.StartTime.Value);
+            var endTimeUtc = _time.ToUtc(model.EndTime.Value);
 
             // التحقق من التعارض (باستثناء الموعد الحالي)
             var hasConflict = await _context.Appointments
@@ -642,12 +644,12 @@ namespace ClinicApp.Web.Controllers
             var currentUserId = GetCurrentUserId();
 
     // إذا ما في تاريخ، استخدم الأسبوع الحالي
-            var startDate = weekStart ?? DateTime.Today;
-             var startDateUtc = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
+            var startDate = weekStart ?? _time.LocalToday();
     // احسب بداية الأسبوع (Monday)
-            var dayOfWeek = (int)startDateUtc.DayOfWeek;
-            var weekStartDate =startDateUtc.AddDays(-(dayOfWeek == 0 ? 6 : dayOfWeek - 1));
-            var weekEndDate = weekStartDate.AddDays(7);
+            var dayOfWeek = (int)startDate.DayOfWeek;
+            var localWeekStart = startDate.AddDays(-(dayOfWeek == 0 ? 6 : dayOfWeek - 1));
+            var weekStartDate = _time.ToUtc(localWeekStart);
+            var weekEndDate = _time.ToUtc(localWeekStart.AddDays(7));
 
     // جلب المواعيد
            IQueryable<Appointment> appointmentsQuery = _context.Appointments
@@ -688,12 +690,12 @@ namespace ClinicApp.Web.Controllers
            var userRole = GetCurrentUserRole();
            var currentUserId = GetCurrentUserId();
 
-           var startDate = weekStart ?? DateTime.Today;
-           var startDateUtc = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
-    
-           var dayOfWeek = (int)startDateUtc.DayOfWeek;
-           var weekStartDate = startDateUtc.AddDays(-(dayOfWeek == 0 ? 6 : dayOfWeek - 1));
-           var weekEndDate = weekStartDate.AddDays(7);
+           var startDate = weekStart ?? _time.LocalToday();
+
+           var dayOfWeek = (int)startDate.DayOfWeek;
+           var localWeekStart = startDate.AddDays(-(dayOfWeek == 0 ? 6 : dayOfWeek - 1));
+           var weekStartDate = _time.ToUtc(localWeekStart);
+           var weekEndDate = _time.ToUtc(localWeekStart.AddDays(7));
 
            IQueryable<Appointment> appointmentsQuery = _context.Appointments
               .Include(a => a.Patient)

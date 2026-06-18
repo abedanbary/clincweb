@@ -1,5 +1,6 @@
 using ClinicApp.Web.Data;
 using ClinicApp.Web.Models;
+using ClinicApp.Web.Services;
 using ClinicApp.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,10 +12,12 @@ namespace ClinicApp.Web.Controllers
     public class DoctorController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IAppTimeService _time;
 
-        public DoctorController(ApplicationDbContext context)
+        public DoctorController(ApplicationDbContext context, IAppTimeService time)
         {
             _context = context;
+            _time = time;
         }
 
         private int GetCurrentClinicId()
@@ -41,7 +44,7 @@ namespace ClinicApp.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var clinicId = GetCurrentClinicId();
-            var today = DateTime.UtcNow.Date;
+            var (todayStart, todayEnd) = _time.TodayUtcRange();
 
             // Get clinic info
             var clinic = await _context.Clinics
@@ -50,7 +53,7 @@ namespace ClinicApp.Web.Controllers
             // Get today's appointments
             var todayAppointments = await _context.Appointments
                 .Include(a => a.Patient)
-                .Where(a => a.ClinicId == clinicId && a.StartTime.Date == today)
+                .Where(a => a.ClinicId == clinicId && a.StartTime >= todayStart && a.StartTime < todayEnd)
                 .OrderBy(a => a.StartTime)
                 .ToListAsync();
 
@@ -60,8 +63,8 @@ namespace ClinicApp.Web.Controllers
 
             // Get pending appointments count
             var pendingAppointments = await _context.Appointments
-                .CountAsync(a => a.ClinicId == clinicId && 
-                                 a.StartTime.Date >= today && 
+                .CountAsync(a => a.ClinicId == clinicId &&
+                                 a.StartTime >= _time.UtcNow() &&
                                  a.Status == AppointmentStatus.Scheduled);
 
             // Get recent patients (last 5)

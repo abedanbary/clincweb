@@ -1,5 +1,6 @@
 @model ClinicApp.Web.ViewModels.AppointmentsPageViewModel
 @using System.Security.Claims
+@inject ClinicApp.Web.Services.IAppTimeService TimeService
 
 @{
     ViewData["Title"] = "Appointments";
@@ -105,9 +106,9 @@
 
                             <tr data-status="@((int)appointment.Status)">
                                 <td>
-                                    <div>@appointment.StartTime.ToLocalTime().ToString("MMM dd, yyyy")</div>
+                                    <div>@TimeService.ToLocal(appointment.StartTime).ToString("MMM dd, yyyy")</div>
                                     <div style="font-size: 11px; color: #64748b;">
-                                        @appointment.StartTime.ToLocalTime().ToString("HH:mm") - @appointment.EndTime.ToLocalTime().ToString("HH:mm")
+                                        @TimeService.ToLocal(appointment.StartTime).ToString("HH:mm") - @TimeService.ToLocal(appointment.EndTime).ToString("HH:mm")
                                     </div>
                                 </td>
                                 <td>

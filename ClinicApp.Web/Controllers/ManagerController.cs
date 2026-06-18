@@ -1,5 +1,6 @@
 using ClinicApp.Web.Data;
 using ClinicApp.Web.Models;
+using ClinicApp.Web.Services;
 using ClinicApp.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,22 +13,25 @@ namespace ClinicApp.Web.Controllers
     public class ManagerController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IAppTimeService _time;
 
-        public ManagerController(ApplicationDbContext context)
+        public ManagerController(ApplicationDbContext context, IAppTimeService time)
         {
             _context = context;
+            _time = time;
         }
 
         public async Task<IActionResult> Index()
         {
             var clinicId = int.Parse(User.FindFirstValue("ClinicId")!);
-            var now        = DateTime.UtcNow;
-            var today      = now.Date;
-            var yesterday  = today.AddDays(-1);
-            var weekStart  = today.AddDays(-((int)today.DayOfWeek == 0 ? 6 : (int)today.DayOfWeek - 1));
-            var thisMonth  = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            var lastMonth  = thisMonth.AddMonths(-1);
-            var lastMonthEnd = thisMonth; // exclusive upper bound for last month
+            var localToday    = _time.LocalToday();
+            var (todayStart, todayEnd)         = _time.TodayUtcRange();
+            var (yesterdayStart, yesterdayEnd) = _time.DateUtcRange(localToday.AddDays(-1));
+            var localWeekStart = localToday.AddDays(-((int)localToday.DayOfWeek == 0 ? 6 : (int)localToday.DayOfWeek - 1));
+            var weekStartUtc   = _time.ToUtc(localWeekStart);
+            var thisMonth      = _time.ToUtc(new DateTime(localToday.Year, localToday.Month, 1));
+            var lastMonth      = thisMonth.AddMonths(-1);
+            var lastMonthEnd   = thisMonth;
 
             // ── Clinic / Users ────────────────────────────────────────────────
             var clinic = await _context.Clinics.FirstOrDefaultAsync(c => c.Id == clinicId);
@@ -41,7 +45,7 @@ namespace ClinicApp.Web.Controllers
             var todayAppointments = await _context.Appointments
                 .Include(a => a.Patient)
                 .Include(a => a.Doctor)
-                .Where(a => a.ClinicId == clinicId && a.StartTime.Date == today)
+                .Where(a => a.ClinicId == clinicId && a.StartTime >= todayStart && a.StartTime < todayEnd)
                 .OrderBy(a => a.StartTime)
                 .Take(8)
                 .ToListAsync();
@@ -53,14 +57,14 @@ namespace ClinicApp.Web.Controllers
                 .CountAsync(a => a.ClinicId == clinicId && a.StartTime >= lastMonth && a.StartTime < lastMonthEnd);
 
             var yesterdayAppts = await _context.Appointments
-                .CountAsync(a => a.ClinicId == clinicId && a.StartTime.Date == yesterday);
+                .CountAsync(a => a.ClinicId == clinicId && a.StartTime >= yesterdayStart && a.StartTime < yesterdayEnd);
 
             var thisWeekAppts = await _context.Appointments
-                .CountAsync(a => a.ClinicId == clinicId && a.StartTime.Date >= weekStart && a.StartTime.Date <= today);
+                .CountAsync(a => a.ClinicId == clinicId && a.StartTime >= weekStartUtc && a.StartTime < todayEnd);
 
             // Today breakdown
             var todayAllStatuses = await _context.Appointments
-                .Where(a => a.ClinicId == clinicId && a.StartTime.Date == today)
+                .Where(a => a.ClinicId == clinicId && a.StartTime >= todayStart && a.StartTime < todayEnd)
                 .Select(a => a.Status)
                 .ToListAsync();
 
@@ -125,16 +129,17 @@ namespace ClinicApp.Web.Controllers
                 .ToListAsync();
 
             // ── Last 7 days sparkline ─────────────────────────────────────────
-            var allApptDates = await _context.Appointments
-                .Where(a => a.ClinicId == clinicId && a.StartTime.Date >= today.AddDays(-6))
-                .Select(a => a.StartTime.Date)
+            var sparkStart = _time.ToUtc(localToday.AddDays(-6));
+            var allApptTimes = await _context.Appointments
+                .Where(a => a.ClinicId == clinicId && a.StartTime >= sparkStart && a.StartTime < todayEnd)
+                .Select(a => a.StartTime)
                 .ToListAsync();
 
             var last7 = new List<int>();
             for (int offset = 6; offset >= 0; offset--)
             {
-                var day = today.AddDays(-offset);
-                last7.Add(allApptDates.Count(d => d == day));
+                var day = localToday.AddDays(-offset);
+                last7.Add(allApptTimes.Count(t => _time.ToLocal(t).Date == day));
             }
 
             // ── Top Doctors this month ────────────────────────────────────────
