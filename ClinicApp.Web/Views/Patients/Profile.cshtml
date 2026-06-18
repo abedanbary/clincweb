@@ -85,7 +85,12 @@
             <span class="quick-action-icon">📁</span>
             <span class="quick-action-text">Patient Files</span>
         </a>
+        <button type="button" class="quick-action-btn" id="whatsapp-btn" onclick="sendWhatsApp()">
+            <span class="quick-action-icon">💬</span>
+            <span class="quick-action-text">Send WhatsApp</span>
+        </button>
     </div>
+    <div id="whatsapp-status" style="display:none; margin-top:0.5rem; padding:0.5rem 0.75rem; border-radius:6px; font-size:0.875rem;"></div>
 </div>
 
             <!-- Medical Info Card -->
@@ -360,6 +365,44 @@
                 closeToothModal();
             }
         });
+
+        async function sendWhatsApp() {
+            const btn = document.getElementById('whatsapp-btn');
+            const status = document.getElementById('whatsapp-status');
+            btn.disabled = true;
+            status.style.display = 'none';
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                const response = await fetch('@Url.Action("SendWhatsApp", "Patients")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: new URLSearchParams({ id: patientId, __RequestVerificationToken: token })
+                });
+
+                const result = await response.json();
+                status.style.display = 'block';
+                if (result.success) {
+                    status.style.background = '#d1fae5';
+                    status.style.color = '#065f46';
+                    status.textContent = '✅ ' + result.message;
+                } else {
+                    status.style.background = '#fee2e2';
+                    status.style.color = '#991b1b';
+                    status.textContent = '❌ ' + result.message;
+                }
+            } catch (err) {
+                status.style.display = 'block';
+                status.style.background = '#fee2e2';
+                status.style.color = '#991b1b';
+                status.textContent = '❌ Error: ' + err.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
 
     </script>
     

@@ -1,5 +1,6 @@
 using ClinicApp.Web.Data;
 using ClinicApp.Web.Models;
+using ClinicApp.Web.Services;
 using ClinicApp.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,10 +12,22 @@ namespace ClinicApp.Web.Controllers
     public class PatientsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWhatsAppService _whatsApp;
 
-        public PatientsController(ApplicationDbContext context)
+        public PatientsController(ApplicationDbContext context, IWhatsAppService whatsApp)
         {
             _context = context;
+            _whatsApp = whatsApp;
+        }
+
+        private static string NormalizePhone(string? phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return string.Empty;
+            var digits = new string(phone.Where(char.IsDigit).ToArray());
+            // Israeli local format: 05X → 97205X
+            if (digits.StartsWith("0"))
+                digits = "972" + digits[1..];
+            return digits;
         }
 
         private int GetCurrentClinicId()
@@ -221,6 +234,28 @@ namespace ClinicApp.Web.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { success = true, toothNumber, status = status.ToString() });
+        }
+
+        // 🟢 POST: /Patients/SendWhatsApp
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Manager,Doctor")]
+        public async Task<IActionResult> SendWhatsApp(int id)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var patient = await _context.Patients
+                .FirstOrDefaultAsync(p => p.Id == id && p.ClinicId == clinicId);
+
+            if (patient == null)
+                return NotFound();
+
+            var phone = NormalizePhone(patient.Phone);
+            if (string.IsNullOrEmpty(phone))
+                return Json(new { success = false, message = "Patient has no phone number." });
+
+            var (success, message) = await _whatsApp.SendTemplateMessageAsync(phone);
+            return Json(new { success, message });
         }
     }
 }
