@@ -12,7 +12,7 @@
     display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
     background: var(--color-surface, #fff);
     border: 1px solid var(--color-border, #e5e7eb);
-    border-radius: 12px; padding: 14px 18px;
+    border-radius: 10px; padding: 14px 18px;
 }
 .att-filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
 .att-filter-label { font-size: 11px; font-weight: 600; color: var(--color-text-muted, #6b7280);
@@ -22,7 +22,7 @@
     border-radius: 8px; font-size: 13px; color: var(--color-text, #111827);
     background: var(--color-bg, #fff); outline: none; transition: border-color .15s;
 }
-.att-filter-select:focus, .att-filter-input:focus { border-color: #10b981; }
+.att-filter-select:focus, .att-filter-input:focus { border-color: #1c5c44; }
 
 /* Summary cards */
 .att-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
@@ -30,7 +30,7 @@
 .att-stat-card {
     background: var(--color-surface, #fff);
     border: 1px solid var(--color-border, #e5e7eb);
-    border-radius: 12px; padding: 18px 20px;
+    border-radius: 10px; padding: 18px 20px;
     display: flex; align-items: center; gap: 14px;
 }
 .att-stat-icon {
@@ -52,7 +52,7 @@
     display: flex; align-items: center; gap: 12px;
     background: var(--color-surface, #fff);
     border: 1px solid var(--color-border, #e5e7eb);
-    border-radius: 12px; padding: 12px 18px;
+    border-radius: 10px; padding: 12px 18px;
 }
 .att-month-name { font-size: 16px; font-weight: 700; color: var(--color-text, #0f172a); min-width: 160px; text-align: center; }
 .att-month-btn {
@@ -67,7 +67,7 @@
 .att-calendar-card {
     background: var(--color-surface, #fff);
     border: 1px solid var(--color-border, #e5e7eb);
-    border-radius: 14px; overflow: hidden;
+    border-radius: 10px; overflow: hidden;
 }
 .att-cal-header { padding: 14px 18px; border-bottom: 1px solid var(--color-border, #e5e7eb); }
 .att-cal-header-title { font-size: 14px; font-weight: 600; color: var(--color-text, #111827); }
@@ -105,22 +105,22 @@
 }
 .att-cal-cell.other-month .att-day-num { color: #d1d5db; }
 .att-cal-cell.is-today .att-day-num {
-    background: #10b981; color: #fff;
+    background: #1c5c44; color: #fff;
     width: 22px; height: 22px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
 }
 
 /* Status badges inside calendar cells */
 .att-status-badge {
-    display: inline-block; padding: 2px 7px; border-radius: 99px;
+    display: inline-block; padding: 2px 7px; border-radius: 4px;
     font-size: 10px; font-weight: 600; width: fit-content;
 }
-.att-status-present  { background: #dcfce7; color: #15803d; }
-.att-status-absent   { background: #fee2e2; color: #b91c1c; }
-.att-status-dayoff   { background: #f1f5f9; color: #475569; }
+.att-status-present  { color: #1c5c44; border: 1px solid #a7f3d0; background: transparent; }
+.att-status-absent   { color: #b91c1c; border: 1px solid #fecaca; background: transparent; }
+.att-status-dayoff   { color: #6b7280; border: 1px solid #d1d5db; background: transparent; }
 
 .att-cell-time { font-size: 10px; color: #6b7280; }
-.att-cell-tx   { font-size: 10px; color: #10b981; font-weight: 600; }
+.att-cell-tx   { font-size: 10px; color: #1c5c44; font-weight: 600; }
 .att-cell-add  {
     font-size: 10px; color: #9ca3af; border: 1px dashed #d1d5db;
     border-radius: 6px; padding: 2px 6px; margin-top: auto;
@@ -132,7 +132,7 @@
 .att-table-card {
     background: var(--color-surface, #fff);
     border: 1px solid var(--color-border, #e5e7eb);
-    border-radius: 14px; overflow: hidden;
+    border-radius: 10px; overflow: hidden;
 }
 .att-table-header {
     display: flex; justify-content: space-between; align-items: center;
@@ -151,11 +151,11 @@
 .att-table tr:hover td { background: #fafafa; }
 
 .att-hours-badge {
-    display: inline-block; padding: 2px 8px; border-radius: 99px;
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
     font-size: 11px; font-weight: 600; background: #eff6ff; color: #1d4ed8;
 }
 .att-tx-count {
-    display: inline-block; padding: 2px 8px; border-radius: 99px;
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
     font-size: 11px; font-weight: 600; background: #f0fdf4; color: #15803d;
 }
 
@@ -168,9 +168,9 @@
     z-index: 1000; padding: 16px;
 }
 .att-modal {
-    background: var(--color-surface, #fff); border-radius: 16px;
+    background: var(--color-surface, #fff); border-radius: 10px;
     width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 .att-modal-header {
     display: flex; justify-content: space-between; align-items: center;
@@ -196,7 +196,7 @@
     transition: border-color .15s; width: 100%;
 }
 .att-form-input:focus, .att-form-select:focus {
-    border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.1);
+    border-color: #1c5c44; box-shadow: 0 0 0 3px rgba(28, 92, 68, 0.07);
 }
 .att-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .att-time-section { display: flex; flex-direction: column; gap: 10px; }
@@ -204,7 +204,7 @@
 /* Today banner */
 .att-today-banner {
     display: flex; align-items: center; justify-content: space-between;
-    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px;
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
     padding: 14px 18px; flex-wrap: wrap; gap: 10px;
 }
 .att-today-status { font-size: 14px; font-weight: 600; color: #0f172a; }

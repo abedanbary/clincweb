@@ -38,13 +38,12 @@
 
 .pay-stat-card {
     background: var(--color-surface);
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 10px;
+    padding: 18px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     border: 1px solid var(--color-border);
-    box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
 
 .pay-stat-icon {
@@ -81,7 +80,7 @@
 .pay-filters-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: 10px;
     padding: 16px 20px;
 }
 
@@ -137,7 +136,7 @@
 .pay-table-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
 }
 
@@ -201,15 +200,15 @@
 
 .pay-badge {
     display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
 }
 
-.pay-badge-paid { background: #dcfce7; color: #15803d; }
-.pay-badge-pending { background: #fff7ed; color: #c2410c; }
-.pay-badge-refunded { background: #fef2f2; color: #b91c1c; }
+.pay-badge-paid    { color: #1c5c44; border: 1px solid #a7f3d0; background: transparent; }
+.pay-badge-pending { color: #92400e; border: 1px solid #fde68a; background: transparent; }
+.pay-badge-refunded{ color: #b91c1c; border: 1px solid #fecaca; background: transparent; }
 
 .pay-method {
     font-size: 12px;
@@ -268,12 +267,13 @@
 
 .pay-modal {
     background: var(--color-surface);
-    border-radius: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--color-border);
     width: 100%;
     max-width: 600px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    box-shadow: 0 4px 16px rgba(0,0,0,.1);
 }
 
 .pay-modal-header {
@@ -352,7 +352,7 @@
 .pay-form-select:focus,
 .pay-form-textarea:focus {
     border-color: var(--color-sky);
-    box-shadow: 0 0 0 3px rgba(16,185,129,.1);
+    box-shadow: 0 0 0 2px rgba(28, 92, 68, 0.12);
 }
 
 .pay-form-textarea { resize: vertical; }
@@ -367,7 +367,7 @@
 .pay-treatment-section {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
 }
 
@@ -418,15 +418,12 @@
 .pay-tx-card {
     background: var(--color-bg, #fff);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
-    padding: 18px;
+    border-radius: 10px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 14px;
-    transition: box-shadow .15s;
 }
-
-.pay-tx-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.06); }
 
 .pay-tx-card-top { }
 
@@ -475,7 +472,7 @@
 .pay-all-section {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
 }
 
@@ -504,7 +501,7 @@
 .pay-outstanding-card {
     background: var(--color-surface);
     border: 1px solid #fed7aa;
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
 }
 
@@ -568,15 +565,15 @@
 
 .pay-out-link {
     font-size: 12px;
-    color: #10b981;
+    color: var(--color-sky, #1c5c44);
     text-decoration: none;
-    padding: 3px 10px;
-    border: 1px solid #bbf7d0;
-    border-radius: 6px;
-    background: #f0fdf4;
+    padding: 3px 8px;
+    border: 1px solid #a7f3d0;
+    border-radius: 4px;
+    background: transparent;
 }
 
-.pay-out-link:hover { background: #dcfce7; }
+.pay-out-link:hover { background: rgba(28, 92, 68, 0.06); }
 
 /* Owes badge in table */
 .pay-owes-badge {
