@@ -27,37 +27,10 @@ namespace ClinicApp.Web.Controllers
             _time = time;
         }
 
-        // GET: Appointments (Index with form)
-        public async Task<IActionResult> Index()
+        // GET: Appointments (redirect to Calendar — Calendar is the primary view)
+        public IActionResult Index()
         {
-            var clinicId = GetCurrentClinicId();
-            var userRole = GetCurrentUserRole();
-            var currentUserId = GetCurrentUserId();
-
-            IQueryable<Appointment> appointmentsQuery = _context.Appointments
-                .Include(a => a.Patient)
-                .Include(a => a.Doctor)
-                .Where(a => a.ClinicId == clinicId);
-
-            // إذا دكتور → يشوف مواعيده فقط
-            if (userRole == UserRole.Doctor)
-            {
-                appointmentsQuery = appointmentsQuery.Where(a => a.DoctorId == currentUserId);
-            }
-
-            var appointments = await appointmentsQuery
-                .OrderBy(a => a.StartTime)
-                .ToListAsync();
-
-            var model = new AppointmentsPageViewModel
-            {
-                Appointments = appointments,
-                NewAppointment = new CreateAppointmentViewModel(),
-                Patients = await GetPatientsListAsyncInternal(),
-                Doctors = await GetDoctorsListAsyncInternal() 
-            };
-
-            return View(model);
+            return RedirectToAction(nameof(Calendar));
         }
 
         // GET: Calendar View
@@ -403,7 +376,7 @@ namespace ClinicApp.Web.Controllers
                     string.IsNullOrWhiteSpace(appointmentModel.NewPatientPhone))
                 {
                     TempData["Error"] = "Please fill all required patient fields";
-                    return RedirectToAction(nameof(Index));
+                    return RedirectToAction(nameof(Calendar));
                 }
 
                 var newPatient = new Patient
@@ -431,7 +404,7 @@ namespace ClinicApp.Web.Controllers
                 if (!appointmentModel.ExistingPatientId.HasValue)
                 {
                     TempData["Error"] = "Please select a patient";
-                    return RedirectToAction(nameof(Index));
+                    return RedirectToAction(nameof(Calendar));
                 }
 
                 patientId = appointmentModel.ExistingPatientId.Value;
@@ -445,8 +418,7 @@ namespace ClinicApp.Web.Controllers
             if (startTimeUtc < DateTime.UtcNow.AddMinutes(-5))
             {
                 TempData["Error"] = "Cannot create appointments in the past";
-                var referer0 = Request.Headers["Referer"].ToString();
-                return referer0.Contains("/Calendar") ? RedirectToAction(nameof(Calendar)) : RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Calendar));
             }
 
             // التحقق من التعارض
@@ -459,8 +431,7 @@ namespace ClinicApp.Web.Controllers
             if (hasConflict)
             {
                 TempData["Error"] = "Doctor already has an appointment at this time";
-                var referer = Request.Headers["Referer"].ToString();
-                return referer.Contains("/Calendar") ? RedirectToAction(nameof(Calendar)) : RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Calendar));
             }
 
             // Prevent same patient from having two overlapping appointments
@@ -473,8 +444,7 @@ namespace ClinicApp.Web.Controllers
             if (hasPatientConflict)
             {
                 TempData["Error"] = "This patient already has an appointment at this time";
-                var referer2 = Request.Headers["Referer"].ToString();
-                return referer2.Contains("/Calendar") ? RedirectToAction(nameof(Calendar)) : RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Calendar));
             }
 
             // إنشاء الموعد
@@ -496,8 +466,7 @@ namespace ClinicApp.Web.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Appointment created successfully!";
-            var referer3 = Request.Headers["Referer"].ToString();
-            return referer3.Contains("/Calendar") ? RedirectToAction(nameof(Calendar)) : RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Calendar));
         }
 
         // POST: Appointments/Edit
@@ -580,14 +549,7 @@ namespace ClinicApp.Web.Controllers
                 TempData["Success"] = "Appointment deleted successfully!";
             }
 
-            // Check if request came from calendar
-            var referer = Request.Headers["Referer"].ToString();
-            if (referer.Contains("/Calendar"))
-            {
-                return RedirectToAction(nameof(Calendar));
-            }
-
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Calendar));
         }
 
         // Helper Methods

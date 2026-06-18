@@ -30,8 +30,12 @@
     flex-direction: column;
     overflow: hidden;
     position: relative;
-    height: calc(100vh - 110px);
-    min-height: 600px;
+    /* Fill available height from the content container */
+    flex: 1;
+    min-height: 0;
+    /* Fallback for browsers that don't support flex fill */
+    height: calc(100vh - 76px);
+    min-height: 520px;
 }
 
 /* ── Toolbar ────────────────────────────────────────────────── */
@@ -352,6 +356,7 @@
     overflow-y: auto;
     overflow-x: auto;
     min-height: 0;
+    scroll-behavior: smooth;
     scrollbar-width: thin;
     scrollbar-color: var(--c-border) transparent;
 }
@@ -1124,7 +1129,7 @@
 }
 
 @media (max-width: 640px) {
-    .cal-root { height: calc(100vh - 80px); }
+    .cal-root { height: calc(100vh - 56px); }
     .cal-toolbar { height: auto; padding: 10px; gap: 8px; }
     .cal-doctor-pills { display: none; }
     .cal-period-label { font-size: 13px; }

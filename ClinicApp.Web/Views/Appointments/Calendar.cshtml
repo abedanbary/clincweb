@@ -1,12 +1,23 @@
 @model ClinicApp.Web.ViewModels.AppointmentsPageViewModel
 @using System.Security.Claims
 @{
-    ViewData["Title"] = "Appointments Calendar";
+    ViewData["Title"] = "Appointments";
     var userRole = User.FindFirstValue(ClaimTypes.Role);
     Layout = userRole == "Doctor" ? "_DoctorLayout" : userRole == "Assistant" ? "_AssistantLayout" : "_ManagerLayout";
 }
 
 <link rel="stylesheet" href="~/css/Calendar.css" />
+<style>
+    /* Lock outer container so only the grid scroller scrolls */
+    .manager-content {
+        overflow: hidden !important;
+        padding: 12px 16px !important;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+</style>
 
 <!-- Toast container -->
 <div class="toast-container" id="toastContainer"></div>
@@ -37,7 +48,6 @@
             <button type="button" class="cal-ghost-btn" id="cancelledToggleBtn">Show Cancelled</button>
             <button type="button" class="cal-ghost-btn" onclick="printWeekPdf()">Print PDF</button>
             <button type="button" class="cal-ghost-btn" onclick="exportWeekExcel()">Export</button>
-            <a asp-action="Index" class="cal-ghost-btn">Table View</a>
             <button type="button" class="cal-new-btn" id="openModalBtn">+ New Appointment</button>
         </div>
 
