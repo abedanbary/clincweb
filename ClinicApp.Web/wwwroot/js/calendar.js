@@ -495,21 +495,18 @@ function openDetailPanel(apptId) {
     // Body rows
     document.getElementById('detailRows').innerHTML = `
         <div class="cal-detail-row">
-            <span class="cal-detail-icon">🕐</span>
             <div class="cal-detail-info">
                 <div class="cal-detail-info-label">Date & Time</div>
                 <div class="cal-detail-info-value">${fmt(ev.startDate)}<br>${fmtTime(ev.startDate)} – ${fmtTime(ev.endDate)}</div>
             </div>
         </div>
         <div class="cal-detail-row">
-            <span class="cal-detail-icon">👨‍⚕️</span>
             <div class="cal-detail-info">
                 <div class="cal-detail-info-label">Doctor</div>
                 <div class="cal-detail-info-value">${escHtml(doc || '—')}</div>
             </div>
         </div>
         <div class="cal-detail-row">
-            <span class="cal-detail-icon">📞</span>
             <div class="cal-detail-info">
                 <div class="cal-detail-info-label">Phone</div>
                 <div class="cal-detail-info-value" style="direction:ltr;text-align:left">${escHtml(props.patientPhone || '—')}</div>
@@ -807,10 +804,10 @@ function checkPatientConflict(excludeId = null) {
         .then(r => r.json())
         .then(data => {
             if (data.hasConflict) {
-                note.textContent = `⚠ ${data.message}`;
+                note.textContent = data.message;
                 note.className   = 'cal-doctor-note error';
             } else {
-                note.textContent = '✓ Patient is free at this time';
+                note.textContent = 'Patient is free at this time';
                 note.className   = 'cal-doctor-note success';
             }
         })
@@ -832,13 +829,13 @@ function loadAvailableDoctors() {
             if (!note) return;
             const me = docs.find(d => String(d.value) === String(window.currentUser.id));
             if (!me || me.worksAtThisTime === false) {
-                note.textContent = '⚠ You don\'t work at this time — you can still book if needed';
+                note.textContent = 'You don\'t work at this time — you can still book if needed';
                 note.className   = 'cal-doctor-note warning';
             } else if (me.hasConflict) {
-                note.textContent = '⚠ You already have an appointment at this time';
+                note.textContent = 'You already have an appointment at this time';
                 note.className   = 'cal-doctor-note error';
             } else {
-                note.textContent = '✓ You are free at this time';
+                note.textContent = 'You are free at this time';
                 note.className   = 'cal-doctor-note success';
             }
         }).catch(() => { if (note) { note.textContent = ''; note.className = 'cal-doctor-note'; } });
@@ -882,13 +879,13 @@ function showDoctorSelectionWarning(sel, docs, note) {
     const d = docs.find(x => String(x.value) === String(id));
     if (!d) return;
     if (d.hasConflict) {
-        note.textContent = '⚠ This doctor already has an appointment at this time';
+        note.textContent = 'This doctor already has an appointment at this time';
         note.className   = 'cal-doctor-note error';
     } else if (!d.worksAtThisTime) {
-        note.textContent = '⚠ This doctor doesn\'t work at this time — you can still book if needed';
+        note.textContent = 'This doctor doesn\'t work at this time — you can still book if needed';
         note.className   = 'cal-doctor-note warning';
     } else {
-        note.textContent = '✓ Doctor is available at this time';
+        note.textContent = 'Doctor is available at this time';
         note.className   = 'cal-doctor-note success';
     }
 }
@@ -927,7 +924,7 @@ function loadNextSlot(doctorId) {
 
     fetch(url).then(r => r.json()).then(data => {
         if (!data.found) { box.style.display = 'none'; return; }
-        chip.innerHTML = `⚡ Next available: <strong>${_slotLocalLabel(data.startIso)}</strong> &nbsp;`;
+        chip.innerHTML = `Next available: <strong>${_slotLocalLabel(data.startIso)}</strong> &nbsp;`;
         const btn = document.createElement('button');
         btn.type      = 'button';
         btn.className = 'cal-use-slot-btn';
@@ -986,7 +983,7 @@ function showToast(msg, type = 'success') {
     const t = document.createElement('div');
     t.className = `toast ${type}`;
     t.innerHTML = `<span class="toast-msg">${escHtml(msg)}</span>
-                   <button class="toast-close" onclick="this.closest('.toast').remove()">✕</button>`;
+                   <button class="toast-close" onclick="this.closest('.toast').remove()">&times;</button>`;
     c.appendChild(t);
     setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.25s'; setTimeout(() => t.remove(), 260); }, 4500);
 }
