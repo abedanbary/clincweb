@@ -8,7 +8,7 @@ namespace ClinicApp.Web.Services
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<AppointmentReminderService> _logger;
-        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(60);
 
         private static readonly TimeZoneInfo IsraelTz =
             TimeZoneInfo.FindSystemTimeZoneById(
@@ -49,8 +49,8 @@ namespace ClinicApp.Web.Services
 
             var utcNow = DateTime.UtcNow;
             var localNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, IsraelTz);
-            var windowStart = utcNow;
-            var windowEnd = utcNow.AddHours(48);
+            var windowStart = utcNow.AddHours(23);
+            var windowEnd = utcNow.AddHours(25);
 
             _logger.LogInformation(
                 "[Reminder] Check started | UTC: {Utc} | Israel: {Local} | Window: {Start} → {End}",
