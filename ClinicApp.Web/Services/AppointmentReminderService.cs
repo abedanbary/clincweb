@@ -43,8 +43,8 @@ namespace ClinicApp.Web.Services
 
             var now = DateTime.UtcNow;
             // 24-hour window: send reminders for appointments 23–25 hours away
-            var windowStart = now.AddHours(23);
-            var windowEnd = now.AddHours(25);
+            var windowStart = now;
+            var windowEnd = now.AddHours(48);
 
             var appointments = await db.Appointments
                 .Include(a => a.Patient)
