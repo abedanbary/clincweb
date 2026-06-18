@@ -1,0 +1,137 @@
+@using ClinicApp.Web.Models
+@using System.Security.Claims
+@inject ClinicApp.Web.Services.IAppTimeService TimeService
+
+@{
+    var patient      = (Patient)ViewData["Patient"]!;
+    var appointments = (List<Appointment>)ViewData["Appointments"]!;
+    var userRole     = User.FindFirstValue(ClaimTypes.Role);
+    var isStaff      = userRole == "Manager" || userRole == "Assistant";
+    Layout = userRole == "Doctor" ? "_DoctorLayout" : userRole == "Assistant" ? "_AssistantLayout" : "_ManagerLayout";
+    ViewData["Title"] = $"Appointments — {patient.FirstName} {patient.LastName}";
+
+    var upcoming  = appointments.Where(a => a.StartTime >= TimeService.UtcNow()).ToList();
+    var completed = appointments.Count(a => a.Status == AppointmentStatus.Completed);
+    var cancelled = appointments.Count(a => a.Status == AppointmentStatus.Cancelled);
+}
+
+<link rel="stylesheet" href="~/css/payments.css" />
+
+<div class="pay-page">
+
+    <!-- Header -->
+    <div class="pay-header">
+        <div>
+            <a asp-controller="Patients" asp-action="Profile" asp-route-id="@patient.Id"
+               style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#64748b;text-decoration:none;margin-bottom:6px;font-weight:500;">
+                ← Back to Patient Profile
+            </a>
+            <h1 class="pay-title">@patient.FirstName @patient.LastName</h1>
+            <p class="pay-subtitle">Appointment history for this patient</p>
+        </div>
+        @if (isStaff)
+        {
+            <a asp-action="Calendar" style="display:inline-flex;align-items:center;gap:6px;"
+               class="btn-primary">+ New Appointment</a>
+        }
+    </div>
+
+    <!-- Stats -->
+    <div class="pay-stats">
+        <div class="pay-stat-card pay-stat-green">
+            <div class="pay-stat-icon">↑</div>
+            <div>
+                <div class="pay-stat-value">@upcoming.Count</div>
+                <div class="pay-stat-label">Upcoming</div>
+            </div>
+        </div>
+        <div class="pay-stat-card" style="background:#f0f9ff;border-color:#bae6fd;">
+            <div class="pay-stat-icon" style="background:#0ea5e9;color:#fff;">✓</div>
+            <div>
+                <div class="pay-stat-value">@completed</div>
+                <div class="pay-stat-label">Completed</div>
+            </div>
+        </div>
+        <div class="pay-stat-card pay-stat-red">
+            <div class="pay-stat-icon">✕</div>
+            <div>
+                <div class="pay-stat-value">@cancelled</div>
+                <div class="pay-stat-label">Cancelled</div>
+            </div>
+        </div>
+        <div class="pay-stat-card" style="background:#f8fafc;border-color:#e2e8f0;">
+            <div class="pay-stat-icon" style="background:#64748b;color:#fff;">#</div>
+            <div>
+                <div class="pay-stat-value">@appointments.Count</div>
+                <div class="pay-stat-label">Total</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointments Table -->
+    <div class="pay-all-section">
+        <div class="pay-table-card" style="border-radius:12px;">
+            @if (!appointments.Any())
+            {
+                <div class="pay-empty">
+                    <div class="pay-empty-icon-text">No appointments found</div>
+                    <p class="pay-empty-text">This patient has no appointment records yet.</p>
+                    @if (isStaff)
+                    {
+                        <a asp-action="Calendar" class="btn-primary">Schedule Appointment</a>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="pay-table-wrapper">
+                    <table class="pay-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Date &amp; Time</th>
+                                <th>Doctor</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in appointments)
+                            {
+                                var localStart = TimeService.ToLocal(a.StartTime);
+                                var localEnd   = TimeService.ToLocal(a.EndTime);
+                                var statusClass = a.Status switch {
+                                    AppointmentStatus.Completed => "pay-badge-paid",
+                                    AppointmentStatus.Cancelled => "pay-badge-refunded",
+                                    AppointmentStatus.NoShow    => "pay-badge-refunded",
+                                    _                           => "pay-badge-pending"
+                                };
+                                <tr>
+                                    <td><span class="pay-invoice">#@a.Id</span></td>
+                                    <td>
+                                        <strong>@localStart.ToString("MMM dd, yyyy")</strong>
+                                        <span style="color:#6b7280;font-size:.85rem;margin-left:4px;">
+                                            @localStart.ToString("HH:mm") – @localEnd.ToString("HH:mm")
+                                        </span>
+                                    </td>
+                                    <td>Dr. @a.Doctor.FirstName @a.Doctor.LastName</td>
+                                    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                        @(string.IsNullOrWhiteSpace(a.ReasonForVisit) ? "—" : a.ReasonForVisit)
+                                    </td>
+                                    <td>
+                                        <span class="pay-badge @statusClass">@a.Status</span>
+                                    </td>
+                                    <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b7280;font-size:.85rem;">
+                                        @(string.IsNullOrWhiteSpace(a.Notes) ? "—" : a.Notes)
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+</div>

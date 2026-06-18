@@ -91,6 +91,7 @@ namespace ClinicApp.Web.ViewModels
         public List<PatientBalanceSummary> OutstandingBalances { get; set; } = new();
 
         public int? FilterPatientId { get; set; }
+        public string? FilterPatientName { get; set; }
         public PaymentStatus? FilterStatus { get; set; }
         public DateTime? FilterFrom { get; set; }
         public DateTime? FilterTo { get; set; }

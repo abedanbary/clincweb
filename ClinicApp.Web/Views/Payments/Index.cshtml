@@ -7,7 +7,8 @@
     var isAssistant = User.IsInRole("Assistant");
     var isStaff     = isManager || isAssistant;
     Layout = isManager ? "_ManagerLayout" : isAssistant ? "_AssistantLayout" : "_DoctorLayout";
-    ViewData["Title"] = "Payments";
+    ViewData["Title"] = Model.FilterPatientName != null ? $"Payments — {Model.FilterPatientName}" : "Payments";
+    bool isPatientContext = Model.FilterPatientId.HasValue && Model.FilterPatientName != null;
 }
 
 <link rel="stylesheet" href="~/css/payments.css" />
@@ -17,8 +18,20 @@
     <!-- Page Header -->
     <div class="pay-header">
         <div>
-            <h1 class="pay-title">Payments</h1>
-            <p class="pay-subtitle">@(isStaff ? "Manage all clinic payments and invoices" : "View patient payments for your practice")</p>
+            @if (isPatientContext)
+            {
+                <a asp-controller="Patients" asp-action="Profile" asp-route-id="@Model.FilterPatientId"
+                   style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#64748b;text-decoration:none;margin-bottom:6px;font-weight:500;">
+                    ← Back to Patient Profile
+                </a>
+                <h1 class="pay-title">@Model.FilterPatientName</h1>
+                <p class="pay-subtitle">Payment history for this patient</p>
+            }
+            else
+            {
+                <h1 class="pay-title">Payments</h1>
+                <p class="pay-subtitle">@(isStaff ? "Manage all clinic payments and invoices" : "View patient payments for your practice")</p>
+            }
         </div>
         @if (isStaff)
         {
@@ -37,39 +50,73 @@
     }
 
     <!-- Stats Cards -->
-    <div class="pay-stats">
-        <div class="pay-stat-card pay-stat-green">
-            <div class="pay-stat-icon">$</div>
-            <div>
-                <div class="pay-stat-value">$@Model.RevenueThisMonth.ToString("N2")</div>
-                <div class="pay-stat-label">Revenue This Month (@Model.PaidCountThisMonth paid)</div>
+    @if (isPatientContext)
+    {
+        var ptPaid      = Model.Payments.Where(p => p.Status == PaymentStatus.Paid).Sum(p => p.Amount);
+        var ptPending   = Model.Payments.Where(p => p.Status == PaymentStatus.Pending).Sum(p => p.Amount);
+        var ptRefunded  = Model.Payments.Where(p => p.Status == PaymentStatus.Refunded).Sum(p => p.Amount);
+        var ptPaidCnt   = Model.Payments.Count(p => p.Status == PaymentStatus.Paid);
+        var ptPendCnt   = Model.Payments.Count(p => p.Status == PaymentStatus.Pending);
+        <div class="pay-stats">
+            <div class="pay-stat-card pay-stat-green">
+                <div class="pay-stat-icon">$</div>
+                <div>
+                    <div class="pay-stat-value">$@ptPaid.ToString("N2")</div>
+                    <div class="pay-stat-label">Total Paid (@ptPaidCnt payment(s))</div>
+                </div>
+            </div>
+            <div class="pay-stat-card pay-stat-orange">
+                <div class="pay-stat-icon">!</div>
+                <div>
+                    <div class="pay-stat-value">$@ptPending.ToString("N2")</div>
+                    <div class="pay-stat-label">Outstanding (@ptPendCnt pending)</div>
+                </div>
+            </div>
+            <div class="pay-stat-card pay-stat-red">
+                <div class="pay-stat-icon">R</div>
+                <div>
+                    <div class="pay-stat-value">$@ptRefunded.ToString("N2")</div>
+                    <div class="pay-stat-label">Refunded</div>
+                </div>
             </div>
         </div>
-        <div class="pay-stat-card pay-stat-green">
-            <div class="pay-stat-icon">$</div>
-            <div>
-                <div class="pay-stat-value">$@Model.TotalRevenue.ToString("N2")</div>
-                <div class="pay-stat-label">All-Time Revenue (@Model.PaidCount paid)</div>
+    }
+    else
+    {
+        <div class="pay-stats">
+            <div class="pay-stat-card pay-stat-green">
+                <div class="pay-stat-icon">$</div>
+                <div>
+                    <div class="pay-stat-value">$@Model.RevenueThisMonth.ToString("N2")</div>
+                    <div class="pay-stat-label">Revenue This Month (@Model.PaidCountThisMonth paid)</div>
+                </div>
+            </div>
+            <div class="pay-stat-card pay-stat-green">
+                <div class="pay-stat-icon">$</div>
+                <div>
+                    <div class="pay-stat-value">$@Model.TotalRevenue.ToString("N2")</div>
+                    <div class="pay-stat-label">All-Time Revenue (@Model.PaidCount paid)</div>
+                </div>
+            </div>
+            <div class="pay-stat-card pay-stat-orange">
+                <div class="pay-stat-icon">!</div>
+                <div>
+                    <div class="pay-stat-value">$@Model.PendingAmount.ToString("N2")</div>
+                    <div class="pay-stat-label">Outstanding (@Model.PendingCount pending)</div>
+                </div>
+            </div>
+            <div class="pay-stat-card pay-stat-red">
+                <div class="pay-stat-icon">R</div>
+                <div>
+                    <div class="pay-stat-value">$@Model.RefundedAmount.ToString("N2")</div>
+                    <div class="pay-stat-label">Refunded</div>
+                </div>
             </div>
         </div>
-        <div class="pay-stat-card pay-stat-orange">
-            <div class="pay-stat-icon">!</div>
-            <div>
-                <div class="pay-stat-value">$@Model.PendingAmount.ToString("N2")</div>
-                <div class="pay-stat-label">Outstanding (@Model.PendingCount pending)</div>
-            </div>
-        </div>
-        <div class="pay-stat-card pay-stat-red">
-            <div class="pay-stat-icon">R</div>
-            <div>
-                <div class="pay-stat-value">$@Model.RefundedAmount.ToString("N2")</div>
-                <div class="pay-stat-label">Refunded</div>
-            </div>
-        </div>
-    </div>
+    }
 
     <!-- Outstanding Balances Panel -->
-    @if (Model.OutstandingBalances.Any())
+    @if (!isPatientContext && Model.OutstandingBalances.Any())
     {
         <div class="pay-outstanding-card">
             <div class="pay-outstanding-header" onclick="toggleOutstanding()">
@@ -720,5 +767,14 @@
             if (e.target.id === 'createModal') closeCreateModal();
             if (e.target.id === 'editModal')   closeEditModal();
         });
+
+        @if (isPatientContext)
+        {
+            <text>
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPatientTreatments(@Model.FilterPatientId);
+        });
+            </text>
+        }
     </script>
 }

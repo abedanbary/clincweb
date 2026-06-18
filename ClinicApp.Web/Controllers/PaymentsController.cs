@@ -75,10 +75,22 @@ namespace ClinicApp.Web.Controllers
                 .OrderByDescending(s => s.TotalPending)
                 .ToList();
 
+            string? filterPatientName = null;
+            if (patientId.HasValue)
+            {
+                var fp = await _context.Patients
+                    .Where(p => p.Id == patientId.Value && p.ClinicId == clinicId)
+                    .Select(p => new { p.FirstName, p.LastName })
+                    .FirstOrDefaultAsync();
+                if (fp == null) return NotFound();
+                filterPatientName = $"{fp.FirstName} {fp.LastName}";
+            }
+
             var vm = new PaymentsPageViewModel
             {
                 Payments = payments,
                 FilterPatientId = patientId,
+                FilterPatientName = filterPatientName,
                 FilterStatus = status,
                 FilterFrom = from,
                 FilterTo = to,
@@ -115,7 +127,7 @@ namespace ClinicApp.Web.Controllers
                     .ToListAsync();
             }
 
-            ViewData["Title"] = "Payments";
+            ViewData["Title"] = filterPatientName != null ? $"Payments — {filterPatientName}" : "Payments";
             return View(vm);
         }
 

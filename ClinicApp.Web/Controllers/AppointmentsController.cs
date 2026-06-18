@@ -552,6 +552,28 @@ namespace ClinicApp.Web.Controllers
             return RedirectToAction(nameof(Calendar));
         }
 
+        // GET: Patient-specific appointments list
+        [HttpGet]
+        public async Task<IActionResult> PatientAppointments(int patientId)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var patient = await _context.Patients
+                .Where(p => p.Id == patientId && p.ClinicId == clinicId)
+                .FirstOrDefaultAsync();
+            if (patient == null) return NotFound();
+
+            var appointments = await _context.Appointments
+                .Include(a => a.Doctor)
+                .Where(a => a.PatientId == patientId && a.ClinicId == clinicId)
+                .OrderByDescending(a => a.StartTime)
+                .ToListAsync();
+
+            ViewData["Patient"] = patient;
+            ViewData["Appointments"] = appointments;
+            return View();
+        }
+
         // Helper Methods
         private int GetCurrentClinicId()
         {

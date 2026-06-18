@@ -72,7 +72,7 @@
         <a asp-controller="TreatmentPlan" asp-action="Index" asp-route-id="@Model.PatientId" class="quick-action-btn">
             <span class="quick-action-text">Treatment Plans</span>
         </a>
-        <a asp-controller="Appointments" asp-action="Index" asp-route-patientId="@Model.PatientId" class="quick-action-btn">
+        <a asp-controller="Appointments" asp-action="PatientAppointments" asp-route-patientId="@Model.PatientId" class="quick-action-btn">
             <span class="quick-action-text">Appointments</span>
         </a>
         <a asp-controller="Payments" asp-action="Index" asp-route-patientId="@Model.PatientId" class="quick-action-btn">
