@@ -31,16 +31,18 @@ namespace ClinicApp.Web.Services
                     : ToothStatus.PlannedTreatment;
             }
 
-            // All active treatments are completed — derive visual state from most recent
+            // All active treatments are completed — derive visual state from most recent structural treatment.
+            // Non-structural treatments (cleaning, scaling, whitening, etc.) resolve to Healthy
+            // because they don't permanently alter the tooth.
             var latest = active.OrderByDescending(t => t.CompletedAt ?? t.TreatmentDate).First();
             return latest.Type switch
             {
-                TreatmentType.Extraction                         => ToothStatus.Missing,
-                TreatmentType.Crown or TreatmentType.Bridge      => ToothStatus.Crown,
-                TreatmentType.Implant                            => ToothStatus.Implant,
-                TreatmentType.RootCanal                          => ToothStatus.RootCanal,
-                TreatmentType.Filling                            => ToothStatus.Filled,
-                _                                                => ToothStatus.Other
+                TreatmentType.Extraction                          => ToothStatus.Missing,
+                TreatmentType.Crown or TreatmentType.Bridge       => ToothStatus.Crown,
+                TreatmentType.Implant                             => ToothStatus.Implant,
+                TreatmentType.RootCanal                           => ToothStatus.RootCanal,
+                TreatmentType.Filling                             => ToothStatus.Filled,
+                _                                                 => ToothStatus.Healthy
             };
         }
 
