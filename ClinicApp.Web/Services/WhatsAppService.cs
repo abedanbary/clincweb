@@ -8,32 +8,37 @@ namespace ClinicApp.Web.Services
     {
         Task<(bool Success, string Message)> SendTemplateMessageAsync(string toPhone, string templateName = "hello_world");
         Task<(bool Success, string Message)> SendTextMessageAsync(string toPhone, string text);
+        bool IsConfigured { get; }
     }
 
     public class WhatsAppService : IWhatsAppService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILogger<WhatsAppService> _logger;
         private readonly string? _accessToken;
         private readonly string? _phoneNumberId;
-        private readonly bool _isConfigured;
 
-        public WhatsAppService(HttpClient httpClient, IConfiguration configuration)
+        public bool IsConfigured { get; }
+
+        public WhatsAppService(HttpClient httpClient, IConfiguration configuration, ILogger<WhatsAppService> logger)
         {
             _httpClient = httpClient;
+            _logger = logger;
             _accessToken = configuration["WHATSAPP_ACCESS_TOKEN"];
             _phoneNumberId = configuration["WHATSAPP_PHONE_NUMBER_ID"];
-            _isConfigured = !string.IsNullOrEmpty(_accessToken) && !string.IsNullOrEmpty(_phoneNumberId);
+            IsConfigured = !string.IsNullOrEmpty(_accessToken) && !string.IsNullOrEmpty(_phoneNumberId);
 
-            if (_isConfigured)
-                Console.WriteLine("✅ WhatsApp Cloud API configured successfully");
+            if (IsConfigured)
+                _logger.LogInformation("[WhatsApp] Cloud API configured. PhoneNumberId ends in ...{Suffix}",
+                    _phoneNumberId![^4..]);
             else
-                Console.WriteLine("⚠️ WhatsApp Cloud API not configured (WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID missing)");
+                _logger.LogWarning("[WhatsApp] NOT configured — WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID is missing.");
         }
 
         public async Task<(bool Success, string Message)> SendTemplateMessageAsync(string toPhone, string templateName = "hello_world")
         {
-            if (!_isConfigured)
-                return (false, "WhatsApp is not configured. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID environment variables.");
+            if (!IsConfigured)
+                return (false, "WhatsApp not configured: WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID missing.");
 
             var payload = new
             {
@@ -47,13 +52,13 @@ namespace ClinicApp.Web.Services
                 }
             };
 
-            return await SendRequestAsync(payload);
+            return await SendRequestAsync(payload, toPhone);
         }
 
         public async Task<(bool Success, string Message)> SendTextMessageAsync(string toPhone, string text)
         {
-            if (!_isConfigured)
-                return (false, "WhatsApp is not configured. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID environment variables.");
+            if (!IsConfigured)
+                return (false, "WhatsApp not configured: WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID missing.");
 
             var payload = new
             {
@@ -63,11 +68,12 @@ namespace ClinicApp.Web.Services
                 text = new { body = text }
             };
 
-            return await SendRequestAsync(payload);
+            return await SendRequestAsync(payload, toPhone);
         }
 
-        private async Task<(bool Success, string Message)> SendRequestAsync(object payload)
+        private async Task<(bool Success, string Message)> SendRequestAsync(object payload, string toPhone)
         {
+            var masked = toPhone.Length > 7 ? toPhone[..4] + "****" + toPhone[^3..] : "****";
             try
             {
                 var url = $"https://graph.facebook.com/v20.0/{_phoneNumberId}/messages";
@@ -77,25 +83,27 @@ namespace ClinicApp.Web.Services
                 _httpClient.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", _accessToken);
 
-                Console.WriteLine($"📤 Sending WhatsApp message to Meta API...");
+                _logger.LogInformation("[WhatsApp] POST to Meta API for {MaskedPhone}...", masked);
                 var response = await _httpClient.PostAsync(url, content);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"✅ WhatsApp message sent successfully");
+                    _logger.LogInformation("[WhatsApp] Sent successfully to {MaskedPhone}. Status: {Status}",
+                        masked, (int)response.StatusCode);
                     return (true, "Message sent successfully.");
                 }
                 else
                 {
-                    Console.WriteLine($"❌ WhatsApp API error: {response.StatusCode} - {responseBody}");
+                    _logger.LogError("[WhatsApp] Meta API rejected request for {MaskedPhone}. Status: {Status} | Body: {Body}",
+                        masked, (int)response.StatusCode, responseBody);
                     return (false, $"API error {(int)response.StatusCode}: {responseBody}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ WhatsApp exception: {ex.Message}");
-                return (false, $"Error sending message: {ex.Message}");
+                _logger.LogError(ex, "[WhatsApp] Exception while sending to {MaskedPhone}.", masked);
+                return (false, $"Exception: {ex.Message}");
             }
         }
     }

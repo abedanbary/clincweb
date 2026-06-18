@@ -10,6 +10,10 @@ namespace ClinicApp.Web.Services
         private readonly ILogger<AppointmentReminderService> _logger;
         private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
 
+        private static readonly TimeZoneInfo IsraelTz =
+            TimeZoneInfo.FindSystemTimeZoneById(
+                OperatingSystem.IsWindows() ? "Israel Standard Time" : "Asia/Jerusalem");
+
         public AppointmentReminderService(IServiceScopeFactory scopeFactory, ILogger<AppointmentReminderService> logger)
         {
             _scopeFactory = scopeFactory;
@@ -18,7 +22,9 @@ namespace ClinicApp.Web.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Appointment reminder service started.");
+            _logger.LogInformation(
+                "[Reminder] Service started. Check interval: {Interval} minutes.",
+                CheckInterval.TotalMinutes);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -28,23 +34,30 @@ namespace ClinicApp.Web.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unexpected error in appointment reminder service.");
+                    _logger.LogError(ex, "[Reminder] Unexpected error during reminder check.");
                 }
 
                 await Task.Delay(CheckInterval, stoppingToken);
             }
         }
 
-        private async Task ProcessRemindersAsync()
+        internal async Task ProcessRemindersAsync()
         {
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var whatsApp = scope.ServiceProvider.GetRequiredService<IWhatsAppService>();
 
-            var now = DateTime.UtcNow;
-            // 24-hour window: send reminders for appointments 23–25 hours away
-            var windowStart = now;
-            var windowEnd = now.AddHours(48);
+            var utcNow = DateTime.UtcNow;
+            var localNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, IsraelTz);
+            var windowStart = utcNow;
+            var windowEnd = utcNow.AddHours(48);
+
+            _logger.LogInformation(
+                "[Reminder] Check started | UTC: {Utc} | Israel: {Local} | Window: {Start} → {End}",
+                utcNow.ToString("yyyy-MM-dd HH:mm:ss"),
+                localNow.ToString("yyyy-MM-dd HH:mm:ss"),
+                windowStart.ToString("yyyy-MM-dd HH:mm:ss"),
+                windowEnd.ToString("yyyy-MM-dd HH:mm:ss"));
 
             var appointments = await db.Appointments
                 .Include(a => a.Patient)
@@ -56,13 +69,29 @@ namespace ClinicApp.Web.Services
                 .ToListAsync();
 
             if (appointments.Count == 0)
-                return;
-
-            _logger.LogInformation("Sending WhatsApp reminders for {Count} upcoming appointment(s).", appointments.Count);
-
-            foreach (var appointment in appointments)
             {
-                await SendReminderAsync(appointment, whatsApp, db);
+                _logger.LogInformation(
+                    "[Reminder] No appointments found in the next 48 hours that need a reminder.");
+                return;
+            }
+
+            _logger.LogInformation(
+                "[Reminder] Found {Count} appointment(s) needing reminders.", appointments.Count);
+
+            foreach (var appt in appointments)
+            {
+                var hasPhone = !string.IsNullOrWhiteSpace(appt.Patient?.Phone);
+                _logger.LogInformation(
+                    "[Reminder] Appointment {Id} | Patient {PatientId} | Start: {Start} | " +
+                    "Phone: {PhoneStatus} | ReminderSent: {Sent} | Status: {Status}",
+                    appt.Id,
+                    appt.PatientId,
+                    appt.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                    hasPhone ? "present" : "MISSING",
+                    appt.WhatsAppReminderSent,
+                    appt.Status);
+
+                await SendReminderAsync(appt, whatsApp, db);
             }
         }
 
@@ -72,35 +101,36 @@ namespace ClinicApp.Web.Services
 
             if (!isValid)
             {
-                // Mark as sent to prevent repeated log spam for permanently invalid numbers
                 _logger.LogWarning(
-                    "Skipping reminder for appointment {AppointmentId}: invalid phone — {Error}",
+                    "[Reminder] Skipping appointment {Id}: invalid phone — {Error}. Marking as sent to avoid repeat.",
                     appointment.Id, error);
                 appointment.WhatsAppReminderSent = true;
                 await db.SaveChangesAsync();
                 return;
             }
 
+            _logger.LogInformation(
+                "[Reminder] Sending WhatsApp to {MaskedPhone} for appointment {Id}...",
+                MaskPhone(formatted), appointment.Id);
+
             var (success, message) = await whatsApp.SendTemplateMessageAsync(formatted);
 
             if (success)
             {
                 _logger.LogInformation(
-                    "Reminder sent for appointment {AppointmentId} to {MaskedPhone}.",
-                    appointment.Id, MaskPhone(formatted));
+                    "[Reminder] SUCCESS — appointment {Id} | phone {MaskedPhone} | response: {Message}",
+                    appointment.Id, MaskPhone(formatted), message);
                 appointment.WhatsAppReminderSent = true;
                 await db.SaveChangesAsync();
             }
             else
             {
-                // Don't mark as sent — will retry on next cycle
                 _logger.LogError(
-                    "Failed to send reminder for appointment {AppointmentId}: {Message}",
-                    appointment.Id, message);
+                    "[Reminder] FAILED — appointment {Id} | phone {MaskedPhone} | error: {Message}. Will retry next cycle.",
+                    appointment.Id, MaskPhone(formatted), message);
             }
         }
 
-        // Mask middle digits so full numbers never appear in logs
         private static string MaskPhone(string phone) =>
             phone.Length > 7 ? phone[..4] + "****" + phone[^3..] : "****";
     }
