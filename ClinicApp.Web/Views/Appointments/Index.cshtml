@@ -27,7 +27,7 @@
             </p>
         </div>
         <div style="display: flex; gap: 12px;">
-            <a asp-action="Calendar" class="btn-ghost">📅 Calendar View</a>
+            <a asp-action="Calendar" class="btn-ghost">Calendar View</a>
             <button type="button" class="btn-primary" id="openModalBtn">+ New Appointment</button>
         </div>
     </header>
@@ -416,14 +416,14 @@
             const d = _lastDocs.find(x => String(x.value) === String(id));
             if (!d) return;
             if (d.hasConflict) {
-                doctorNote.textContent = '⚠ This doctor already has an appointment at this time';
+                doctorNote.textContent = 'This doctor already has an appointment at this time';
                 doctorNote.style.color = '#ef4444';
             } else if (!d.worksAtThisTime) {
-                doctorNote.textContent = '⚠ This doctor doesn\'t work at this time — you can still book if needed';
+                doctorNote.textContent = 'This doctor doesn\'t work at this time — you can still book if needed';
                 doctorNote.style.color = '#f59e0b';
             } else {
-                doctorNote.textContent = '✓ Doctor is available at this time';
-                doctorNote.style.color = '#10b981';
+                doctorNote.textContent = 'Doctor is available at this time';
+                doctorNote.style.color = '#1c5c44';
             }
             loadIndexNextSlot(id);
         });
@@ -457,7 +457,7 @@
                               : startLocal.toDateString() === tom.toDateString() ? 'Tomorrow'
                               : startLocal.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
                     const label = `${dl} at ${pad(startLocal.getHours())}:${pad(startLocal.getMinutes())}`;
-                    chip.innerHTML = `⚡ Next available: <strong>${label}</strong> &nbsp;`;
+                    chip.innerHTML = `Next available: <strong>${label}</strong> &nbsp;`;
                     const btn = document.createElement('button');
                     btn.type = 'button';
                     btn.className = 'cal-use-slot-btn';

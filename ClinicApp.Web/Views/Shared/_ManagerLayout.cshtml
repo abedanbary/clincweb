@@ -99,9 +99,9 @@
                         </div>
                     </div>
                     <select class="lang-select" onchange="setLanguage(this.value)" style="border:1px solid rgba(0,0,0,0.15);background:#fff;color:var(--color-text);padding:4px 8px;border-radius:6px;font-size:13px;cursor:pointer;outline:none;">
-                        <option value="en">🌐 English</option>
-                        <option value="he">🌐 עברית</option>
-                        <option value="ar">🌐 العربية</option>
+                        <option value="en">English</option>
+                        <option value="he">עברית</option>
+                        <option value="ar">العربية</option>
                     </select>
                     <form asp-controller="Auth" asp-action="Logout" method="post" style="display:inline;">
                         @Html.AntiForgeryToken()

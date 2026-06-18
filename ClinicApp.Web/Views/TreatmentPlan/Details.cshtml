@@ -153,11 +153,11 @@
                         _                          => "treatment-planned"
                     };
                     var tIcon = treatment.Status switch {
-                        TreatmentStatus.Planned    => "◯",
-                        TreatmentStatus.InProgress => "◑",
-                        TreatmentStatus.Completed  => "✓",
-                        TreatmentStatus.Cancelled  => "✕",
-                        _                          => "◯"
+                        TreatmentStatus.Planned    => "",
+                        TreatmentStatus.InProgress => "",
+                        TreatmentStatus.Completed  => "",
+                        TreatmentStatus.Cancelled  => "",
+                        _                          => ""
                     };
                     var tStatusText = treatment.Status switch {
                         TreatmentStatus.Planned    => "Planned",
@@ -296,7 +296,7 @@
         else
         {
             <div class="empty-state">
-                <div class="empty-state-icon">🦷</div>
+                <div class="empty-state-icon"></div>
                 <h3 class="empty-state-title">No Treatments Yet</h3>
                 <p class="empty-state-text">Add treatments to this plan to get started.</p>
             </div>

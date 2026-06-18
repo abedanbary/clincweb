@@ -24,13 +24,13 @@
             @if (isManager || User.IsInRole("Assistant"))
             {
                 <a href="/Materials/Invoices" class="btn-ghost" style="text-decoration: none;">
-                    🧾 Purchase Invoices
+                    Purchase Invoices
                 </a>
             }
             @if (isManager)
             {
                 <a href="/Materials/ExportExcel" class="btn-ghost" style="text-decoration: none;">
-                   📊 Export to Excel
+                   Export to Excel
                 </a>
                 <button class="btn-primary" onclick="openAddMaterialModal()">
                     Add Material
@@ -428,10 +428,10 @@
                             if (h.invoiceId && canSeeInvoices) {
                                 invoiceCell = `<a href="/Materials/Invoices?materialId=${materialId}" style="color:#10b981;font-weight:500;font-size:.78rem;text-decoration:none;"
                                     title="Total: ${h.invoiceTotal?.toFixed(2)}">
-                                    🧾 ${h.invoiceNumber}
+                                    ${h.invoiceNumber}
                                 </a>`;
                             } else if (h.invoiceId) {
-                                invoiceCell = `<span style="color:#9ca3af;font-size:.78rem;">🧾 ${h.invoiceNumber}</span>`;
+                                invoiceCell = `<span style="color:#9ca3af;font-size:.78rem;">${h.invoiceNumber}</span>`;
                             }
 
                             html += `<tr>
