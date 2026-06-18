@@ -33,7 +33,7 @@
 
         <!-- Left Column: Patient Info -->
         <div class="profile-sidebar">
-            
+
             <!-- Contact Info Card -->
             <div class="profile-card">
                 <div class="profile-card-header">
@@ -64,29 +64,30 @@
                     </div>
                 </div>
             </div>
+
             <div class="profile-card">
-            <div class="profile-card-header">
-             <h2 class="profile-card-title">Quick Actions</h2>
+                <div class="profile-card-header">
+                    <h2 class="profile-card-title">Quick Actions</h2>
+                </div>
+                <div class="quick-actions">
+                    <a asp-controller="TreatmentPlan" asp-action="Index" asp-route-id="@Model.PatientId" class="quick-action-btn">
+                        <span class="quick-action-text">Treatment Plans</span>
+                    </a>
+                    <a asp-controller="Appointments" asp-action="PatientAppointments" asp-route-patientId="@Model.PatientId" class="quick-action-btn">
+                        <span class="quick-action-text">Appointments</span>
+                    </a>
+                    <a asp-controller="Payments" asp-action="Index" asp-route-patientId="@Model.PatientId" class="quick-action-btn">
+                        <span class="quick-action-text">Payments</span>
+                    </a>
+                    <a href="/patients/@Model.PatientId/files" class="quick-action-btn">
+                        <span class="quick-action-text">Patient Files</span>
+                    </a>
+                    <button type="button" class="quick-action-btn" id="whatsapp-btn" onclick="sendWhatsApp()">
+                        <span class="quick-action-text">Send WhatsApp</span>
+                    </button>
+                </div>
+                <div id="whatsapp-status" style="display:none; margin-top:0.5rem; padding:0.5rem 0.75rem; border-radius:6px; font-size:0.875rem;"></div>
             </div>
-            <div class="quick-actions">
-        <a asp-controller="TreatmentPlan" asp-action="Index" asp-route-id="@Model.PatientId" class="quick-action-btn">
-            <span class="quick-action-text">Treatment Plans</span>
-        </a>
-        <a asp-controller="Appointments" asp-action="PatientAppointments" asp-route-patientId="@Model.PatientId" class="quick-action-btn">
-            <span class="quick-action-text">Appointments</span>
-        </a>
-        <a asp-controller="Payments" asp-action="Index" asp-route-patientId="@Model.PatientId" class="quick-action-btn">
-            <span class="quick-action-text">Payments</span>
-        </a>
-        <a href="/patients/@Model.PatientId/files" class="quick-action-btn">
-            <span class="quick-action-text">Patient Files</span>
-        </a>
-        <button type="button" class="quick-action-btn" id="whatsapp-btn" onclick="sendWhatsApp()">
-            <span class="quick-action-text">Send WhatsApp</span>
-        </button>
-    </div>
-    <div id="whatsapp-status" style="display:none; margin-top:0.5rem; padding:0.5rem 0.75rem; border-radius:6px; font-size:0.875rem;"></div>
-</div>
 
             <!-- Medical Info Card -->
             <div class="profile-card">
@@ -124,42 +125,46 @@
 
         </div>
 
-        <!-- Right Column: Dental Chart + Files -->
+        <!-- Right Column: Dental Chart -->
         <div class="profile-main">
             <div class="profile-card dental-chart-card">
                 <div class="profile-card-header">
                     <h2 class="profile-card-title">Dental Chart</h2>
                     <div class="dental-legend">
                         <span class="legend-item"><span class="legend-color healthy"></span> Healthy</span>
-                        <span class="legend-item"><span class="legend-color caries"></span> Caries</span>
+                        <span class="legend-item"><span class="legend-color planned-treatment"></span> Planned</span>
+                        <span class="legend-item"><span class="legend-color in-progress"></span> In Progress</span>
                         <span class="legend-item"><span class="legend-color filled"></span> Filled</span>
                         <span class="legend-item"><span class="legend-color crown"></span> Crown</span>
                         <span class="legend-item"><span class="legend-color root-canal"></span> Root Canal</span>
+                        <span class="legend-item"><span class="legend-color implant"></span> Implant</span>
+                        <span class="legend-item"><span class="legend-color caries"></span> Caries</span>
                         <span class="legend-item"><span class="legend-color missing"></span> Missing</span>
+                        <span class="legend-item"><span class="legend-color extraction"></span> Extraction</span>
                     </div>
                 </div>
 
-                <!-- Dental Chart SVG -->
+                <!-- Dental Chart -->
                 <div class="dental-chart-container">
                     <!-- Upper Jaw -->
                     <div class="dental-jaw upper-jaw">
                         <h3 class="jaw-title">Upper Jaw</h3>
                         <div class="teeth-row">
-                            @* Right side: 11-18 *@
                             @for (int i = 18; i >= 11; i--)
                             {
-                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)">
+                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)" title="Tooth @i">
                                     <div class="tooth-visual" id="tooth-@i"></div>
                                     <div class="tooth-number">@i</div>
+                                    <div class="tooth-dot" id="dot-@i" style="display:none;"></div>
                                 </div>
                             }
                             <div class="jaw-separator"></div>
-                            @* Left side: 21-28 *@
                             @for (int i = 21; i <= 28; i++)
                             {
-                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)">
+                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)" title="Tooth @i">
                                     <div class="tooth-visual" id="tooth-@i"></div>
                                     <div class="tooth-number">@i</div>
+                                    <div class="tooth-dot" id="dot-@i" style="display:none;"></div>
                                 </div>
                             }
                         </div>
@@ -169,21 +174,21 @@
                     <div class="dental-jaw lower-jaw">
                         <h3 class="jaw-title">Lower Jaw</h3>
                         <div class="teeth-row">
-                            @* Right side: 41-48 *@
                             @for (int i = 48; i >= 41; i--)
                             {
-                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)">
+                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)" title="Tooth @i">
                                     <div class="tooth-visual" id="tooth-@i"></div>
                                     <div class="tooth-number">@i</div>
+                                    <div class="tooth-dot" id="dot-@i" style="display:none;"></div>
                                 </div>
                             }
                             <div class="jaw-separator"></div>
-                            @* Left side: 31-38 *@
                             @for (int i = 31; i <= 38; i++)
                             {
-                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)">
+                                <div class="tooth" data-tooth="@i" onclick="selectTooth(@i)" title="Tooth @i">
                                     <div class="tooth-visual" id="tooth-@i"></div>
                                     <div class="tooth-number">@i</div>
+                                    <div class="tooth-dot" id="dot-@i" style="display:none;"></div>
                                 </div>
                             }
                         </div>
@@ -195,45 +200,118 @@
 
     </section>
 
-    <!-- Edit Tooth Modal -->
+    <!-- ── Tooth Panel Modal ─────────────────────────────────────────────── -->
     <div id="toothModal" class="modal-overlay hidden" onclick="closeModalOnOverlay(event)">
-        <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-card tooth-panel" onclick="event.stopPropagation()">
+
+            <!-- Header -->
             <div class="modal-header">
-                <h3 class="modal-title">Edit Tooth <span id="modal-tooth-number"></span></h3>
-                <button class="modal-close" onclick="closeToothModal()">&times;</button>
+                <div>
+                    <h3 class="modal-title">Tooth <span id="tp-number"></span></h3>
+                    <p class="tp-tooth-name" id="tp-name"></p>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="tp-status-badge" id="tp-status-badge"></span>
+                    <button class="modal-close" onclick="closeToothModal()">&times;</button>
+                </div>
             </div>
-            
-            <form id="toothForm" class="modal-body">
-                <input type="hidden" id="tooth-number-input" name="toothNumber" />
-                
-                <div class="patients-field">
-                    <label class="patients-label">Status</label>
-                    <select class="patients-select" id="tooth-status" name="status" required>
-                        <option value="1">Healthy</option>
-                        <option value="2">Caries</option>
-                        <option value="3">Filled</option>
-                        <option value="4">Crown</option>
-                        <option value="5">Root Canal</option>
-                        <option value="6">Missing</option>
-                        <option value="7">Extraction Needed</option>
-                        <option value="8">Other</option>
-                    </select>
+
+            <!-- Loading -->
+            <div id="tp-loading" class="tp-loading-state">Loading tooth data...</div>
+
+            <!-- Content -->
+            <div id="tp-content" style="display:none;">
+
+                <!-- Treatments Section -->
+                <div class="tp-section">
+                    <div class="tp-section-header">
+                        <span class="tp-section-title">Treatments</span>
+                        <button class="btn-ghost btn-sm" onclick="toggleAddForm()">+ Add Treatment</button>
+                    </div>
+                    <div id="tp-treatments-list"></div>
+                    <div id="tp-no-treatments" class="tp-empty-treatments">
+                        No treatments planned for this tooth.
+                        <span class="tp-empty-hint">Click "Add Treatment" to begin planning.</span>
+                    </div>
                 </div>
-                
-                <div class="patients-field">
-                    <label class="patients-label">Notes (Optional)</label>
-                    <textarea class="patients-textarea" id="tooth-notes" name="notes" rows="3" placeholder="Add treatment notes..."></textarea>
+
+                <!-- Add Treatment Form -->
+                <div id="tp-add-form" class="tp-add-section" style="display:none;">
+                    <div class="tp-add-title">New Treatment for Tooth <span id="tp-add-tooth-num"></span></div>
+                    <div class="tp-form-row">
+                        <div class="patients-field">
+                            <label class="patients-label">Type *</label>
+                            <select id="tp-type" class="patients-select" onchange="autoFillTitle()">
+                                <option value="1">Cleaning</option>
+                                <option value="2">Filling</option>
+                                <option value="3">Root Canal</option>
+                                <option value="4">Extraction</option>
+                                <option value="5">Crown</option>
+                                <option value="6">Bridge</option>
+                                <option value="7">Implant</option>
+                                <option value="8">Whitening</option>
+                                <option value="9">Orthodontics</option>
+                                <option value="10">Denture</option>
+                                <option value="11">Scaling</option>
+                                <option value="12">Other</option>
+                            </select>
+                        </div>
+                        <div class="patients-field">
+                            <label class="patients-label">Priority</label>
+                            <select id="tp-priority" class="patients-select">
+                                <option value="1">Urgent</option>
+                                <option value="2" selected>Medium</option>
+                                <option value="3">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="patients-field">
+                        <label class="patients-label">Title *</label>
+                        <input type="text" id="tp-title" class="patients-select" placeholder="e.g., Crown for Tooth 26" />
+                    </div>
+                    <div class="patients-field">
+                        <label class="patients-label">Estimated Cost ($) *</label>
+                        <input type="number" id="tp-cost" class="patients-select" step="0.01" min="0" placeholder="0.00" />
+                    </div>
+                    <div id="tp-add-error" class="tp-error" style="display:none;"></div>
+                    <div class="tp-form-actions">
+                        <button class="btn-primary btn-sm" onclick="submitQuickTreatment()">Add Treatment</button>
+                        <button class="btn-ghost btn-sm" onclick="toggleAddForm()">Cancel</button>
+                    </div>
                 </div>
-                
-                <div class="patients-form-actions">
-                    <button type="submit" class="btn-primary">
-                        Save
-                    </button>
-                    <button type="button" class="btn-ghost" onclick="closeToothModal()">
-                        Cancel
-                    </button>
+
+                <!-- Divider -->
+                <div class="tp-divider"></div>
+
+                <!-- Manual Status & Notes -->
+                <div class="tp-section">
+                    <div class="tp-section-title">Chart Settings</div>
+                    <div class="patients-field">
+                        <label class="patients-label">Manual Status Override</label>
+                        <select id="tooth-status" class="patients-select">
+                            <option value="1">Healthy</option>
+                            <option value="2">Caries</option>
+                            <option value="3">Filled</option>
+                            <option value="4">Crown</option>
+                            <option value="5">Root Canal</option>
+                            <option value="6">Missing</option>
+                            <option value="7">Extraction Needed</option>
+                            <option value="8">Other</option>
+                            <option value="9">Planned Treatment</option>
+                            <option value="10">In Progress</option>
+                            <option value="11">Implant</option>
+                        </select>
+                    </div>
+                    <div class="patients-field">
+                        <label class="patients-label">Notes</label>
+                        <textarea class="patients-textarea" id="tooth-notes" rows="2" placeholder="Clinical notes for this tooth..."></textarea>
+                    </div>
+                    <div class="tp-form-actions">
+                        <button class="btn-primary btn-sm" onclick="saveToothSettings()">Save Settings</button>
+                    </div>
                 </div>
-            </form>
+
+            </div>
         </div>
     </div>
 
@@ -241,126 +319,307 @@
 
 @section Scripts {
     <script>
-        // Tooth data from server
         const patientId = @Model.PatientId;
-        const teethData = @Html.Raw(Json.Serialize(Model.Teeth.Select(t => new {
+
+        // Seed teeth data from server (status + treatment count)
+        const teethData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Teeth.Select(t => new {
             toothNumber = t.ToothNumber,
             status = (int)t.Status,
             notes = t.Notes
         })));
+        const treatmentCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ToothTreatmentCounts));
 
-        // Initialize tooth colors on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            teethData.forEach(tooth => {
-                updateToothVisual(tooth.toothNumber, tooth.status);
+        // ── Init chart on load ─────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            teethData.forEach(t => updateToothVisual(t.toothNumber, t.status));
+
+            // Show treatment-count dots
+            Object.entries(treatmentCounts).forEach(([tn, cnt]) => {
+                const dot = document.getElementById('dot-' + tn);
+                if (dot && cnt > 0) {
+                    dot.style.display = 'block';
+                    dot.title = cnt + ' treatment(s)';
+                }
             });
         });
 
-        // Select tooth for editing
+        // ── FDI tooth name lookup ──────────────────────────────────────────
+        function getToothName(n) {
+            const names = {
+                11:'UR Central Incisor', 12:'UR Lateral Incisor', 13:'UR Canine',
+                14:'UR 1st Premolar', 15:'UR 2nd Premolar', 16:'UR 1st Molar',
+                17:'UR 2nd Molar', 18:'UR 3rd Molar',
+                21:'UL Central Incisor', 22:'UL Lateral Incisor', 23:'UL Canine',
+                24:'UL 1st Premolar', 25:'UL 2nd Premolar', 26:'UL 1st Molar',
+                27:'UL 2nd Molar', 28:'UL 3rd Molar',
+                31:'LL Central Incisor', 32:'LL Lateral Incisor', 33:'LL Canine',
+                34:'LL 1st Premolar', 35:'LL 2nd Premolar', 36:'LL 1st Molar',
+                37:'LL 2nd Molar', 38:'LL 3rd Molar',
+                41:'LR Central Incisor', 42:'LR Lateral Incisor', 43:'LR Canine',
+                44:'LR 1st Premolar', 45:'LR 2nd Premolar', 46:'LR 1st Molar',
+                47:'LR 2nd Molar', 48:'LR 3rd Molar'
+            };
+            return names[n] || '';
+        }
+
+        // ── Status mapping ─────────────────────────────────────────────────
+        const STATUS_CLASS = {
+            1:'healthy', 2:'caries', 3:'filled', 4:'crown', 5:'root-canal',
+            6:'missing', 7:'extraction', 8:'other', 9:'planned-treatment', 10:'in-progress', 11:'implant'
+        };
+        const STATUS_LABEL = {
+            1:'Healthy', 2:'Caries', 3:'Filled', 4:'Crown', 5:'Root Canal',
+            6:'Missing', 7:'Extraction', 8:'Other', 9:'Planned', 10:'In Progress', 11:'Implant'
+        };
+        const STATUS_BADGE_CLASS = {
+            1:'tp-badge-healthy', 2:'tp-badge-caries', 3:'tp-badge-filled',
+            4:'tp-badge-crown', 5:'tp-badge-rootcanal', 6:'tp-badge-missing',
+            7:'tp-badge-extraction', 8:'tp-badge-other', 9:'tp-badge-planned',
+            10:'tp-badge-inprogress', 11:'tp-badge-implant'
+        };
+
+        // ── Update tooth visual ────────────────────────────────────────────
+        function updateToothVisual(toothNumber, status) {
+            const el = document.getElementById('tooth-' + toothNumber);
+            if (!el) return;
+            el.className = 'tooth-visual ' + (STATUS_CLASS[status] || 'healthy');
+        }
+
+        // ── Selected tooth state ───────────────────────────────────────────
+        let currentTooth = null;
+
         function selectTooth(toothNumber) {
-            document.getElementById('modal-tooth-number').textContent = toothNumber;
-            document.getElementById('tooth-number-input').value = toothNumber;
-            
-            // Find existing tooth data
-            const existingTooth = teethData.find(t => t.toothNumber === toothNumber);
-            if (existingTooth) {
-                document.getElementById('tooth-status').value = existingTooth.status;
-                document.getElementById('tooth-notes').value = existingTooth.notes || '';
-            } else {
-                document.getElementById('tooth-status').value = '1'; // Healthy
-                document.getElementById('tooth-notes').value = '';
-            }
-            
+            currentTooth = toothNumber;
+            document.getElementById('tp-number').textContent = toothNumber;
+            document.getElementById('tp-name').textContent = getToothName(toothNumber);
+            document.getElementById('tp-add-tooth-num').textContent = toothNumber;
+            document.getElementById('tp-status-badge').textContent = '';
+            document.getElementById('tp-status-badge').className = 'tp-status-badge';
+            document.getElementById('tp-loading').style.display = 'block';
+            document.getElementById('tp-content').style.display = 'none';
+            document.getElementById('tp-add-form').style.display = 'none';
             document.getElementById('toothModal').classList.remove('hidden');
+
+            fetch(`/Patients/ToothDetails?patientId=${patientId}&toothNumber=${toothNumber}`)
+                .then(r => r.json())
+                .then(data => renderToothPanel(data))
+                .catch(() => {
+                    document.getElementById('tp-loading').textContent = 'Error loading data.';
+                });
         }
 
-        // Close modal
-        function closeToothModal() {
-            document.getElementById('toothModal').classList.add('hidden');
-        }
+        function renderToothPanel(data) {
+            // Header badge
+            const badge = document.getElementById('tp-status-badge');
+            badge.textContent = STATUS_LABEL[data.status] || 'Unknown';
+            badge.className = 'tp-status-badge ' + (STATUS_BADGE_CLASS[data.status] || '');
 
-        function closeModalOnOverlay(event) {
-            if (event.target === event.currentTarget) {
-                closeToothModal();
+            // Manual status & notes
+            document.getElementById('tooth-status').value = data.status;
+            document.getElementById('tooth-notes').value = data.notes || '';
+
+            // Treatments list
+            const list = document.getElementById('tp-treatments-list');
+            const empty = document.getElementById('tp-no-treatments');
+            const activeTreatments = data.treatments.filter(t => t.statusInt !== 4); // exclude cancelled
+            const allTreatments = data.treatments;
+
+            if (allTreatments.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+            } else {
+                empty.style.display = 'none';
+                list.innerHTML = allTreatments.map(t => buildTreatmentRow(t)).join('');
             }
+
+            document.getElementById('tp-loading').style.display = 'none';
+            document.getElementById('tp-content').style.display = 'block';
         }
 
-        // Handle form submission
-        document.getElementById('toothForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const toothNumber = parseInt(document.getElementById('tooth-number-input').value);
-            const status = parseInt(document.getElementById('tooth-status').value);
-            const notes = document.getElementById('tooth-notes').value;
-            
+        function buildTreatmentRow(t) {
+            const statusColors = {
+                'Planned':    { bg:'#fef9c3', color:'#a16207', border:'#fde047' },
+                'InProgress': { bg:'#dbeafe', color:'#1d4ed8', border:'#93c5fd' },
+                'Completed':  { bg:'#dcfce7', color:'#15803d', border:'#86efac' },
+                'Cancelled':  { bg:'#f3f4f6', color:'#9ca3af', border:'#e5e7eb' }
+            };
+            const sc = statusColors[t.status] || statusColors['Planned'];
+            const statusBadge = `<span style="padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600;background:${sc.bg};color:${sc.color};border:1px solid ${sc.border};">${t.status === 'InProgress' ? 'In Progress' : t.status}</span>`;
+
+            const isCancelled = t.statusInt === 4;
+            const isCompleted = t.statusInt === 3;
+
+            let actions = '';
+            if (!isCancelled && !isCompleted) {
+                if (t.statusInt === 1) { // Planned
+                    actions += `<button class="tp-action-btn tp-action-progress" onclick="quickStatus(${t.id}, 2)">Start</button>`;
+                }
+                actions += `<button class="tp-action-btn tp-action-complete" onclick="quickStatus(${t.id}, 3)">Complete</button>`;
+                actions += `<button class="tp-action-btn tp-action-cancel" onclick="quickStatus(${t.id}, 4)">Cancel</button>`;
+            }
+
+            const planLink = t.planId
+                ? `<a href="/TreatmentPlan/Details/${t.planId}" class="tp-plan-link" target="_blank">→ ${t.planTitle || 'Plan'}</a>`
+                : '';
+
+            const completedLine = t.completedAt
+                ? `<span style="color:#16a34a;font-size:11px;">Completed: ${t.completedAt}</span>`
+                : '';
+
+            return `
+            <div class="tp-treatment-row ${isCancelled ? 'tp-treatment-cancelled' : ''}">
+                <div class="tp-treatment-top">
+                    <div style="flex:1;min-width:0;">
+                        <div class="tp-treatment-title">${t.title}</div>
+                        <div class="tp-treatment-meta">
+                            <span class="tp-type-badge">${t.type}</span>
+                            ${statusBadge}
+                            <span style="color:#9ca3af;font-size:11px;">${t.doctorName}</span>
+                        </div>
+                        <div class="tp-treatment-cost">
+                            $${t.estimatedCost.toFixed(0)} est.
+                            ${t.cost > 0 ? `<span style="color:#059669;"> · $${t.cost.toFixed(0)} actual</span>` : ''}
+                            ${completedLine}
+                            ${planLink}
+                        </div>
+                        ${t.description ? `<div class="tp-treatment-notes">${t.description}</div>` : ''}
+                    </div>
+                </div>
+                ${actions ? `<div class="tp-treatment-actions">${actions}</div>` : ''}
+            </div>`;
+        }
+
+        // ── Quick status update ────────────────────────────────────────────
+        const antiForgeryToken = () => document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        async function quickStatus(treatmentId, status) {
             try {
-                const response = await fetch('@Url.Action("UpdateTooth", "Patients")', {
+                const r = await fetch('/TreatmentPlan/QuickUpdateStatus', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                        'RequestVerificationToken': antiForgeryToken()
                     },
                     body: new URLSearchParams({
-                        patientId: patientId,
-                        toothNumber: toothNumber,
-                        status: status,
-                        notes: notes,
-                        __RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]').value
+                        treatmentId, status,
+                        __RequestVerificationToken: antiForgeryToken()
                     })
                 });
-                
-                if (response.ok) {
-                    // Update visual
-                    updateToothVisual(toothNumber, status);
-                    
-                    // Update local data
-                    const existingIndex = teethData.findIndex(t => t.toothNumber === toothNumber);
-                    if (existingIndex >= 0) {
-                        teethData[existingIndex] = { toothNumber, status, notes };
-                    } else {
-                        teethData.push({ toothNumber, status, notes });
+                const data = await r.json();
+                if (data.success) {
+                    if (data.toothStatus > 0) {
+                        updateToothVisual(currentTooth, data.toothStatus);
+                        updateLocalTeethData(currentTooth, data.toothStatus);
                     }
-                    
-                    closeToothModal();
-                } else {
-                    alert('Error updating tooth. Please try again.');
+                    // Reload panel
+                    selectTooth(currentTooth);
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error updating tooth. Please try again.');
+            } catch (e) {
+                console.error(e);
             }
-        });
-
-        // Update tooth visual based on status
-        function updateToothVisual(toothNumber, status) {
-            const toothElement = document.getElementById(`tooth-${toothNumber}`);
-            if (!toothElement) return;
-            
-            // Remove all status classes
-            toothElement.className = 'tooth-visual';
-            
-            // Add status class
-            const statusClass = {
-                1: 'healthy',
-                2: 'caries',
-                3: 'filled',
-                4: 'crown',
-                5: 'root-canal',
-                6: 'missing',
-                7: 'extraction',
-                8: 'other'
-            }[status] || 'healthy';
-            
-            toothElement.classList.add(statusClass);
         }
 
-        // ESC to close
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                closeToothModal();
-            }
-        });
+        // ── Add Treatment (quick form) ─────────────────────────────────────
+        function toggleAddForm() {
+            const form = document.getElementById('tp-add-form');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            if (form.style.display === 'block') autoFillTitle();
+        }
 
+        const TYPE_LABELS = {
+            1:'Cleaning', 2:'Filling', 3:'Root Canal', 4:'Extraction', 5:'Crown',
+            6:'Bridge', 7:'Implant', 8:'Whitening', 9:'Orthodontics', 10:'Denture',
+            11:'Scaling', 12:'Other'
+        };
+
+        function autoFillTitle() {
+            const type = document.getElementById('tp-type').value;
+            const label = TYPE_LABELS[type] || 'Treatment';
+            document.getElementById('tp-title').value = `${label} for Tooth ${currentTooth}`;
+        }
+
+        async function submitQuickTreatment() {
+            const type     = document.getElementById('tp-type').value;
+            const title    = document.getElementById('tp-title').value.trim();
+            const cost     = parseFloat(document.getElementById('tp-cost').value) || 0;
+            const priority = document.getElementById('tp-priority').value;
+            const errEl    = document.getElementById('tp-add-error');
+
+            if (!title) { errEl.textContent = 'Title is required.'; errEl.style.display = 'block'; return; }
+            if (cost <= 0) { errEl.textContent = 'Enter a valid estimated cost.'; errEl.style.display = 'block'; return; }
+            errEl.style.display = 'none';
+
+            try {
+                const r = await fetch('/TreatmentPlan/QuickAddTreatment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken()
+                    },
+                    body: new URLSearchParams({
+                        patientId, toothNumber: currentTooth,
+                        type, title, estimatedCost: cost, priority,
+                        __RequestVerificationToken: antiForgeryToken()
+                    })
+                });
+                const data = await r.json();
+                if (data.success) {
+                    updateToothVisual(currentTooth, data.toothStatus);
+                    updateLocalTeethData(currentTooth, data.toothStatus);
+                    updateTreatmentDot(currentTooth, true);
+                    document.getElementById('tp-add-form').style.display = 'none';
+                    // Reload panel to show new treatment
+                    selectTooth(currentTooth);
+                }
+            } catch (e) {
+                errEl.textContent = 'Error adding treatment. Please try again.';
+                errEl.style.display = 'block';
+            }
+        }
+
+        // ── Manual status + notes save ─────────────────────────────────────
+        async function saveToothSettings() {
+            const status = parseInt(document.getElementById('tooth-status').value);
+            const notes  = document.getElementById('tooth-notes').value;
+
+            try {
+                const r = await fetch('@Url.Action("UpdateTooth", "Patients")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': antiForgeryToken()
+                    },
+                    body: new URLSearchParams({
+                        patientId, toothNumber: currentTooth, status, notes,
+                        __RequestVerificationToken: antiForgeryToken()
+                    })
+                });
+                if (r.ok) {
+                    updateToothVisual(currentTooth, status);
+                    updateLocalTeethData(currentTooth, status, notes);
+                    closeToothModal();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // ── Local state helpers ────────────────────────────────────────────
+        function updateLocalTeethData(toothNumber, status, notes) {
+            const i = teethData.findIndex(t => t.toothNumber === toothNumber);
+            if (i >= 0) { teethData[i].status = status; if (notes !== undefined) teethData[i].notes = notes; }
+            else teethData.push({ toothNumber, status, notes: notes || '' });
+        }
+
+        function updateTreatmentDot(toothNumber, show) {
+            const dot = document.getElementById('dot-' + toothNumber);
+            if (dot) dot.style.display = show ? 'block' : 'none';
+        }
+
+        // ── Modal helpers ──────────────────────────────────────────────────
+        function closeToothModal() { document.getElementById('toothModal').classList.add('hidden'); }
+        function closeModalOnOverlay(e) { if (e.target === e.currentTarget) closeToothModal(); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeToothModal(); });
+
+        // ── WhatsApp ──────────────────────────────────────────────────────
         async function sendWhatsApp() {
             const btn = document.getElementById('whatsapp-btn');
             const status = document.getElementById('whatsapp-status');
@@ -368,38 +627,28 @@
             status.style.display = 'none';
 
             try {
-                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                const token = antiForgeryToken();
                 const response = await fetch('@Url.Action("SendWhatsApp", "Patients")', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'RequestVerificationToken': token
-                    },
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
                     body: new URLSearchParams({ id: patientId, __RequestVerificationToken: token })
                 });
 
                 const result = await response.json();
                 status.style.display = 'block';
                 if (result.success) {
-                    status.style.background = '#d1fae5';
-                    status.style.color = '#065f46';
-                    status.textContent = result.message;
+                    status.style.background = '#d1fae5'; status.style.color = '#065f46';
                 } else {
-                    status.style.background = '#fee2e2';
-                    status.style.color = '#991b1b';
-                    status.textContent = result.message;
+                    status.style.background = '#fee2e2'; status.style.color = '#991b1b';
                 }
+                status.textContent = result.message;
             } catch (err) {
                 status.style.display = 'block';
-                status.style.background = '#fee2e2';
-                status.style.color = '#991b1b';
+                status.style.background = '#fee2e2'; status.style.color = '#991b1b';
                 status.textContent = 'Error: ' + err.message;
-            } finally {
-                btn.disabled = false;
-            }
+            } finally { btn.disabled = false; }
         }
-
     </script>
-    
+
     @Html.AntiForgeryToken()
 }

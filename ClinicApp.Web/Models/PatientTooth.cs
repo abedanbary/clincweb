@@ -4,14 +4,17 @@ namespace ClinicApp.Web.Models
 {
     public enum ToothStatus
     {
-        Healthy = 1,      // سليم
-        Caries = 2,       // تسوس
-        Filled = 3,       // حشوة
-        Crown = 4,        // تاج
-        RootCanal = 5,    // علاج جذور
-        Missing = 6,      // مفقود
-        Extraction = 7,   // مطلوب خلع
-        Other = 8         // أخرى
+        Healthy = 1,            // سليم
+        Caries = 2,             // تسوس
+        Filled = 3,             // حشوة
+        Crown = 4,              // تاج
+        RootCanal = 5,          // علاج جذور
+        Missing = 6,            // مفقود
+        Extraction = 7,         // مطلوب خلع
+        Other = 8,              // أخرى
+        PlannedTreatment = 9,   // علاج مخطط
+        InProgress = 10,        // علاج جارٍ
+        Implant = 11            // زرعة
     }
 
     public class PatientTooth

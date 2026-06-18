@@ -21,5 +21,8 @@ namespace ClinicApp.Web.ViewModels
 
         // خريطة الأسنان (ToothNumber → {Status, Notes, UpdatedAt})
         public List<PatientTooth> Teeth { get; set; } = new();
+
+        // عدد العلاجات النشطة لكل سن (ToothNumber → ActiveTreatmentCount)
+        public Dictionary<int, int> ToothTreatmentCounts { get; set; } = new();
     }
 }

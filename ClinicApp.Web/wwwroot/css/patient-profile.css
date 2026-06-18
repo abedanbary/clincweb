@@ -180,12 +180,16 @@
     border: 1px solid var(--color-border);
 }
 
-.legend-color.healthy     { background: #1c5c44; }
-.legend-color.caries      { background: #ef4444; }
-.legend-color.filled      { background: #3b82f6; }
-.legend-color.crown       { background: #f59e0b; }
-.legend-color.root-canal  { background: #8b5cf6; }
-.legend-color.missing     { background: #9ca3af; }
+.legend-color.healthy            { background: #1c5c44; }
+.legend-color.caries             { background: #ef4444; }
+.legend-color.filled             { background: #3b82f6; }
+.legend-color.crown              { background: #f59e0b; }
+.legend-color.root-canal         { background: #8b5cf6; }
+.legend-color.missing            { background: #9ca3af; }
+.legend-color.extraction         { background: #f97316; }
+.legend-color.planned-treatment  { background: #0ea5e9; }
+.legend-color.in-progress        { background: #6366f1; }
+.legend-color.implant            { background: #1e3a5f; }
 
 .dental-chart-container {
     display: flex;
@@ -252,14 +256,17 @@
 }
 
 /* Tooth status colors */
-.tooth-visual.healthy    { background: #1c5c44; border-color: #174d39; }
-.tooth-visual.caries     { background: #ef4444; border-color: #dc2626; }
-.tooth-visual.filled     { background: #3b82f6; border-color: #2563eb; }
-.tooth-visual.crown      { background: #f59e0b; border-color: #d97706; }
-.tooth-visual.root-canal { background: #8b5cf6; border-color: #7c3aed; }
-.tooth-visual.missing    { background: #9ca3af; border-color: #6b7280; opacity: 0.6; }
-.tooth-visual.extraction { background: #f97316; border-color: #ea580c; }
-.tooth-visual.other      { background: #64748b; border-color: #475569; }
+.tooth-visual.healthy           { background: #1c5c44; border-color: #174d39; }
+.tooth-visual.caries            { background: #ef4444; border-color: #dc2626; }
+.tooth-visual.filled            { background: #3b82f6; border-color: #2563eb; }
+.tooth-visual.crown             { background: #f59e0b; border-color: #d97706; }
+.tooth-visual.root-canal        { background: #8b5cf6; border-color: #7c3aed; }
+.tooth-visual.missing           { background: #9ca3af; border-color: #6b7280; opacity: 0.5; }
+.tooth-visual.extraction        { background: #f97316; border-color: #ea580c; }
+.tooth-visual.other             { background: #64748b; border-color: #475569; }
+.tooth-visual.planned-treatment { background: #0ea5e9; border-color: #0284c7; }
+.tooth-visual.in-progress       { background: #6366f1; border-color: #4f46e5; }
+.tooth-visual.implant           { background: #1e3a5f; border-color: #172d4a; }
 
 /* ── Modal ──────────────────────────────────────────────────── */
 .modal-overlay {
@@ -405,4 +412,266 @@
     .teeth-row { flex-wrap: wrap; }
     .jaw-separator { display: none; }
     .dental-legend { font-size: 11px; }
+}
+
+/* ── Treatment count dot ─────────────────────────────────────── */
+.tooth-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6366f1;
+    position: absolute;
+    top: -2px;
+    right: -2px;
+}
+
+.tooth { position: relative; }
+
+/* ── Tooth Panel (rich modal) ────────────────────────────────── */
+.tooth-panel {
+    max-width: 600px;
+    width: 94%;
+    max-height: 90vh;
+}
+
+.tp-tooth-name {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin: 2px 0 0;
+    font-weight: 500;
+}
+
+/* Status badge in header */
+.tp-status-badge {
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+.tp-badge-healthy    { background:#dcfce7;color:#15803d;border-color:#86efac; }
+.tp-badge-planned    { background:#e0f2fe;color:#0369a1;border-color:#7dd3fc; }
+.tp-badge-inprogress { background:#ede9fe;color:#6d28d9;border-color:#c4b5fd; }
+.tp-badge-filled     { background:#dbeafe;color:#1d4ed8;border-color:#93c5fd; }
+.tp-badge-crown      { background:#fef9c3;color:#a16207;border-color:#fde047; }
+.tp-badge-rootcanal  { background:#f3e8ff;color:#7c3aed;border-color:#d8b4fe; }
+.tp-badge-implant    { background:#1e3a5f;color:#e0f2fe;border-color:#172d4a; }
+.tp-badge-caries     { background:#fee2e2;color:#b91c1c;border-color:#fca5a5; }
+.tp-badge-missing    { background:#f3f4f6;color:#6b7280;border-color:#d1d5db; }
+.tp-badge-extraction { background:#ffedd5;color:#c2410c;border-color:#fdba74; }
+.tp-badge-other      { background:#f1f5f9;color:#475569;border-color:#cbd5e1; }
+
+.tp-loading-state {
+    text-align: center;
+    padding: 28px 0;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+/* ── Panel sections ──────────────────────────────────────────── */
+.tp-section { margin-bottom: 2px; }
+
+.tp-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.tp-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+}
+
+.tp-empty-treatments {
+    text-align: center;
+    padding: 16px 8px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+.tp-empty-hint {
+    display: block;
+    font-size: 11px;
+    margin-top: 4px;
+    color: #9ca3af;
+}
+
+/* ── Treatment rows ──────────────────────────────────────────── */
+.tp-treatment-row {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    margin-bottom: 7px;
+}
+
+.tp-treatment-row.tp-treatment-cancelled {
+    opacity: 0.55;
+    background: var(--color-surface-alt);
+}
+
+.tp-treatment-top { display: flex; gap: 8px; align-items: flex-start; }
+
+.tp-treatment-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tp-treatment-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.tp-type-badge {
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.tp-treatment-cost {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tp-treatment-notes {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin-top: 5px;
+    padding: 5px 8px;
+    background: var(--color-surface-alt);
+    border-radius: 4px;
+    border-left: 2px solid #93c5fd;
+}
+
+.tp-plan-link {
+    color: #1c5c44;
+    font-size: 11px;
+    font-weight: 500;
+    text-decoration: none;
+}
+.tp-plan-link:hover { text-decoration: underline; }
+
+.tp-treatment-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f3f4f6;
+}
+
+.tp-action-btn {
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid;
+    transition: background 0.12s;
+}
+.tp-action-progress {
+    background: #dbeafe; color: #1d4ed8; border-color: #93c5fd;
+}
+.tp-action-progress:hover { background: #bfdbfe; }
+.tp-action-complete {
+    background: #dcfce7; color: #15803d; border-color: #86efac;
+}
+.tp-action-complete:hover { background: #bbf7d0; }
+.tp-action-cancel {
+    background: #f3f4f6; color: #6b7280; border-color: #d1d5db;
+}
+.tp-action-cancel:hover { background: #e5e7eb; }
+
+/* ── Add treatment form ──────────────────────────────────────── */
+.tp-add-section {
+    background: #f8fafc;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.tp-add-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.tp-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.tp-form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.tp-error {
+    font-size: 12px;
+    color: #b91c1c;
+    background: #fee2e2;
+    border-radius: 5px;
+    padding: 5px 10px;
+    margin-bottom: 6px;
+}
+
+/* ── Panel divider ───────────────────────────────────────────── */
+.tp-divider {
+    height: 1px;
+    background: var(--color-border);
+    margin: 14px 0;
+}
+
+/* ── Quick actions ───────────────────────────────────────────── */
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.quick-action-btn {
+    display: block;
+    padding: 9px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    font-family: inherit;
+    width: 100%;
+}
+
+.quick-action-btn:hover {
+    background: var(--color-surface-alt);
+    border-color: #c9c9c6;
 }

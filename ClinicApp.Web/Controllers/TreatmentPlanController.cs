@@ -13,11 +13,13 @@ namespace ClinicApp.Web.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ICloudinaryService _cloudinary;
+        private readonly IToothStatusService _toothStatus;
 
-        public TreatmentPlanController(ApplicationDbContext context,ICloudinaryService cloudinary)
+        public TreatmentPlanController(ApplicationDbContext context, ICloudinaryService cloudinary, IToothStatusService toothStatus)
         {
             _context = context;
-            _cloudinary=cloudinary;
+            _cloudinary = cloudinary;
+            _toothStatus = toothStatus;
         }
 
         private int GetCurrentClinicId()
@@ -180,6 +182,9 @@ namespace ClinicApp.Web.Controllers
 
             await _context.SaveChangesAsync();
 
+            if (toothNumber.HasValue)
+                await _toothStatus.SyncToothAsync(plan.PatientId, toothNumber.Value, clinicId);
+
             return RedirectToAction(nameof(Details), new { id = planId });
         }
 
@@ -231,9 +236,16 @@ namespace ClinicApp.Web.Controllers
          if (status == TreatmentStatus.Completed)
           treatment.CompletedAt = DateTime.UtcNow;
 
+         var toothNum = treatment.ToothNumber;
+         var patientIdForSync = treatment.PatientId;
+         var planIdForRedirect = treatment.TreatmentPlanId ?? 0;
+
          await _context.SaveChangesAsync();
 
-          return RedirectToAction(nameof(Details), new { id = treatment.TreatmentPlanId ?? 0 });
+         if (toothNum.HasValue)
+             await _toothStatus.SyncToothAsync(patientIdForSync, toothNum.Value, clinicId);
+
+          return RedirectToAction(nameof(Details), new { id = planIdForRedirect });
       }
 
         // 🔴 POST: /TreatmentPlan/DeleteTreatment
@@ -251,6 +263,8 @@ namespace ClinicApp.Web.Controllers
                 return NotFound();
 
             var planId = treatment.TreatmentPlanId;
+            var toothNum = treatment.ToothNumber;
+            var patientIdForSync = treatment.PatientId;
 
             // تحديث التكلفة الإجمالية
             if (treatment.TreatmentPlan != null && treatment.EstimatedCost.HasValue)
@@ -260,6 +274,9 @@ namespace ClinicApp.Web.Controllers
 
             _context.Treatments.Remove(treatment);
             await _context.SaveChangesAsync();
+
+            if (toothNum.HasValue)
+                await _toothStatus.SyncToothAsync(patientIdForSync, toothNum.Value, clinicId);
 
             return RedirectToAction(nameof(Details), new { id = planId });
         }
@@ -285,6 +302,104 @@ namespace ClinicApp.Web.Controllers
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Details), new { id = planId });
+        }
+
+        // 🟩 POST: /TreatmentPlan/QuickAddTreatment (AJAX — from dental chart)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> QuickAddTreatment(
+            int patientId, int toothNumber, TreatmentType type,
+            string title, decimal estimatedCost, int priority)
+        {
+            var clinicId = GetCurrentClinicId();
+            var doctorId = GetCurrentUserId();
+
+            var patient = await _context.Patients
+                .FirstOrDefaultAsync(p => p.Id == patientId && p.ClinicId == clinicId);
+            if (patient == null) return NotFound();
+
+            // Find the most recent active plan or create one
+            var plan = await _context.TreatmentPlans
+                .Where(p => p.PatientId == patientId && p.ClinicId == clinicId && p.Status == PlanStatus.Active)
+                .OrderByDescending(p => p.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (plan == null)
+            {
+                plan = new TreatmentPlan
+                {
+                    Title = $"Treatment Plan — {DateTime.UtcNow:MMM yyyy}",
+                    PatientId = patientId,
+                    DoctorId = doctorId,
+                    ClinicId = clinicId,
+                    Status = PlanStatus.Active,
+                    TotalEstimatedCost = 0,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.TreatmentPlans.Add(plan);
+                await _context.SaveChangesAsync();
+            }
+
+            var treatment = new Treatment
+            {
+                Title = title,
+                Type = type,
+                ToothNumber = toothNumber,
+                EstimatedCost = estimatedCost,
+                Cost = 0,
+                Priority = priority,
+                Status = TreatmentStatus.Planned,
+                TreatmentPlanId = plan.Id,
+                PatientId = patientId,
+                DoctorId = doctorId,
+                ClinicId = clinicId,
+                TreatmentDate = DateTime.UtcNow
+            };
+            _context.Treatments.Add(treatment);
+            plan.TotalEstimatedCost += estimatedCost;
+            await _context.SaveChangesAsync();
+
+            await _toothStatus.SyncToothAsync(patientId, toothNumber, clinicId);
+
+            var tooth = await _context.PatientTeeth
+                .FirstOrDefaultAsync(t => t.PatientId == patientId && t.ToothNumber == toothNumber);
+
+            return Json(new
+            {
+                success = true,
+                treatmentId = treatment.Id,
+                planId = plan.Id,
+                toothStatus = tooth != null ? (int)tooth.Status : (int)ToothStatus.PlannedTreatment
+            });
+        }
+
+        // 🟡 POST: /TreatmentPlan/QuickUpdateStatus (AJAX — from dental chart tooth panel)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> QuickUpdateStatus(int treatmentId, TreatmentStatus status)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var treatment = await _context.Treatments
+                .FirstOrDefaultAsync(t => t.Id == treatmentId && t.ClinicId == clinicId);
+            if (treatment == null) return NotFound();
+
+            treatment.Status = status;
+            if (status == TreatmentStatus.Completed)
+                treatment.CompletedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            int newToothStatus = -1;
+            if (treatment.ToothNumber.HasValue)
+            {
+                await _toothStatus.SyncToothAsync(treatment.PatientId, treatment.ToothNumber.Value, clinicId);
+                var tooth = await _context.PatientTeeth
+                    .FirstOrDefaultAsync(t => t.PatientId == treatment.PatientId && t.ToothNumber == treatment.ToothNumber.Value);
+                newToothStatus = tooth != null ? (int)tooth.Status : -1;
+            }
+
+            return Json(new { success = true, toothStatus = newToothStatus });
         }
 
         // 🔴 POST: /TreatmentPlan/DeletePlan

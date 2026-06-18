@@ -165,6 +165,13 @@ namespace ClinicApp.Web.Controllers
             if (patient == null)
                 return NotFound();
 
+            var toothCounts = await _context.Treatments
+                .Where(t => t.PatientId == patient.Id && t.ClinicId == clinicId
+                         && t.ToothNumber != null && t.Status != TreatmentStatus.Cancelled)
+                .GroupBy(t => t.ToothNumber!.Value)
+                .Select(g => new { ToothNumber = g.Key, Count = g.Count() })
+                .ToListAsync();
+
             var vm = new PatientProfileViewModel
             {
                 PatientId = patient.Id,
@@ -180,7 +187,8 @@ namespace ClinicApp.Web.Controllers
                 MedicalNotes = patient.MedicalNotes,
                 Allergies = patient.Allergies,
                 ChronicDiseases = patient.ChronicDiseases,
-                Teeth = patient.Teeth.ToList()
+                Teeth = patient.Teeth.ToList(),
+                ToothTreatmentCounts = toothCounts.ToDictionary(x => x.ToothNumber, x => x.Count)
             };
 
             ViewData["Title"] = $"{patient.FirstName} {patient.LastName} - Profile";
@@ -225,6 +233,53 @@ namespace ClinicApp.Web.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { success = true, toothNumber, status = status.ToString() });
+        }
+
+        // 🟦 GET: /Patients/ToothDetails?patientId={}&toothNumber={}
+        [HttpGet]
+        [Authorize(Roles = "Manager,Doctor")]
+        public async Task<IActionResult> ToothDetails(int patientId, int toothNumber)
+        {
+            var clinicId = GetCurrentClinicId();
+
+            var patientExists = await _context.Patients
+                .AnyAsync(p => p.Id == patientId && p.ClinicId == clinicId);
+            if (!patientExists) return NotFound();
+
+            var tooth = await _context.PatientTeeth
+                .FirstOrDefaultAsync(t => t.PatientId == patientId && t.ToothNumber == toothNumber);
+
+            var treatments = await _context.Treatments
+                .Include(t => t.Doctor)
+                .Include(t => t.TreatmentPlan)
+                .Where(t => t.PatientId == patientId && t.ToothNumber == toothNumber && t.ClinicId == clinicId)
+                .OrderBy(t => t.Status)
+                .ThenByDescending(t => t.TreatmentDate)
+                .ToListAsync();
+
+            return Json(new
+            {
+                toothNumber,
+                status = tooth != null ? (int)tooth.Status : 1,
+                notes = tooth?.Notes,
+                treatments = treatments.Select(t => new
+                {
+                    id = t.Id,
+                    title = t.Title,
+                    type = t.Type.ToString(),
+                    typeInt = (int)t.Type,
+                    status = t.Status.ToString(),
+                    statusInt = (int)t.Status,
+                    estimatedCost = t.EstimatedCost ?? 0,
+                    cost = t.Cost,
+                    date = t.TreatmentDate.ToString("MMM dd, yyyy"),
+                    completedAt = t.CompletedAt?.ToString("MMM dd, yyyy"),
+                    doctorName = $"Dr. {t.Doctor.FirstName} {t.Doctor.LastName}",
+                    planId = t.TreatmentPlanId,
+                    planTitle = t.TreatmentPlan?.Title,
+                    description = t.Description
+                })
+            });
         }
 
         // 🟢 POST: /Patients/SendWhatsApp
