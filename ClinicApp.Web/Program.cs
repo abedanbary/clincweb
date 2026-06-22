@@ -2,6 +2,7 @@ using ClinicApp.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.HttpOverrides;
 using ClinicApp.Web.Models;
 using ClinicApp.Web.Services;
 using ClinicApp.Web.Services.Storage;
@@ -166,6 +167,15 @@ builder.Services.AddHttpClient<IWhatsAppService, WhatsAppService>();
 builder.Services.AddSingleton<AppointmentReminderService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<AppointmentReminderService>());
 
+// Railway terminates TLS and forwards X-Forwarded-Proto: https.
+// Clear known networks/proxies because Railway's proxy IP is not fixed.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
 Console.WriteLine("=== Running Migrations ===");
@@ -205,6 +215,10 @@ catch (Exception ex)
 }
 
 Console.WriteLine("=== Configuring HTTP Pipeline ===");
+
+// Must be first: reads X-Forwarded-Proto from Railway so Request.Scheme = "https"
+// This makes Google OAuth build the correct https:// redirect_uri
+app.UseForwardedHeaders();
 
 if (!app.Environment.IsDevelopment())
 {
