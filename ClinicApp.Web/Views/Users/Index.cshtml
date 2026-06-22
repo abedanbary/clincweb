@@ -22,7 +22,7 @@
 
         <div class="users-header-actions">
             <button class="btn-primary">
-                Add User
+                Invite Staff
             </button>
         </div>
     </header>
@@ -55,6 +55,7 @@
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Role</th>
+                            <th>Google</th>
                             <th style="width: 140px;">Actions</th>
                         </tr>
                     </thead>
@@ -70,6 +71,7 @@
                                     UserRole.Assistant => "badge-assistant",
                                     _ => "badge-ok"
                                 };
+                                var isLinked = !string.IsNullOrEmpty(user.GoogleId);
 
                                 <tr>
                                     <td>@user.FirstName @user.LastName</td>
@@ -77,6 +79,16 @@
                                     <td>@user.Phone</td>
                                     <td>
                                         <span class="badge @roleClass">@user.Role</span>
+                                    </td>
+                                    <td>
+                                        @if (isLinked)
+                                        {
+                                            <span class="badge badge-ok">Linked</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-pending">Pending</span>
+                                        }
                                     </td>
                                     <td>
                                         <button class="btn-ghost" onclick="editUser(@user.Id)">Edit</button>
@@ -91,7 +103,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="5">No users found for this clinic yet.</td>
+                                <td colspan="6">No users found for this clinic yet.</td>
                             </tr>
                         }
                     </tbody>
@@ -103,8 +115,8 @@
         <div class="users-card users-form-card">
             <div class="users-card-header">
                 <div>
-                    <h2 class="users-card-title">User details</h2>
-                    <p class="users-card-caption">Add new staff member to your clinic.</p>
+                    <h2 class="users-card-title">Invite Staff Member</h2>
+                    <p class="users-card-caption">Enter their details — they will sign in with their Google account.</p>
                 </div>
             </div>
 
@@ -150,7 +162,7 @@
 
                 <div class="users-form-actions">
                     <button type="submit" class="btn-primary">
-                        Save
+                        Send Invite
                     </button>
                     <button type="reset" class="btn-ghost">
                         Reset
