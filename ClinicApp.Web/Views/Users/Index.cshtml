@@ -115,8 +115,8 @@
         <div class="users-card users-form-card">
             <div class="users-card-header">
                 <div>
-                    <h2 class="users-card-title">Invite Staff Member</h2>
-                    <p class="users-card-caption">Enter their details — they will sign in with their Google account.</p>
+                    <h2 class="users-card-title">Add Staff Member</h2>
+                    <p class="users-card-caption">Set a password for local login, or leave it blank for Google-only access.</p>
                 </div>
             </div>
 
@@ -160,9 +160,15 @@
                     <span class="users-error" asp-validation-for="NewUser.Role"></span>
                 </div>
 
+                <div class="users-field">
+                    <label class="users-label" asp-for="NewUser.Password">Password <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                    <input class="users-input" asp-for="NewUser.Password" type="password" placeholder="Leave blank for Google-only login" autocomplete="new-password" />
+                    <span class="users-error" asp-validation-for="NewUser.Password"></span>
+                </div>
+
                 <div class="users-form-actions">
                     <button type="submit" class="btn-primary">
-                        Send Invite
+                        Save
                     </button>
                     <button type="reset" class="btn-ghost">
                         Reset

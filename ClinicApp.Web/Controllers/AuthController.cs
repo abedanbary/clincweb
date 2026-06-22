@@ -4,6 +4,7 @@ using ClinicApp.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,13 +13,15 @@ namespace ClinicApp.Web.Controllers
     public class AuthController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IPasswordHasher<AppUser> _passwordHasher;
 
-        public AuthController(ApplicationDbContext context)
+        public AuthController(ApplicationDbContext context, IPasswordHasher<AppUser> passwordHasher)
         {
             _context = context;
+            _passwordHasher = passwordHasher;
         }
 
-        // GET /Auth/Login — show Google sign-in page
+        // GET /Auth/Login
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Login()
@@ -27,6 +30,38 @@ namespace ClinicApp.Web.Controllers
                 return RedirectByRole();
 
             return View();
+        }
+
+        // POST /Auth/Login — local email/password login
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(string email, string password)
+        {
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            {
+                TempData["Error"] = "Please enter your email and password.";
+                return View();
+            }
+
+            var user = await _context.AppUsers
+                .FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user == null || string.IsNullOrEmpty(user.PasswordHash))
+            {
+                TempData["Error"] = "Invalid email or password.";
+                return View();
+            }
+
+            var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+            if (result == PasswordVerificationResult.Failed)
+            {
+                TempData["Error"] = "Invalid email or password.";
+                return View();
+            }
+
+            await SignInUserAsync(user);
+            return RedirectByRole(user.Role);
         }
 
         // GET /Auth/ExternalLogin?provider=Google — kick off Google OAuth challenge

@@ -26,5 +26,9 @@ namespace ClinicApp.Web.ViewModels
         [Required(ErrorMessage = "Role is required")]
         [Range(1, 3, ErrorMessage = "Please select a valid role")]
         public UserRole Role { get; set; }
+
+        // Optional — leave blank to create a Google-only (invite) account
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters")]
+        public string? Password { get; set; }
     }
 }

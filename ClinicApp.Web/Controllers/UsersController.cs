@@ -1,6 +1,7 @@
 using ClinicApp.Web.Data;
 using ClinicApp.Web.Models;
 using ClinicApp.Web.ViewModels;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
@@ -11,10 +12,12 @@ namespace ClinicApp.Web.Controllers
     public class UsersController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IPasswordHasher<AppUser> _passwordHasher;
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(ApplicationDbContext context, IPasswordHasher<AppUser> passwordHasher)
         {
             _context = context;
+            _passwordHasher = passwordHasher;
         }
 
         private int GetCurrentClinicId()
@@ -62,7 +65,6 @@ namespace ClinicApp.Web.Controllers
                 return View("Index", vm);
             }
 
-            // Invite model: no password — user authenticates via Google OAuth
             var newUser = new AppUser
             {
                 FirstName = vm.NewUser.FirstName,
@@ -71,7 +73,9 @@ namespace ClinicApp.Web.Controllers
                 Phone = vm.NewUser.Phone,
                 Role = vm.NewUser.Role,
                 ClinicId = clinicId,
-                PasswordHash = null,
+                PasswordHash = string.IsNullOrWhiteSpace(vm.NewUser.Password)
+                    ? null
+                    : _passwordHasher.HashPassword(new AppUser(), vm.NewUser.Password),
                 GoogleId = null
             };
 
