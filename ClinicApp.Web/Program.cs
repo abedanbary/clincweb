@@ -121,14 +121,39 @@ catch (Exception ex)
 // hash password
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 
-// cookie auth
+// Authentication: primary cookie + temporary external cookie + Google OAuth
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
-        options.LoginPath = "/Auth/Login";
-        options.LogoutPath = "/Auth/Logout";
+        options.LoginPath        = "/Auth/Login";
+        options.LogoutPath       = "/Auth/Logout";
         options.AccessDeniedPath = "/Auth/AccessDenied";
+        options.ExpireTimeSpan   = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+    })
+    .AddCookie("ExternalCookie", options =>
+    {
+        // Short-lived cookie used to hold Google's response until our callback processes it
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+    })
+    .AddGoogle(options =>
+    {
+        options.SignInScheme  = "ExternalCookie";
+        options.ClientId     = builder.Configuration["Authentication:Google:ClientId"]
+                               ?? throw new InvalidOperationException("Authentication:Google:ClientId is not configured.");
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
+                               ?? throw new InvalidOperationException("Authentication:Google:ClientSecret is not configured.");
+        options.CallbackPath = "/signin-google";
+        // Request name and email scopes
+        options.Scope.Add("profile");
+        options.Scope.Add("email");
+        // Redirect to our callback after Google finishes
+        options.Events.OnTicketReceived = ctx =>
+        {
+            ctx.ReturnUri = "/Auth/ExternalCallback";
+            return Task.CompletedTask;
+        };
     });
 
 builder.Services.AddAuthorization();

@@ -50,8 +50,7 @@ namespace ClinicApp.Web.Services
             var windowStart = utcNow.AddHours(23);
             var windowEnd = utcNow.AddHours(25);
 
-            _logger.LogInformation(
-                "[Reminder] Check started | UTC: {Utc} | Israel: {Local} | Window: {Start} → {End}",
+            _logger.LogInformation("[Reminder] Check started | UTC: {Utc} | Israel: {Local} | Window: {Start} → {End}",
                 utcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                 localNow.ToString("yyyy-MM-dd HH:mm:ss"),
                 windowStart.ToString("yyyy-MM-dd HH:mm:ss"),

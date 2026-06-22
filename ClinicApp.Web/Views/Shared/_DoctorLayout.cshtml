@@ -102,9 +102,8 @@
                         <option value="ar">العربية</option>
                     </select>
                     <form asp-controller="Auth" asp-action="Logout" method="post" style="display: inline;">
-                        <button type="submit" class="topbar-button">
-                            Logout
-                        </button>
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="topbar-button">Logout</button>
                     </form>
                 </div>
             </header>

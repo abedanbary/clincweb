@@ -1,10 +1,9 @@
 using System.Security.Claims;
 using ClinicApp.Web.Data;
 using ClinicApp.Web.Models;
-using ClinicApp.Web.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,85 +12,141 @@ namespace ClinicApp.Web.Controllers
     public class AuthController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly IPasswordHasher<AppUser> _passwordHasher;
 
-        public AuthController(ApplicationDbContext context, IPasswordHasher<AppUser> passwordHasher)
+        public AuthController(ApplicationDbContext context)
         {
             _context = context;
-            _passwordHasher = passwordHasher;
         }
 
-        // 🟦 1) GET: /Auth/Login
+        // GET /Auth/Login — show Google sign-in page
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login()
         {
-            return View(new LoginViewModel());
+            if (User.Identity?.IsAuthenticated == true)
+                return RedirectByRole();
+
+            return View();
         }
 
-        // 🟩 2) POST: /Auth/Login
-       [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel model){
-            if (!ModelState.IsValid)
-              return View(model);
+        // GET /Auth/ExternalLogin?provider=Google — kick off Google OAuth challenge
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ExternalLogin(string provider = "Google")
+        {
+            var redirectUrl = Url.Action(nameof(ExternalCallback), "Auth");
+            var properties  = new AuthenticationProperties { RedirectUri = redirectUrl };
+            return Challenge(properties, provider);
+        }
 
-           var user = await _context.AppUsers
-           .FirstOrDefaultAsync(u => u.Email == model.Email);
-
-           if (user == null)
+        // GET /Auth/ExternalCallback — Google redirects here after sign-in
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> ExternalCallback()
+        {
+            // Read the temporary ExternalCookie set by the Google middleware
+            var result = await HttpContext.AuthenticateAsync("ExternalCookie");
+            if (!result.Succeeded)
             {
-             ModelState.AddModelError("", "Invalid email or password");
-              return View(model);
+                TempData["Error"] = "Google sign-in failed or was cancelled.";
+                return RedirectToAction(nameof(Login));
             }
 
-            // ✅ تحقق آمن: مقارنة كلمة المرور المدخلة مع الـ Hash المخزّن
-            var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, model.Password);
+            // Extract identity from Google
+            var principal  = result.Principal;
+            var googleId   = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            var email      = principal.FindFirstValue(ClaimTypes.Email);
+            var firstName  = principal.FindFirstValue(ClaimTypes.GivenName)
+                             ?? principal.FindFirstValue(ClaimTypes.Name)?.Split(' ').FirstOrDefault()
+                             ?? "User";
+            var lastName   = principal.FindFirstValue(ClaimTypes.Surname)
+                             ?? (principal.FindFirstValue(ClaimTypes.Name)?.Contains(' ') == true
+                                 ? principal.FindFirstValue(ClaimTypes.Name)!.Substring(principal.FindFirstValue(ClaimTypes.Name)!.IndexOf(' ') + 1)
+                                 : "");
 
-              if (result == PasswordVerificationResult.Failed)
-               {
-                ModelState.AddModelError("", "Invalid email or password");
-                return View(model);
-               }
+            // Discard the temporary cookie — we no longer need it
+            await HttpContext.SignOutAsync("ExternalCookie");
 
-            // 🔐 لو الوصول هنا → كلمة المرور صحيحة
-               var claims = new List<Claim>
-               {
-                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),  // ✅ هذا السطر جديد
-                  new Claim("UserId", user.Id.ToString()),   
-                  new Claim(ClaimTypes.Name, user.FirstName + " " + user.LastName),
-                  new Claim(ClaimTypes.Email, user.Email),
-                  new Claim(ClaimTypes.Role, user.Role.ToString()),
-                  new Claim("ClinicId", user.ClinicId.ToString())
-               };
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(googleId))
+            {
+                TempData["Error"] = "Could not retrieve your email from Google. Please try again.";
+                return RedirectToAction(nameof(Login));
+            }
 
-               var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-               var principal = new ClaimsPrincipal(identity);
+            // Find existing user: first by GoogleId, then fall back to email match (for existing accounts)
+            var user = await _context.AppUsers
+                .FirstOrDefaultAsync(u => u.GoogleId == googleId)
+                ?? await _context.AppUsers
+                .FirstOrDefaultAsync(u => u.Email == email);
 
-               await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+            if (user == null)
+            {
+                // Unknown Google account — show pending approval page
+                ViewBag.Email     = email;
+                ViewBag.FirstName = firstName;
+                ViewBag.LastName  = lastName;
+                return View("PendingApproval");
+            }
 
-             // 🔁 توجيه حسب الدور
-               if (user.Role == UserRole.Manager)
-                 return RedirectToAction("Index", "Manager");
+            // Link the GoogleId if this is the first Google sign-in for a legacy account
+            if (user.GoogleId == null)
+            {
+                user.GoogleId = googleId;
+                await _context.SaveChangesAsync();
+            }
 
-             if (user.Role == UserRole.Doctor)
-                 return RedirectToAction("Index", "Doctor");
-
-            if (user.Role == UserRole.Assistant)
-                 return RedirectToAction("Index", "Assistant");
-
-             return RedirectToAction("Index", "Home");
+            // Sign in with our app cookie
+            await SignInUserAsync(user);
+            return RedirectByRole(user.Role);
         }
 
-        // 🟥 تسجيل الخروج
+        // POST /Auth/Logout
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Login", "Auth");
+            return RedirectToAction(nameof(Login));
         }
 
-        // صفحة لو ما عنده صلاحية
-        public IActionResult AccessDenied()
+        // GET /Auth/AccessDenied
+        [AllowAnonymous]
+        public IActionResult AccessDenied() => View();
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+
+        private async Task SignInUserAsync(AppUser user)
         {
-            return View();
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim("UserId",        user.Id.ToString()),
+                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role.ToString()),
+                new Claim("ClinicId",   user.ClinicId.ToString()),
+                new Claim("FirstName",  user.FirstName),   // used by layouts
+                new Claim("LastName",   user.LastName)     // used by layouts
+            };
+
+            var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                principal,
+                new AuthenticationProperties { IsPersistent = true });
+        }
+
+        private IActionResult RedirectByRole(UserRole? role = null)
+        {
+            return role switch
+            {
+                UserRole.Manager   => RedirectToAction("Index", "Manager"),
+                UserRole.Doctor    => RedirectToAction("Index", "Doctor"),
+                UserRole.Assistant => RedirectToAction("Index", "Assistant"),
+                _                  => RedirectToAction("Index", "Home")
+            };
         }
     }
 }
