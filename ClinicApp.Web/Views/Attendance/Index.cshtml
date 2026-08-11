@@ -120,7 +120,7 @@
 
     @if (!Model.SelectedDoctorId.HasValue)
     {
-        <div class="att-empty" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;">
+        <div class="att-empty" style="background:#fff;border:1px solid var(--dt-border);border-radius:12px;">
             Select a doctor to view attendance.
         </div>
     }
@@ -239,7 +239,7 @@
         <div class="att-table-card">
             <div class="att-table-header">
                 <span class="att-table-title">Records — @Model.MonthName</span>
-                <span style="font-size:12px;color:#6b7280;">@Model.Records.Count record(s)</span>
+                <span style="font-size:12px;color:var(--dt-text-muted);">@Model.Records.Count record(s)</span>
             </div>
 
             @if (!Model.Records.Any())
@@ -285,7 +285,7 @@
                                     @if (dayTx > 0) { <span class="att-tx-count">@dayTx</span> }
                                     else { <text>—</text> }
                                 </td>
-                                <td style="color:#9ca3af;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                <td style="color:var(--dt-text-faint);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                                     @(r.Notes ?? "—")
                                 </td>
                                 <td style="text-align:right;white-space:nowrap;">

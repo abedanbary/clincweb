@@ -438,10 +438,10 @@
 
         function buildTreatmentRow(t) {
             const statusColors = {
-                'Planned':    { bg:'#fef9c3', color:'#a16207', border:'#fde047' },
-                'InProgress': { bg:'#dbeafe', color:'#1d4ed8', border:'#93c5fd' },
-                'Completed':  { bg:'#dcfce7', color:'#15803d', border:'#86efac' },
-                'Cancelled':  { bg:'#f3f4f6', color:'#9ca3af', border:'#e5e7eb' }
+                'Planned':    { bg:'var(--dt-warning-bg)', color:'var(--dt-warning)', border:'var(--dt-warning-line)' },
+                'InProgress': { bg:'var(--dt-info-bg)', color:'var(--dt-info)', border:'var(--dt-info-line)' },
+                'Completed':  { bg:'var(--dt-success-bg)', color:'var(--dt-success)', border:'var(--dt-success-line)' },
+                'Cancelled':  { bg:'var(--dt-surface-alt)', color:'var(--dt-text-faint)', border:'var(--dt-border)' }
             };
             const sc = statusColors[t.status] || statusColors['Planned'];
             const statusBadge = `<span style="padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600;background:${sc.bg};color:${sc.color};border:1px solid ${sc.border};">${t.status === 'InProgress' ? 'In Progress' : t.status}</span>`;
@@ -463,7 +463,7 @@
                 : '';
 
             const completedLine = t.completedAt
-                ? `<span style="color:#16a34a;font-size:11px;">Completed: ${t.completedAt}</span>`
+                ? `<span style="color:var(--dt-success);font-size:11px;">Completed: ${t.completedAt}</span>`
                 : '';
 
             return `
@@ -474,11 +474,11 @@
                         <div class="tp-treatment-meta">
                             <span class="tp-type-badge">${t.type}</span>
                             ${statusBadge}
-                            <span style="color:#9ca3af;font-size:11px;">${t.doctorName}</span>
+                            <span style="color:var(--dt-text-faint);font-size:11px;">${t.doctorName}</span>
                         </div>
                         <div class="tp-treatment-cost">
                             $${t.estimatedCost.toFixed(0)} est.
-                            ${t.cost > 0 ? `<span style="color:#059669;"> · $${t.cost.toFixed(0)} actual</span>` : ''}
+                            ${t.cost > 0 ? `<span style="color:var(--dt-success);"> · $${t.cost.toFixed(0)} actual</span>` : ''}
                             ${completedLine}
                             ${planLink}
                         </div>
@@ -637,14 +637,14 @@
                 const result = await response.json();
                 status.style.display = 'block';
                 if (result.success) {
-                    status.style.background = '#d1fae5'; status.style.color = '#065f46';
+                    status.style.background = 'var(--dt-success-bg)'; status.style.color = 'var(--dt-success)';
                 } else {
-                    status.style.background = '#fee2e2'; status.style.color = '#991b1b';
+                    status.style.background = 'var(--dt-danger-bg)'; status.style.color = 'var(--dt-danger)';
                 }
                 status.textContent = result.message;
             } catch (err) {
                 status.style.display = 'block';
-                status.style.background = '#fee2e2'; status.style.color = '#991b1b';
+                status.style.background = 'var(--dt-danger-bg)'; status.style.color = 'var(--dt-danger)';
                 status.textContent = 'Error: ' + err.message;
             } finally { btn.disabled = false; }
         }

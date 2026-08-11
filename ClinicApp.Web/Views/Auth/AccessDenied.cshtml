@@ -1,4 +1,5 @@
 @{
+    ViewData["Title"] = "Access Denied";
     Layout = null;
 }
 <!DOCTYPE html>
@@ -6,87 +7,107 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Access Denied</title>
+    <title>Access denied — DentalTrack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/dentaltrack.css" asp-append-version="true" />
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { margin: 0; }
 
-        body {
+        .dt-wrap {
             min-height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(4px);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-
-        .dialog {
+            flex-direction: column;
+            padding: 40px 56px;
             background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-            padding: 40px 36px 32px;
-            width: 100%;
-            max-width: 380px;
-            text-align: center;
-            animation: pop .2s ease;
         }
 
-        @@keyframes pop {
-            from { transform: scale(.9); opacity: 0; }
-            to   { transform: scale(1);  opacity: 1; }
-        }
-
-        .icon {
-            width: 60px;
-            height: 60px;
-            background: #fee2e2;
-            border-radius: 50%;
+        .dt-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 28px;
+            justify-content: space-between;
         }
 
-        h2 {
-            font-size: 20px;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 8px;
+        .dt-logo {
+            font: 800 15px/1 var(--dt-font);
+            letter-spacing: -.02em;
+            color: var(--dt-ink);
         }
 
-        p {
-            font-size: 14px;
-            color: #6b7280;
-            line-height: 1.6;
-            margin-bottom: 28px;
+        .dt-logo span { color: var(--dt-green); }
+
+        .dt-note {
+            font: 600 12px var(--dt-font);
+            color: var(--dt-text-soft);
         }
 
-        .btn {
-            display: inline-block;
-            padding: 10px 28px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            border: none;
+        .dt-main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            max-width: 1180px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 56px 0;
         }
 
-        .btn-back {
-            background: #f3f4f6;
-            color: #374151;
+        .dt-h1 {
+            font: 800 44px/1.06 var(--dt-font);
+            letter-spacing: -.04em;
+            color: var(--dt-ink);
+            margin: 26px 0 0;
+            text-wrap: balance;
         }
 
-        .btn-back:hover { background: #e5e7eb; }
+        .dt-lede {
+            font: 500 14px/1.7 var(--dt-font);
+            color: var(--dt-text-muted);
+            margin: 18px 0 0;
+            max-width: 40ch;
+        }
+
+        .dt-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .dt-footer {
+            border-top: 1px solid var(--dt-border);
+            padding-top: 18px;
+            font: 500 11.5px var(--dt-font);
+            color: var(--dt-text-faint);
+        }
+
+        @@media (max-width: 860px) {
+            .dt-wrap { padding: 28px 24px; }
+            .dt-main { padding: 48px 0; }
+            .dt-h1 { font-size: 32px; }
+        }
     </style>
 </head>
 <body>
-    <div class="dialog">
-        <div class="icon">🔒</div>
-        <h2>Access Denied</h2>
-        <p>You don't have permission to view this page.</p>
-        <a class="btn btn-back" href="javascript:history.back()">Go Back</a>
+    <div class="dt-wrap">
+        <header class="dt-header">
+            <div class="dt-logo">Dental<span>Track</span></div>
+            <div class="dt-note">Clinic portal</div>
+        </header>
+
+        <main class="dt-main">
+            <div>
+                <div class="dt-rule"></div>
+                <h1 class="dt-h1">You don't have access.</h1>
+                <p class="dt-lede">This page is restricted to staff with a different role. If you believe this is a mistake, contact your clinic administrator.</p>
+
+                <div class="dt-actions">
+                    <a class="dt-btn-ghost" href="javascript:history.back()">Go back</a>
+                    <a class="dt-btn-primary" href="/Auth/Login">Sign in as someone else</a>
+                </div>
+            </div>
+        </main>
+
+        <footer class="dt-footer">DentalTrack · Privacy · Support</footer>
     </div>
 </body>
 </html>

@@ -10,122 +10,146 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Access Pending — Clinic Management</title>
+    <title>Access pending — DentalTrack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/dentaltrack.css" asp-append-version="true" />
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { margin: 0; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .dt-wrap {
             min-height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            flex-direction: column;
+            padding: 40px 56px;
+            background: #fff;
         }
 
-        .card {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-            padding: 56px 48px;
-            max-width: 480px;
+        .dt-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dt-logo {
+            font: 800 15px/1 var(--dt-font);
+            letter-spacing: -.02em;
+            color: var(--dt-ink);
+        }
+
+        .dt-logo span { color: var(--dt-green); }
+
+        .dt-note {
+            font: 600 12px var(--dt-font);
+            color: var(--dt-text-soft);
+        }
+
+        .dt-main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+            max-width: 1180px;
             width: 100%;
-            text-align: center;
-            animation: pop 0.4s ease-out;
+            margin: 0 auto;
+            padding: 56px 0;
         }
 
-        @@keyframes pop {
-            from { transform: scale(0.95); opacity: 0; }
-            to   { transform: scale(1);    opacity: 1; }
+        .dt-h1 {
+            font: 800 44px/1.06 var(--dt-font);
+            letter-spacing: -.04em;
+            color: var(--dt-ink);
+            margin: 26px 0 0;
+            text-wrap: balance;
         }
 
-        .icon { font-size: 64px; margin-bottom: 24px; }
-
-        h1 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 12px;
+        .dt-lede {
+            font: 500 14px/1.7 var(--dt-font);
+            color: var(--dt-text-muted);
+            margin: 18px 0 0;
+            max-width: 34ch;
         }
 
-        .subtitle {
-            font-size: 15px;
-            color: #64748b;
-            line-height: 1.6;
-            margin-bottom: 28px;
+        .dt-panel { max-width: 420px; width: 100%; }
+
+        .dt-email {
+            border-bottom: 1.5px solid var(--dt-ink);
+            padding-bottom: 10px;
+            font: 700 15px var(--dt-font);
+            color: var(--dt-ink);
+            word-break: break-all;
         }
 
-        .email-pill {
-            display: inline-block;
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            color: #166534;
-            padding: 6px 14px;
-            border-radius: 99px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 28px;
+        .dt-steps {
+            margin-top: 28px;
+            padding-left: 3px;
+            border-left: 2px solid var(--dt-border);
         }
 
-        .info-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 16px 20px;
-            text-align: left;
-            margin-bottom: 28px;
-            font-size: 13px;
-            color: #475569;
-            line-height: 1.7;
+        .dt-step {
+            padding: 0 0 18px 16px;
+            font: 500 13px/1.7 var(--dt-font);
+            color: var(--dt-text-muted);
         }
 
-        .info-box strong { color: #1e293b; }
+        .dt-step:last-child { padding-bottom: 0; }
+        .dt-step strong { color: var(--dt-ink); font-weight: 700; }
 
-        .btn-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            color: #475569;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background 0.15s;
+        .dt-footer {
+            border-top: 1px solid var(--dt-border);
+            padding-top: 18px;
+            font: 500 11.5px var(--dt-font);
+            color: var(--dt-text-faint);
         }
 
-        .btn-back:hover { background: #e2e8f0; }
+        @@media (max-width: 860px) {
+            .dt-wrap { padding: 28px 24px; }
+            .dt-main { grid-template-columns: 1fr; gap: 44px; padding: 48px 0; }
+            .dt-h1 { font-size: 32px; }
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div class="icon">🔒</div>
-        <h1>Access Pending</h1>
+    <div class="dt-wrap">
+        <header class="dt-header">
+            <div class="dt-logo">Dental<span>Track</span></div>
+            <div class="dt-note">Clinic portal</div>
+        </header>
 
-        @if (!string.IsNullOrEmpty(firstName))
-        {
-            <p class="subtitle">Hi <strong>@firstName</strong>, your Google account was verified but you don't have access to this system yet.</p>
-        }
-        else
-        {
-            <p class="subtitle">Your Google account was verified but you don't have access to this system yet.</p>
-        }
+        <main class="dt-main">
+            <div>
+                <div class="dt-rule"></div>
+                <h1 class="dt-h1">Your access is pending.</h1>
+                @if (!string.IsNullOrEmpty(firstName))
+                {
+                    <p class="dt-lede">Hi @firstName — we verified your Google account, but it isn't linked to a clinic yet.</p>
+                }
+                else
+                {
+                    <p class="dt-lede">We verified your Google account, but it isn't linked to a clinic yet.</p>
+                }
+            </div>
 
-        @if (!string.IsNullOrEmpty(email))
-        {
-            <div class="email-pill">@email</div>
-        }
+            <div class="dt-panel">
+                @if (!string.IsNullOrEmpty(email))
+                {
+                    <span class="dt-label">Verified account</span>
+                    <div class="dt-email">@email</div>
+                }
 
-        <div class="info-box">
-            <strong>What to do next:</strong><br />
-            Contact your clinic administrator and provide them with your Google email address above.<br /><br />
-            The administrator will add your account with the correct role and clinic assignment.
-        </div>
+                <div class="dt-steps">
+                    <div class="dt-step"><strong>Send this address</strong> to your clinic administrator.</div>
+                    <div class="dt-step"><strong>They add your account</strong> with the right role and clinic.</div>
+                    <div class="dt-step"><strong>Sign in again</strong> once they confirm.</div>
+                </div>
 
-        <a href="/Auth/Login" class="btn-back">← Back to Sign In</a>
+                <a class="dt-btn-ghost" href="/Auth/Login" style="margin-top:30px">Back to sign in</a>
+            </div>
+        </main>
+
+        <footer class="dt-footer">DentalTrack · Privacy · Support</footer>
     </div>
 </body>
 </html>

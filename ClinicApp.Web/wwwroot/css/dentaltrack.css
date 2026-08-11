@@ -1,0 +1,325 @@
+/* ============================================================================
+   DentalTrack — shared design foundation
+   ----------------------------------------------------------------------------
+   Single source of truth for the visual language established by the sign-in
+   page (Views/Auth/Login.cshtml): Manrope type, a green/ink palette, hairline
+   borders, square corners, no shadows or gradients.
+
+   Load this AFTER every page stylesheet. It deliberately redefines the older
+   --color-* and --c-* token names at the bottom of this file so existing rules
+   pick up the new palette without being rewritten.
+   ========================================================================== */
+
+/* ── Tokens ─────────────────────────────────────────────────── */
+:root {
+    /* Brand */
+    --dt-green:        #174d39;
+    --dt-green-dark:   #0f3628;
+    --dt-green-tint:   #f0f4f2;
+
+    /* Ink & text */
+    --dt-ink:          #1a1a1a;
+    --dt-text:         #1a1a1a;
+    --dt-text-muted:   #7c8581;
+    --dt-text-soft:    #8a938f;
+    --dt-text-faint:   #a2aaa6;
+
+    /* Surfaces */
+    --dt-surface:      #ffffff;
+    --dt-surface-alt:  #f7f7f5;
+    --dt-canvas:       #ffffff;
+
+    /* Lines */
+    --dt-border:       #eceeed;
+    --dt-border-strong:#1a1a1a;
+
+    /* Status — flattened to match the restrained palette.
+       Each has a solid, a tint, a hairline, and a hover one step deeper, so
+       hover states stay visible instead of collapsing into the base colour. */
+    --dt-danger:       #b4321f;
+    --dt-danger-bg:    #fdf3f1;
+    --dt-danger-line:  #f0d8d3;
+    --dt-danger-hover: #8f2718;
+
+    --dt-success:      #174d39;
+    --dt-success-bg:   #f0f4f2;
+    --dt-success-line: #d5e0da;
+    --dt-success-hover:#0f3628;
+
+    --dt-warning:      #8a6d1f;
+    --dt-warning-bg:   #faf6ec;
+    --dt-warning-line: #e8dfc4;
+    --dt-warning-hover:#6e5618;
+
+    --dt-info:         #2c4a63;
+    --dt-info-bg:      #f0f3f6;
+    --dt-info-line:    #d6dee5;
+    --dt-info-hover:   #223a4e;
+
+    /* Type */
+    --dt-font:         Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    /* Geometry — "less is more": square corners, no elevation */
+    --dt-radius:       0;
+    --dt-shadow:       none;
+}
+
+/* ── Base ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    font-family: var(--dt-font);
+    color: var(--dt-text);
+    background: var(--dt-canvas);
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--dt-green); }
+a:hover { color: var(--dt-green-dark); }
+
+/* ── Type scale ─────────────────────────────────────────────── */
+.dt-title {
+    font: 800 26px/1.15 var(--dt-font);
+    letter-spacing: -.03em;
+    color: var(--dt-ink);
+    margin: 0;
+}
+
+.dt-subtitle {
+    font: 500 13px/1.6 var(--dt-font);
+    color: var(--dt-text-muted);
+    margin: 6px 0 0;
+}
+
+.dt-eyebrow {
+    font: 600 11px var(--dt-font);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--dt-text-soft);
+}
+
+/* The 34x3 accent rule from the sign-in page — the brand's signature mark. */
+.dt-rule {
+    width: 34px;
+    height: 3px;
+    background: var(--dt-green);
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.dt-btn,
+.dt-btn-primary,
+.dt-btn-ghost {
+    height: 40px;
+    padding: 0 18px;
+    border-radius: var(--dt-radius);
+    font: 600 13.5px var(--dt-font);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+}
+
+.dt-btn-primary {
+    border: 0;
+    background: var(--dt-green);
+    color: #fff;
+    font-weight: 700;
+}
+
+.dt-btn-primary:hover { background: var(--dt-green-dark); color: #fff; }
+
+.dt-btn-ghost {
+    border: 1.5px solid var(--dt-ink);
+    background: #fff;
+    color: var(--dt-ink);
+}
+
+.dt-btn-ghost:hover { background: var(--dt-ink); color: #fff; }
+
+.dt-btn-quiet {
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--dt-border);
+    border-radius: var(--dt-radius);
+    background: transparent;
+    color: var(--dt-text-muted);
+    font: 600 13px var(--dt-font);
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+}
+
+.dt-btn-quiet:hover { border-color: var(--dt-ink); color: var(--dt-ink); }
+
+/* ── Fields — the sign-in page's underline treatment ────────── */
+.dt-field {
+    width: 100%;
+    height: 48px;
+    border: 0;
+    border-bottom: 1.5px solid var(--dt-ink);
+    border-radius: 0;
+    background: none;
+    font: 500 14px var(--dt-font);
+    color: var(--dt-ink);
+    padding: 0;
+    transition: border-color .15s;
+}
+
+.dt-field:focus { outline: none; border-bottom-color: var(--dt-green); }
+.dt-field::placeholder { color: var(--dt-text-faint); }
+
+.dt-label {
+    display: block;
+    font: 600 11px var(--dt-font);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--dt-text-soft);
+    margin-bottom: 4px;
+}
+
+/* Visually hidden, still read by screen readers. */
+.dt-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+/* ── Surfaces ───────────────────────────────────────────────── */
+.dt-card {
+    background: var(--dt-surface);
+    border: 1px solid var(--dt-border);
+    border-radius: var(--dt-radius);
+    box-shadow: none;
+    padding: 20px;
+}
+
+.dt-divider {
+    border: 0;
+    border-top: 1px solid var(--dt-border);
+    margin: 0;
+}
+
+/* ── Tables ─────────────────────────────────────────────────── */
+.dt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font: 500 13px var(--dt-font);
+}
+
+.dt-table th {
+    text-align: left;
+    font: 600 11px var(--dt-font);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--dt-text-soft);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--dt-border);
+    white-space: nowrap;
+}
+
+.dt-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--dt-border);
+    color: var(--dt-text);
+}
+
+.dt-table tbody tr:hover { background: var(--dt-surface-alt); }
+
+/* ── Badges ─────────────────────────────────────────────────── */
+.dt-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: var(--dt-radius);
+    font: 600 11px var(--dt-font);
+    letter-spacing: .02em;
+    border: 1px solid transparent;
+}
+
+.dt-badge-success { background: var(--dt-success-bg); color: var(--dt-success); border-color: var(--dt-success-line); }
+.dt-badge-danger  { background: var(--dt-danger-bg);  color: var(--dt-danger);  border-color: var(--dt-danger-line); }
+.dt-badge-warning { background: var(--dt-warning-bg); color: var(--dt-warning); border-color: var(--dt-warning-line); }
+.dt-badge-info    { background: var(--dt-info-bg);    color: var(--dt-info);    border-color: var(--dt-info-line); }
+.dt-badge-neutral { background: var(--dt-surface-alt); color: var(--dt-text-muted); border-color: var(--dt-border); }
+
+/* ── Alerts — matches the sign-in error banner ──────────────── */
+.dt-alert {
+    border-left: 3px solid var(--dt-danger);
+    background: var(--dt-danger-bg);
+    color: var(--dt-danger);
+    padding: 12px 14px;
+    margin: 0 0 20px;
+    font: 600 12.5px/1.5 var(--dt-font);
+    border-radius: 0;
+}
+
+.dt-alert-success { border-left-color: var(--dt-success); background: var(--dt-success-bg); color: var(--dt-success); }
+.dt-alert-warning { border-left-color: var(--dt-warning); background: var(--dt-warning-bg); color: var(--dt-warning); }
+.dt-alert-info    { border-left-color: var(--dt-info);    background: var(--dt-info-bg);    color: var(--dt-info); }
+
+/* ── Page header ────────────────────────────────────────────── */
+.dt-page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--dt-border);
+    margin-bottom: 22px;
+}
+
+/* ── Empty state ────────────────────────────────────────────── */
+.dt-empty {
+    padding: 48px 24px;
+    text-align: center;
+    font: 500 13px/1.7 var(--dt-font);
+    color: var(--dt-text-faint);
+}
+
+/* ============================================================================
+   Legacy token remap
+   ----------------------------------------------------------------------------
+   The existing stylesheets funnel most colors through these names. Repointing
+   them here re-skins those rules without touching them, which is why this file
+   must load last.
+   ========================================================================== */
+:root {
+    /* manager.css */
+    --color-bg:          var(--dt-canvas);
+    --color-bg-soft:     var(--dt-surface);
+    --color-sky:         var(--dt-green);
+    --color-sky-soft:    var(--dt-green);
+    --color-text:        var(--dt-text);
+    --color-text-muted:  var(--dt-text-muted);
+    --color-border:      var(--dt-border);
+    --color-surface:     var(--dt-surface);
+    --color-surface-alt: var(--dt-surface-alt);
+
+    /* Calendar.css */
+    --c-accent:    var(--dt-green);
+    --c-accent-dk: var(--dt-green-dark);
+    --c-bg:        var(--dt-canvas);
+    --c-surface:   var(--dt-surface);
+    --c-text:      var(--dt-text);
+    --c-text-mid:  var(--dt-text-muted);
+    --c-text-soft: var(--dt-text-faint);
+    --c-border:    var(--dt-border);
+    --c-border-2:  var(--dt-border);
+    --c-border-3:  var(--dt-border);
+    --c-shadow:    none;
+}
+
+/* Square off and de-elevate the existing components wholesale. */
+.manager-sidebar, .manager-topbar, .manager-content,
+.brand-logo, .user-avatar, .sidebar-link, .topbar-button,
+.dt-card, .card, .panel, .modal-content {
+    box-shadow: none !important;
+}
+
+.brand-logo, .user-avatar, .sidebar-link, .topbar-button, .lang-select {
+    border-radius: 0 !important;
+}

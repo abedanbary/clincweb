@@ -427,7 +427,7 @@
 
 <style>
 /* ── Plan status panel ─────────────────────────────────────────────────── */
-.plan-status-panel { background:#f8fafc; border:1px solid var(--color-border); border-radius:10px; padding:12px 16px; margin-top:4px; }
+.plan-status-panel { background:var(--dt-surface-alt); border:1px solid var(--color-border); border-radius:10px; padding:12px 16px; margin-top:4px; }
 .plan-status-form  { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .plan-status-label { font-size:13px; font-weight:600; color:var(--color-text-muted); }
 .form-input-sm     { padding:6px 10px; font-size:13px; border-radius:7px; border:1px solid var(--color-border); }
@@ -444,7 +444,7 @@
 .plan-timeline-sep  { color: var(--color-text-muted); font-size:18px; margin:0 4px; }
 .ptl-label  { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; color:var(--color-text-muted); }
 .ptl-value  { font-size:14px; font-weight:600; color:var(--color-text); }
-.ptl-done .ptl-value { color: #16a34a; }
+.ptl-done .ptl-value { color: var(--dt-success); }
 
 /* ── Plan notes card ───────────────────────────────────────────────────── */
 .plan-notes-label {
@@ -453,39 +453,39 @@
 }
 
 /* ── Progress stats ────────────────────────────────────────────────────── */
-.stat-over { color:#dc2626; font-weight:700; }
-.stat-ok   { color:#16a34a; font-weight:700; }
+.stat-over { color:var(--dt-danger); font-weight:700; }
+.stat-ok   { color:var(--dt-success); font-weight:700; }
 
 /* ── Treatment card header badges ──────────────────────────────────────── */
 .treatment-header-badges { display:flex; gap:6px; align-items:center; flex-shrink:0; }
 .tst-badge {
     padding:2px 9px; border-radius:999px; font-size:11px; font-weight:600;
 }
-.tst-planned    { background:#fef9c3; color:#a16207; border:1px solid #fde047; }
-.tst-inprogress { background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; }
-.tst-completed  { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
-.tst-cancelled  { background:#f3f4f6; color:#6b7280; border:1px solid #d1d5db; }
+.tst-planned    { background:var(--dt-warning-bg); color:var(--dt-warning); border:1px solid var(--dt-warning-line); }
+.tst-inprogress { background:var(--dt-info-bg); color:var(--dt-info); border:1px solid var(--dt-info-line); }
+.tst-completed  { background:var(--dt-success-bg); color:var(--dt-success); border:1px solid var(--dt-success-line); }
+.tst-cancelled  { background:var(--dt-surface-alt); color:var(--dt-text-muted); border:1px solid var(--dt-border); }
 
 /* ── Treatment detail grid ─────────────────────────────────────────────── */
 .treatment-detail-grid {
     display: flex; flex-wrap: wrap; gap: 6px 20px;
-    padding: 10px 0; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6;
+    padding: 10px 0; border-top: 1px solid var(--dt-surface-alt); border-bottom: 1px solid var(--dt-surface-alt);
     margin: 10px 0;
 }
 .tdg-item  { display:flex; flex-direction:column; gap:2px; }
 .tdg-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--color-text-muted); }
 .tdg-value { font-size:13px; font-weight:600; color:var(--color-text); }
-.tdg-done  { color:#16a34a; }
-.tdg-over  { color:#dc2626; }
+.tdg-done  { color:var(--dt-success); }
+.tdg-over  { color:var(--dt-danger); }
 
 /* ── Treatment notes block ─────────────────────────────────────────────── */
 .treatment-notes-block {
-    background: #f8fafc; border-left: 3px solid #93c5fd;
+    background: var(--dt-surface-alt); border-left: 3px solid var(--dt-info-line);
     border-radius: 0 6px 6px 0; padding: 8px 12px; margin: 0 0 10px;
 }
 .treatment-notes-label {
     font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
-    color:#2563eb; margin-bottom:4px; display:block;
+    color:var(--dt-info); margin-bottom:4px; display:block;
 }
 .treatment-notes-text { font-size:13px; color:var(--color-text); margin:0; line-height:1.55; }
 
@@ -496,7 +496,7 @@
     border:2px solid var(--color-border); cursor:pointer;
     transition:transform .2s, border-color .2s;
 }
-.photo-thumb:hover { transform:scale(1.05); border-color:#3b82f6; }
+.photo-thumb:hover { transform:scale(1.05); border-color:var(--dt-info); }
 
 /* ── Form rows ─────────────────────────────────────────────────────────── */
 .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }

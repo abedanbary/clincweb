@@ -11,8 +11,8 @@
 
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <div>
-            <h1 style="font-size: 22px; font-weight: 700; color: #1e293b; margin: 0;">Doctor Working Hours</h1>
-            <p style="color: #64748b; font-size: 14px; margin: 4px 0 0;">Set which days and hours each doctor works. Only available doctors will appear when booking appointments.</p>
+            <h1 style="font-size: 22px; font-weight: 700; color: var(--dt-ink); margin: 0;">Doctor Working Hours</h1>
+            <p style="color: var(--dt-text-muted); font-size: 14px; margin: 4px 0 0;">Set which days and hours each doctor works. Only available doctors will appear when booking appointments.</p>
         </div>
     </div>
 
@@ -23,7 +23,7 @@
 
     @if (!Model.Doctors.Any())
     {
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 48px; text-align: center; color: #64748b;">
+        <div style="background: var(--dt-surface-alt); border: 1px solid var(--dt-border); border-radius: 12px; padding: 48px; text-align: center; color: var(--dt-text-muted);">
             No doctors found in this clinic. Add doctors first from the Users section.
         </div>
     }
@@ -35,18 +35,18 @@
             @for (int di = 0; di < Model.Doctors.Count; di++)
             {
                 var doctor = Model.Doctors[di];
-                <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 24px; overflow: hidden;">
-                    <div style="background: #f1f5f9; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1e293b;">@doctor.DoctorName</h3>
+                <div style="background: #fff; border: 1px solid var(--dt-border); border-radius: 12px; margin-bottom: 24px; overflow: hidden;">
+                    <div style="background: var(--dt-surface-alt); padding: 16px 20px; border-bottom: 1px solid var(--dt-border);">
+                        <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--dt-ink);">@doctor.DoctorName</h3>
                     </div>
                     <div style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                             <thead>
-                                <tr style="background: #f8fafc;">
-                                    <th style="padding: 10px 16px; text-align: left; color: #64748b; font-weight: 600; width: 130px;">Day</th>
-                                    <th style="padding: 10px 16px; text-align: center; color: #64748b; font-weight: 600; width: 100px;">Working?</th>
-                                    <th style="padding: 10px 16px; text-align: left; color: #64748b; font-weight: 600;">Start Time</th>
-                                    <th style="padding: 10px 16px; text-align: left; color: #64748b; font-weight: 600;">End Time</th>
+                                <tr style="background: var(--dt-surface-alt);">
+                                    <th style="padding: 10px 16px; text-align: left; color: var(--dt-text-muted); font-weight: 600; width: 130px;">Day</th>
+                                    <th style="padding: 10px 16px; text-align: center; color: var(--dt-text-muted); font-weight: 600; width: 100px;">Working?</th>
+                                    <th style="padding: 10px 16px; text-align: left; color: var(--dt-text-muted); font-weight: 600;">Start Time</th>
+                                    <th style="padding: 10px 16px; text-align: left; color: var(--dt-text-muted); font-weight: 600;">End Time</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -54,8 +54,8 @@
                                 {
                                     var day = doctor.Schedule[si];
                                     var prefix = $"schedules[{di * 7 + si}]";
-                                    <tr style="border-top: 1px solid #f1f5f9;" class="schedule-row @(day.IsWorkingDay ? "working" : "off")">
-                                        <td style="padding: 12px 16px; font-weight: 500; color: #374151;">
+                                    <tr style="border-top: 1px solid var(--dt-surface-alt);" class="schedule-row @(day.IsWorkingDay ? "working" : "off")">
+                                        <td style="padding: 12px 16px; font-weight: 500; color: var(--dt-text-muted);">
                                             @day.DayName
                                             <input type="hidden" name="@(prefix).DoctorId" value="@day.DoctorId" />
                                             <input type="hidden" name="@(prefix).DayOfWeek" value="@((int)day.DayOfWeek)" />
@@ -79,14 +79,14 @@
                                                    name="@(prefix).StartTime"
                                                    value="@day.StartTime"
                                                    class="time-input"
-                                                   style="border: 1px solid #d1d5db; border-radius: 6px; padding: 6px 10px; font-size: 14px; color: #374151; @(day.IsWorkingDay ? "" : "opacity:0.4")" />
+                                                   style="border: 1px solid var(--dt-border); border-radius: 6px; padding: 6px 10px; font-size: 14px; color: var(--dt-text-muted); @(day.IsWorkingDay ? "" : "opacity:0.4")" />
                                         </td>
                                         <td style="padding: 12px 16px;">
                                             <input type="time"
                                                    name="@(prefix).EndTime"
                                                    value="@day.EndTime"
                                                    class="time-input"
-                                                   style="border: 1px solid #d1d5db; border-radius: 6px; padding: 6px 10px; font-size: 14px; color: #374151; @(day.IsWorkingDay ? "" : "opacity:0.4")" />
+                                                   style="border: 1px solid var(--dt-border); border-radius: 6px; padding: 6px 10px; font-size: 14px; color: var(--dt-text-muted); @(day.IsWorkingDay ? "" : "opacity:0.4")" />
                                         </td>
                                     </tr>
                                 }

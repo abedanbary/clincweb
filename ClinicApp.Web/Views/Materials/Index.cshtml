@@ -188,15 +188,15 @@
             </div>
 
             <!-- Purchase Invoice toggle -->
-            <div style="border-top: 1px solid #e5e7eb; margin-top: .5rem; padding-top: .75rem;">
-                <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-size:.875rem; font-weight:500; color:#374151;">
-                    <input type="checkbox" asp-for="Invoice.CreateInvoice" id="addCreateInvoice" onchange="toggleAddInvoice(this)" style="width:16px;height:16px;accent-color:#10b981;" />
+            <div style="border-top: 1px solid var(--dt-border); margin-top: .5rem; padding-top: .75rem;">
+                <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-size:.875rem; font-weight:500; color:var(--dt-text-muted);">
+                    <input type="checkbox" asp-for="Invoice.CreateInvoice" id="addCreateInvoice" onchange="toggleAddInvoice(this)" style="width:16px;height:16px;accent-color:var(--dt-success);" />
                     Create a purchase invoice for this stock
                 </label>
             </div>
 
-            <div id="addInvoiceFields" style="display:none; margin-top:.75rem; padding:.9rem; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0;">
-                <div style="font-size:.78rem; font-weight:600; color:#059669; margin-bottom:.65rem; text-transform:uppercase; letter-spacing:.05em;">Purchase Invoice</div>
+            <div id="addInvoiceFields" style="display:none; margin-top:.75rem; padding:.9rem; background:var(--dt-success-bg); border-radius:8px; border:1px solid var(--dt-success-line);">
+                <div style="font-size:.78rem; font-weight:600; color:var(--dt-success); margin-bottom:.65rem; text-transform:uppercase; letter-spacing:.05em;">Purchase Invoice</div>
                 <div class="materials-field-row">
                     <div class="materials-field">
                         <label class="materials-label">Unit Price</label>
@@ -220,11 +220,11 @@
                     <input type="file" name="invoiceImage" class="materials-input"
                            accept=".jpg,.jpeg,.png,.pdf,.webp"
                            style="padding:.4rem .5rem;" />
-                    <small style="color:#9ca3af;font-size:.72rem;">Photo or scan of the paper invoice</small>
+                    <small style="color:var(--dt-text-faint);font-size:.72rem;">Photo or scan of the paper invoice</small>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem; color:#374151; padding:.4rem 0 0;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem; color:var(--dt-text-muted); padding:.4rem 0 0;">
                     <span>Total Amount</span>
-                    <strong id="addTotalDisplay" style="color:#059669; font-size:1rem;">—</strong>
+                    <strong id="addTotalDisplay" style="color:var(--dt-success); font-size:1rem;">—</strong>
                 </div>
             </div>
 
@@ -277,15 +277,15 @@
             </div>
 
             <!-- Purchase Invoice toggle -->
-            <div id="invoiceToggleWrapper" style="border-top: 1px solid #e5e7eb; margin-top: .5rem; padding-top: .75rem; display:none;">
-                <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-size:.875rem; font-weight:500; color:#374151;">
-                    <input type="checkbox" name="createInvoice" value="true" id="editCreateInvoice" onchange="toggleEditInvoice(this)" style="width:16px;height:16px;accent-color:#10b981;" />
+            <div id="invoiceToggleWrapper" style="border-top: 1px solid var(--dt-border); margin-top: .5rem; padding-top: .75rem; display:none;">
+                <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-size:.875rem; font-weight:500; color:var(--dt-text-muted);">
+                    <input type="checkbox" name="createInvoice" value="true" id="editCreateInvoice" onchange="toggleEditInvoice(this)" style="width:16px;height:16px;accent-color:var(--dt-success);" />
                     Create a purchase invoice for this stock
                 </label>
             </div>
 
-            <div id="editInvoiceFields" style="display:none; margin-top:.75rem; padding:.9rem; background:#f0fdf4; border-radius:8px; border:1px solid #bbf7d0;">
-                <div style="font-size:.78rem; font-weight:600; color:#059669; margin-bottom:.65rem; text-transform:uppercase; letter-spacing:.05em;">Purchase Invoice</div>
+            <div id="editInvoiceFields" style="display:none; margin-top:.75rem; padding:.9rem; background:var(--dt-success-bg); border-radius:8px; border:1px solid var(--dt-success-line);">
+                <div style="font-size:.78rem; font-weight:600; color:var(--dt-success); margin-bottom:.65rem; text-transform:uppercase; letter-spacing:.05em;">Purchase Invoice</div>
                 <div class="materials-field-row">
                     <div class="materials-field">
                         <label class="materials-label">Unit Price</label>
@@ -309,11 +309,11 @@
                     <input type="file" name="invoiceImage" class="materials-input"
                            accept=".jpg,.jpeg,.png,.pdf,.webp"
                            style="padding:.4rem .5rem;" />
-                    <small style="color:#9ca3af;font-size:.72rem;">Photo or scan of the paper invoice</small>
+                    <small style="color:var(--dt-text-faint);font-size:.72rem;">Photo or scan of the paper invoice</small>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem; color:#374151; padding:.4rem 0 0;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:.85rem; color:var(--dt-text-muted); padding:.4rem 0 0;">
                     <span>Total Amount</span>
-                    <strong id="editTotalDisplay" style="color:#059669; font-size:1rem;">—</strong>
+                    <strong id="editTotalDisplay" style="color:var(--dt-success); font-size:1rem;">—</strong>
                 </div>
             </div>
 
@@ -423,15 +423,15 @@
                             const changeColor = h.quantityChange > 0 ? 'green' : 'red';
                             const changeSign = h.quantityChange > 0 ? '+' : '';
 
-                            let invoiceCell = '<span style="color:#9ca3af;">—</span>';
+                            let invoiceCell = '<span style="color:var(--dt-text-faint);">—</span>';
                             const canSeeInvoices = @Json.Serialize(canSeeInvoices);
                             if (h.invoiceId && canSeeInvoices) {
-                                invoiceCell = `<a href="/Materials/Invoices?materialId=${materialId}" style="color:#10b981;font-weight:500;font-size:.78rem;text-decoration:none;"
+                                invoiceCell = `<a href="/Materials/Invoices?materialId=${materialId}" style="color:var(--dt-success);font-weight:500;font-size:.78rem;text-decoration:none;"
                                     title="Total: ${h.invoiceTotal?.toFixed(2)}">
                                     ${h.invoiceNumber}
                                 </a>`;
                             } else if (h.invoiceId) {
-                                invoiceCell = `<span style="color:#9ca3af;font-size:.78rem;">${h.invoiceNumber}</span>`;
+                                invoiceCell = `<span style="color:var(--dt-text-faint);font-size:.78rem;">${h.invoiceNumber}</span>`;
                             }
 
                             html += `<tr>
@@ -449,7 +449,7 @@
                 } catch (error) {
                     loadingDiv.style.display = 'none';
                     contentDiv.style.display = 'block';
-                    contentDiv.innerHTML = '<p style="color: #fca5a5;">Error loading history.</p>';
+                    contentDiv.innerHTML = '<p style="color: var(--dt-danger-line);">Error loading history.</p>';
                 }
             }
         } else {

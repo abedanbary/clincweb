@@ -107,13 +107,13 @@
                             <tr data-status="@((int)appointment.Status)">
                                 <td>
                                     <div>@TimeService.ToLocal(appointment.StartTime).ToString("MMM dd, yyyy")</div>
-                                    <div style="font-size: 11px; color: #64748b;">
+                                    <div style="font-size: 11px; color: var(--dt-text-muted);">
                                         @TimeService.ToLocal(appointment.StartTime).ToString("HH:mm") - @TimeService.ToLocal(appointment.EndTime).ToString("HH:mm")
                                     </div>
                                 </td>
                                 <td>
                                     @appointment.Patient.FirstName @appointment.Patient.LastName
-                                    <div style="font-size: 11px; color: #64748b;">
+                                    <div style="font-size: 11px; color: var(--dt-text-muted);">
                                         @appointment.Patient.Phone
                                     </div>
                                 </td>
@@ -138,7 +138,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="6" style="text-align: center; padding: 24px; color: #64748b;">
+                            <td colspan="6" style="text-align: center; padding: 24px; color: var(--dt-text-muted);">
                                 No appointments found. Click "New Appointment" to create one.
                             </td>
                         </tr>
@@ -239,7 +239,7 @@
                 <select asp-for="NewAppointment.DoctorId" class="appointments-select" id="DoctorSelect">
                     <option value="">-- Select time first --</option>
                 </select>
-                <span id="doctorAvailabilityNote" style="font-size: 12px; color: #64748b; margin-top: 4px; display: block;"></span>
+                <span id="doctorAvailabilityNote" style="font-size: 12px; color: var(--dt-text-muted); margin-top: 4px; display: block;"></span>
                 <div id="nextSlotSuggestion" style="display:none;margin-top:6px;">
                     <span class="cal-next-slot-chip" id="nextSlotChip"></span>
                 </div>
@@ -377,7 +377,7 @@
             if (!start || !end) return;
 
             doctorNote.textContent = 'Checking availability...';
-            doctorNote.style.color = '#6b7280';
+            doctorNote.style.color = 'var(--dt-text-muted)';
             doctorSelect.innerHTML = '<option value="">Loading...</option>';
 
             fetch(`/Appointments/GetAvailableDoctors?startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`)
@@ -399,15 +399,15 @@
                     const freeCount = doctors.filter(d => d.worksAtThisTime && !d.hasConflict).length;
                     if (freeCount > 0) {
                         doctorNote.textContent = `${freeCount} doctor(s) available at this time.`;
-                        doctorNote.style.color = '#10b981';
+                        doctorNote.style.color = 'var(--dt-success)';
                     } else {
                         doctorNote.textContent = 'No doctors are scheduled at this time — you can still select one.';
-                        doctorNote.style.color = '#f59e0b';
+                        doctorNote.style.color = 'var(--dt-warning)';
                     }
                 })
                 .catch(() => {
                     doctorNote.textContent = 'Could not load doctors.';
-                    doctorNote.style.color = '#ef4444';
+                    doctorNote.style.color = 'var(--dt-danger)';
                 });
         }
 
@@ -418,13 +418,13 @@
             if (!d) return;
             if (d.hasConflict) {
                 doctorNote.textContent = 'This doctor already has an appointment at this time';
-                doctorNote.style.color = '#ef4444';
+                doctorNote.style.color = 'var(--dt-danger)';
             } else if (!d.worksAtThisTime) {
                 doctorNote.textContent = 'This doctor doesn\'t work at this time — you can still book if needed';
-                doctorNote.style.color = '#f59e0b';
+                doctorNote.style.color = 'var(--dt-warning)';
             } else {
                 doctorNote.textContent = 'Doctor is available at this time';
-                doctorNote.style.color = '#1c5c44';
+                doctorNote.style.color = 'var(--dt-green)';
             }
             loadIndexNextSlot(id);
         });

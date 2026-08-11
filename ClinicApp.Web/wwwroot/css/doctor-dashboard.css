@@ -44,7 +44,7 @@
 .stat-card {
     background: #ffffff;
     border: 1px solid var(--color-border);
-    border-radius: 10px;
+    border-radius: 0;
     padding: 16px 18px;
     display: flex;
     align-items: center;
@@ -55,13 +55,13 @@
     font-size: 18px;
     width: 38px;
     height: 38px;
-    border-radius: 8px;
-    background: var(--color-surface-alt, #f4f4f2);
+    border-radius: 0;
+    background: var(--color-surface-alt, var(--dt-surface-alt));
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    color: var(--color-sky, #1c5c44);
+    color: var(--color-sky, var(--dt-green));
 }
 
 .stat-label {
@@ -91,7 +91,7 @@
 .dashboard-card {
     background: #ffffff;
     border: 1px solid var(--color-border);
-    border-radius: 10px;
+    border-radius: 0;
     padding: 16px 18px;
 }
 
@@ -125,7 +125,7 @@
 
 .appointment-item {
     background: var(--color-surface-alt);
-    border-radius: 6px;
+    border-radius: 0;
     padding: 9px 12px;
     display: flex;
     align-items: center;
@@ -153,15 +153,15 @@
 /* Status pills — outline */
 .appointment-status {
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: 0;
     font-size: 11px;
     font-weight: 500;
 }
 
-.status-pending   { color: #92400e; border: 1px solid #fde68a; background: transparent; }
-.status-completed { color: #1c5c44; border: 1px solid #a7f3d0; background: transparent; }
-.status-cancelled { color: #b91c1c; border: 1px solid #fecaca; background: transparent; }
-.status-noshow    { color: #6b7280; border: 1px solid #d1d5db; background: transparent; }
+.status-pending   { color: var(--dt-warning); border: 1px solid var(--dt-warning-line); background: transparent; }
+.status-completed { color: var(--dt-green); border: 1px solid var(--dt-success-line); background: transparent; }
+.status-cancelled { color: var(--dt-danger); border: 1px solid var(--dt-danger-line); background: transparent; }
+.status-noshow    { color: var(--dt-text-muted); border: 1px solid var(--dt-border); background: transparent; }
 
 /* ── Patient list ───────────────────────────────────────────── */
 .patient-list {
@@ -172,7 +172,7 @@
 
 .patient-item {
     background: var(--color-surface-alt);
-    border-radius: 6px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
     padding: 9px 12px;
     display: flex;
@@ -183,8 +183,8 @@
 .patient-avatar {
     width: 30px;
     height: 30px;
-    border-radius: 6px;
-    background: var(--color-sky, #1c5c44);
+    border-radius: 0;
+    background: var(--color-sky, var(--dt-green));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -237,7 +237,7 @@
 
 .material-quantity {
     font-size: 12px;
-    color: #dc2626;
+    color: var(--dt-danger);
     font-weight: 600;
 }
 

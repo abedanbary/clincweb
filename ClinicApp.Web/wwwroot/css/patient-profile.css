@@ -23,7 +23,7 @@
 
 .btn-back {
     padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
     background: var(--color-surface);
     color: var(--color-text-muted);
@@ -70,7 +70,7 @@
 /* ── Card ───────────────────────────────────────────────────── */
 .profile-card {
     background: var(--color-surface);
-    border-radius: 10px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
     padding: 16px 18px;
 }
@@ -131,7 +131,7 @@
     gap: 3px;
     padding: 8px 10px;
     background: var(--color-surface-alt);
-    border-radius: 6px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
 }
 
@@ -176,20 +176,20 @@
 .legend-color {
     width: 12px;
     height: 12px;
-    border-radius: 3px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
 }
 
-.legend-color.healthy            { background: #1c5c44; }
-.legend-color.caries             { background: #ef4444; }
-.legend-color.filled             { background: #3b82f6; }
-.legend-color.crown              { background: #f59e0b; }
-.legend-color.root-canal         { background: #8b5cf6; }
-.legend-color.missing            { background: #9ca3af; }
-.legend-color.extraction         { background: #f97316; }
-.legend-color.planned-treatment  { background: #0ea5e9; }
-.legend-color.in-progress        { background: #6366f1; }
-.legend-color.implant            { background: #1e3a5f; }
+.legend-color.healthy            { background: var(--dt-green); }
+.legend-color.caries             { background: var(--dt-danger); }
+.legend-color.filled             { background: var(--dt-info); }
+.legend-color.crown              { background: var(--dt-warning); }
+.legend-color.root-canal         { background: var(--dt-info); }
+.legend-color.missing            { background: var(--dt-text-faint); }
+.legend-color.extraction         { background: var(--dt-warning); }
+.legend-color.planned-treatment  { background: var(--dt-info); }
+.legend-color.in-progress        { background: var(--dt-info); }
+.legend-color.implant            { background: var(--dt-info); }
 
 .dental-chart-container {
     display: flex;
@@ -239,14 +239,14 @@
 .tooth-visual {
     width: 32px;
     height: 44px;
-    border-radius: 5px 5px 10px 10px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
     background: #ffffff;
     transition: border-color 0.15s;
 }
 
 .tooth:hover .tooth-visual {
-    border-color: var(--color-sky, #1c5c44);
+    border-color: var(--color-sky, var(--dt-green));
 }
 
 .tooth-number {
@@ -256,17 +256,17 @@
 }
 
 /* Tooth status colors */
-.tooth-visual.healthy           { background: #1c5c44; border-color: #174d39; }
-.tooth-visual.caries            { background: #ef4444; border-color: #dc2626; }
-.tooth-visual.filled            { background: #3b82f6; border-color: #2563eb; }
-.tooth-visual.crown             { background: #f59e0b; border-color: #d97706; }
-.tooth-visual.root-canal        { background: #8b5cf6; border-color: #7c3aed; }
-.tooth-visual.missing           { background: #9ca3af; border-color: #6b7280; opacity: 0.5; }
-.tooth-visual.extraction        { background: #f97316; border-color: #ea580c; }
-.tooth-visual.other             { background: #64748b; border-color: #475569; }
-.tooth-visual.planned-treatment { background: #0ea5e9; border-color: #0284c7; }
-.tooth-visual.in-progress       { background: #6366f1; border-color: #4f46e5; }
-.tooth-visual.implant           { background: #1e3a5f; border-color: #172d4a; }
+.tooth-visual.healthy           { background: var(--dt-green); border-color: var(--dt-green-dark); }
+.tooth-visual.caries            { background: var(--dt-danger); border-color: var(--dt-danger); }
+.tooth-visual.filled            { background: var(--dt-info); border-color: var(--dt-info); }
+.tooth-visual.crown             { background: var(--dt-warning); border-color: var(--dt-warning); }
+.tooth-visual.root-canal        { background: var(--dt-info); border-color: var(--dt-info); }
+.tooth-visual.missing           { background: var(--dt-text-faint); border-color: var(--dt-text-muted); opacity: 0.5; }
+.tooth-visual.extraction        { background: var(--dt-warning); border-color: var(--dt-warning); }
+.tooth-visual.other             { background: var(--dt-text-muted); border-color: var(--dt-text-muted); }
+.tooth-visual.planned-treatment { background: var(--dt-info); border-color: var(--dt-info); }
+.tooth-visual.in-progress       { background: var(--dt-info); border-color: var(--dt-info); }
+.tooth-visual.implant           { background: var(--dt-info); border-color: var(--dt-info); }
 
 /* ── Modal ──────────────────────────────────────────────────── */
 .modal-overlay {
@@ -283,10 +283,10 @@
 
 .modal-card {
     background: var(--color-surface);
-    border-radius: 10px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
     padding: 20px 24px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
     max-width: 500px;
     width: 90%;
     max-height: 85vh;
@@ -318,7 +318,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: 0;
     transition: background 0.12s;
 }
 
@@ -344,7 +344,7 @@
 
 .patients-select,
 .patients-textarea {
-    border-radius: 6px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
     background: var(--color-surface);
     color: var(--color-text);
@@ -358,7 +358,7 @@
 .patients-select:focus,
 .patients-textarea:focus {
     border-color: var(--color-sky);
-    box-shadow: 0 0 0 2px rgba(28, 92, 68, 0.12);
+    box-shadow: 0 0 0 2px rgba(23, 77, 57, 0.12);
 }
 
 .patients-textarea { resize: vertical; }
@@ -373,9 +373,9 @@
 /* ── Buttons ────────────────────────────────────────────────── */
 .btn-primary {
     padding: 7px 16px;
-    border-radius: 6px;
+    border-radius: 0;
     border: none;
-    background: var(--color-sky, #1c5c44);
+    background: var(--color-sky, var(--dt-green));
     color: #ffffff;
     font-size: 13px;
     font-weight: 500;
@@ -383,11 +383,11 @@
     transition: background 0.12s;
 }
 
-.btn-primary:hover { background: #174d39; }
+.btn-primary:hover { background: var(--dt-green-dark); }
 
 .btn-ghost {
     padding: 7px 14px;
-    border-radius: 6px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
@@ -398,7 +398,7 @@
 
 .btn-ghost:hover {
     background: var(--color-surface-alt);
-    border-color: #c9c9c6;
+    border-color: var(--dt-border);
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */
@@ -418,8 +418,8 @@
 .tooth-dot {
     width: 6px;
     height: 6px;
-    border-radius: 50%;
-    background: #6366f1;
+    border-radius: 0;
+    background: var(--dt-info);
     position: absolute;
     top: -2px;
     right: -2px;
@@ -444,22 +444,22 @@
 /* Status badge in header */
 .tp-status-badge {
     padding: 3px 10px;
-    border-radius: 99px;
+    border-radius: 0;
     font-size: 11px;
     font-weight: 600;
     border: 1px solid transparent;
 }
-.tp-badge-healthy    { background:#dcfce7;color:#15803d;border-color:#86efac; }
-.tp-badge-planned    { background:#e0f2fe;color:#0369a1;border-color:#7dd3fc; }
-.tp-badge-inprogress { background:#ede9fe;color:#6d28d9;border-color:#c4b5fd; }
-.tp-badge-filled     { background:#dbeafe;color:#1d4ed8;border-color:#93c5fd; }
-.tp-badge-crown      { background:#fef9c3;color:#a16207;border-color:#fde047; }
-.tp-badge-rootcanal  { background:#f3e8ff;color:#7c3aed;border-color:#d8b4fe; }
-.tp-badge-implant    { background:#1e3a5f;color:#e0f2fe;border-color:#172d4a; }
-.tp-badge-caries     { background:#fee2e2;color:#b91c1c;border-color:#fca5a5; }
-.tp-badge-missing    { background:#f3f4f6;color:#6b7280;border-color:#d1d5db; }
-.tp-badge-extraction { background:#ffedd5;color:#c2410c;border-color:#fdba74; }
-.tp-badge-other      { background:#f1f5f9;color:#475569;border-color:#cbd5e1; }
+.tp-badge-healthy    { background:var(--dt-success-bg);color:var(--dt-success);border-color:var(--dt-success-line); }
+.tp-badge-planned    { background:var(--dt-info-bg);color:var(--dt-info);border-color:var(--dt-info-line); }
+.tp-badge-inprogress { background:var(--dt-info-bg);color:var(--dt-info);border-color:var(--dt-info-line); }
+.tp-badge-filled     { background:var(--dt-info-bg);color:var(--dt-info);border-color:var(--dt-info-line); }
+.tp-badge-crown      { background:var(--dt-warning-bg);color:var(--dt-warning);border-color:var(--dt-warning-line); }
+.tp-badge-rootcanal  { background:var(--dt-info-bg);color:var(--dt-info);border-color:var(--dt-info-line); }
+.tp-badge-implant    { background:var(--dt-info);color:#fff;border-color:var(--dt-info); }
+.tp-badge-caries     { background:var(--dt-danger-bg);color:var(--dt-danger);border-color:var(--dt-danger-line); }
+.tp-badge-missing    { background:var(--dt-surface-alt);color:var(--dt-text-muted);border-color:var(--dt-border); }
+.tp-badge-extraction { background:var(--dt-warning-bg);color:var(--dt-warning);border-color:var(--dt-warning-line); }
+.tp-badge-other      { background:var(--dt-surface-alt);color:var(--dt-text-muted);border-color:var(--dt-text-faint); }
 
 .tp-loading-state {
     text-align: center;
@@ -496,13 +496,13 @@
     display: block;
     font-size: 11px;
     margin-top: 4px;
-    color: #9ca3af;
+    color: var(--dt-text-faint);
 }
 
 /* ── Treatment rows ──────────────────────────────────────────── */
 .tp-treatment-row {
     padding: 10px 12px;
-    border-radius: 8px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
     background: var(--color-surface);
     margin-bottom: 7px;
@@ -535,12 +535,12 @@
 
 .tp-type-badge {
     padding: 1px 6px;
-    border-radius: 4px;
+    border-radius: 0;
     font-size: 10px;
     font-weight: 600;
-    background: #eff6ff;
-    color: #1d4ed8;
-    border: 1px solid #bfdbfe;
+    background: var(--dt-info-bg);
+    color: var(--dt-info);
+    border: 1px solid var(--dt-info-line);
 }
 
 .tp-treatment-cost {
@@ -558,12 +558,12 @@
     margin-top: 5px;
     padding: 5px 8px;
     background: var(--color-surface-alt);
-    border-radius: 4px;
-    border-left: 2px solid #93c5fd;
+    border-radius: 0;
+    border-left: 2px solid var(--dt-info-line);
 }
 
 .tp-plan-link {
-    color: #1c5c44;
+    color: var(--dt-green);
     font-size: 11px;
     font-weight: 500;
     text-decoration: none;
@@ -575,12 +575,12 @@
     gap: 5px;
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid var(--dt-surface-alt);
 }
 
 .tp-action-btn {
     padding: 3px 10px;
-    border-radius: 5px;
+    border-radius: 0;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
@@ -588,23 +588,23 @@
     transition: background 0.12s;
 }
 .tp-action-progress {
-    background: #dbeafe; color: #1d4ed8; border-color: #93c5fd;
+    background: var(--dt-info-bg); color: var(--dt-info); border-color: var(--dt-info-line);
 }
-.tp-action-progress:hover { background: #bfdbfe; }
+.tp-action-progress:hover { background: var(--dt-info-line); }
 .tp-action-complete {
-    background: #dcfce7; color: #15803d; border-color: #86efac;
+    background: var(--dt-success-bg); color: var(--dt-success); border-color: var(--dt-success-line);
 }
-.tp-action-complete:hover { background: #bbf7d0; }
+.tp-action-complete:hover { background: var(--dt-success-line); }
 .tp-action-cancel {
-    background: #f3f4f6; color: #6b7280; border-color: #d1d5db;
+    background: var(--dt-surface-alt); color: var(--dt-text-muted); border-color: var(--dt-border);
 }
-.tp-action-cancel:hover { background: #e5e7eb; }
+.tp-action-cancel:hover { background: var(--dt-border); }
 
 /* ── Add treatment form ──────────────────────────────────────── */
 .tp-add-section {
-    background: #f8fafc;
+    background: var(--dt-surface-alt);
     border: 1px solid var(--color-border);
-    border-radius: 8px;
+    border-radius: 0;
     padding: 14px;
     margin-bottom: 12px;
 }
@@ -633,9 +633,9 @@
 
 .tp-error {
     font-size: 12px;
-    color: #b91c1c;
-    background: #fee2e2;
-    border-radius: 5px;
+    color: var(--dt-danger);
+    background: var(--dt-danger-bg);
+    border-radius: 0;
     padding: 5px 10px;
     margin-bottom: 6px;
 }
@@ -657,7 +657,7 @@
 .quick-action-btn {
     display: block;
     padding: 9px 12px;
-    border-radius: 7px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
     background: var(--color-surface);
     color: var(--color-text);
@@ -673,5 +673,5 @@
 
 .quick-action-btn:hover {
     background: var(--color-surface-alt);
-    border-color: #c9c9c6;
+    border-color: var(--dt-border);
 }

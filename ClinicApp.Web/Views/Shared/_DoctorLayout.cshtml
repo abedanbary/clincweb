@@ -10,6 +10,10 @@
     <title>@title - Clinic Doctor</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
     <link rel="stylesheet" href="~/css/manager.css" />
     <link rel="stylesheet" href="~/css/doctor-dashboard.css" />
     <link rel="stylesheet" href="~/css/patients.css" />
@@ -17,6 +21,8 @@
     <link rel="stylesheet" href="~/css/materials.css" />
     <link rel="stylesheet" href="~/css/attendance.css" />
     <link rel="stylesheet" href="~/css/rtl.css" />
+    <!-- Loads last so its token remap re-skins the stylesheets above. -->
+    <link rel="stylesheet" href="~/css/dentaltrack.css" asp-append-version="true" />
 </head>
 
 
@@ -96,7 +102,7 @@
                         </div>
                     </div>
 
-                    <select class="lang-select" onchange="setLanguage(this.value)" style="border:1px solid rgba(0,0,0,0.15);background:#fff;color:var(--color-text);padding:4px 8px;border-radius:6px;font-size:13px;cursor:pointer;outline:none;">
+                    <select class="lang-select" onchange="setLanguage(this.value)">
                         <option value="en">English</option>
                         <option value="he">עברית</option>
                         <option value="ar">العربية</option>

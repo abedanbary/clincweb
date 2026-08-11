@@ -5,16 +5,16 @@
 /* ── Design tokens ──────────────────────────────────────────── */
 /* Defined on :root so modals outside .cal-root still inherit them */
 :root {
-    --c-accent:    #1c5c44;
-    --c-accent-dk: #174d39;
-    --c-bg:        #f7f7f5;
+    --c-accent:    var(--dt-green);
+    --c-accent-dk: var(--dt-green-dark);
+    --c-bg:        var(--dt-surface-alt);
     --c-surface:   #ffffff;
-    --c-text:      #1a1a1a;
-    --c-text-mid:  #64748b;
-    --c-text-soft: #94a3b8;
-    --c-border:    #e5e5e3;
-    --c-border-2:  #e5e5e3;
-    --c-border-3:  #f1f5f9;
+    --c-text:      var(--dt-ink);
+    --c-text-mid:  var(--dt-text-muted);
+    --c-text-soft: var(--dt-text-faint);
+    --c-border:    var(--dt-border);
+    --c-border-2:  var(--dt-border);
+    --c-border-3:  var(--dt-surface-alt);
     --c-shadow:    none;
     --gutter:      54px;
     --toolbar-h:   62px;
@@ -24,7 +24,7 @@
 /* ── Root card ──────────────────────────────────────────────── */
 .cal-root {
     background: var(--c-surface);
-    border-radius: 10px;
+    border-radius: 0;
     border: 1px solid var(--c-border);
     display: flex;
     flex-direction: column;
@@ -63,7 +63,7 @@
     height: 30px;
     border: 1.5px solid var(--c-border);
     background: var(--c-surface);
-    border-radius: 7px;
+    border-radius: 0;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -85,7 +85,7 @@
     padding: 0 12px;
     border: 1.5px solid var(--c-border);
     background: var(--c-surface);
-    border-radius: 7px;
+    border-radius: 0;
     cursor: pointer;
     color: var(--c-text);
     font-size: 12px;
@@ -123,7 +123,7 @@
     align-items: center;
     gap: 5px;
     padding: 4px 12px;
-    border-radius: 20px;
+    border-radius: 0;
     border: 1.5px solid var(--c-border);
     background: var(--c-surface);
     color: var(--c-text-mid);
@@ -150,7 +150,7 @@
 .cal-pill-dot {
     width: 7px;
     height: 7px;
-    border-radius: 50%;
+    border-radius: 0;
     flex-shrink: 0;
 }
 
@@ -158,7 +158,7 @@
 .cal-view-group {
     display: flex;
     border: 1.5px solid var(--c-border);
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
 }
 
@@ -198,7 +198,7 @@
     border: 1.5px solid var(--c-border);
     background: var(--c-surface);
     color: var(--c-text-mid);
-    border-radius: 8px;
+    border-radius: 0;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -219,7 +219,7 @@
     border: none;
     background: var(--c-accent);
     color: #fff;
-    border-radius: 6px;
+    border-radius: 0;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -304,7 +304,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 0;
     font-size: 15px;
     font-weight: 800;
     color: var(--c-text);
@@ -336,7 +336,7 @@
     min-width: 16px;
     height: 16px;
     padding: 0 4px;
-    border-radius: 99px;
+    border-radius: 0;
     background: var(--c-accent);
     color: #fff;
     font-size: 9px;
@@ -462,7 +462,7 @@
 .cal-now-dot {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
+    border-radius: 0;
     background: var(--c-accent);
     flex-shrink: 0;
     margin-left: -4px;
@@ -480,7 +480,7 @@
 .cal-event {
     position: absolute;
     /* left/right set inline by JS based on overlap lane */
-    border-radius: 6px;
+    border-radius: 0;
     padding: 3px 7px;
     overflow: hidden;
     cursor: pointer;
@@ -492,7 +492,7 @@
 
 .cal-event:hover {
     z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
 }
 
 .cal-event:focus-visible {
@@ -529,16 +529,16 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #ef4444;
+    color: var(--dt-danger);
     margin-top: 2px;
     opacity: 0.8;
 }
 
 /* Active state for the Show Cancelled toggle */
 .cal-ghost-btn.active-filter {
-    background: #fef2f2;
-    border-color: #fca5a5;
-    color: #dc2626;
+    background: var(--dt-danger-bg);
+    border-color: var(--dt-danger-line);
+    color: var(--dt-danger);
 }
 
 /* ── Slide-in detail panel ──────────────────────────────────── */
@@ -549,7 +549,7 @@
     bottom: 0;
     width: 280px;
     background: var(--c-surface);
-    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
     z-index: 50;
     display: flex;
     flex-direction: column;
@@ -599,7 +599,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 0;
     transition: all 0.15s ease;
     line-height: 1;
 }
@@ -614,7 +614,7 @@
     align-items: center;
     gap: 5px;
     padding: 3px 10px;
-    border-radius: 999px;
+    border-radius: 0;
     font-size: 11px;
     font-weight: 700;
 }
@@ -674,7 +674,7 @@
     width: 100%;
     padding: 10px;
     border: none;
-    border-radius: 9px;
+    border-radius: 0;
     font-size: 13px;
     font-weight: 700;
     color: #fff;
@@ -692,9 +692,9 @@
     width: 100%;
     padding: 10px;
     border: none;
-    border-radius: 9px;
-    background: #fef2f2;
-    color: #dc2626;
+    border-radius: 0;
+    background: var(--dt-danger-bg);
+    color: var(--dt-danger);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -703,14 +703,14 @@
 }
 
 .cal-detail-btn-danger:hover {
-    background: #fee2e2;
+    background: var(--dt-danger-bg);
 }
 
 /* ── Status badges ──────────────────────────────────────────── */
-.status-scheduled { background: transparent; color: #6b7280; border: 1px solid #d1d5db; }
-.status-completed { background: transparent; color: #1c5c44; border: 1px solid #a7f3d0; }
-.status-cancelled { background: transparent; color: #b91c1c; border: 1px solid #fecaca; }
-.status-noshow    { background: transparent; color: #92400e; border: 1px solid #fde68a; }
+.status-scheduled { background: transparent; color: var(--dt-text-muted); border: 1px solid var(--dt-border); }
+.status-completed { background: transparent; color: var(--dt-green); border: 1px solid var(--dt-success-line); }
+.status-cancelled { background: transparent; color: var(--dt-danger); border: 1px solid var(--dt-danger-line); }
+.status-noshow    { background: transparent; color: var(--dt-warning); border: 1px solid var(--dt-warning-line); }
 
 /* ── Toast notifications ────────────────────────────────────── */
 .toast-container {
@@ -729,11 +729,11 @@
     align-items: center;
     gap: 10px;
     background: white;
-    border-radius: 8px;
+    border-radius: 0;
     padding: 12px 16px;
     min-width: 240px;
     max-width: 340px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: none;
     border: 1px solid var(--c-border);
     border-left: 3px solid var(--c-accent);
     pointer-events: all;
@@ -743,7 +743,7 @@
     color: var(--c-text);
 }
 
-.toast.error   { border-left-color: #ef4444; }
+.toast.error   { border-left-color: var(--dt-danger); }
 .toast.success { border-left-color: var(--c-accent); }
 
 .toast-msg  { flex: 1; }
@@ -761,7 +761,7 @@
 /* ── Alerts ─────────────────────────────────────────────────── */
 .alert {
     padding: 12px 16px;
-    border-radius: 8px;
+    border-radius: 0;
     font-size: 13px;
     display: flex;
     align-items: center;
@@ -771,13 +771,13 @@
 
 .alert-success {
     background: rgba(16, 185, 129, 0.1);
-    color: #059669;
+    color: var(--dt-success);
     border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .alert-error {
     background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
+    color: var(--dt-danger);
     border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
@@ -813,10 +813,10 @@
 .cal-modal-panel,
 .cal-create-panel {
     background: var(--c-surface);
-    border-radius: 10px;
+    border-radius: 0;
     border: 1px solid var(--c-border);
     width: 100%;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
     overflow: hidden;
     animation: panelIn 0.2s ease;
     max-height: 90vh;
@@ -861,7 +861,7 @@
     background: none;
     border: none;
     color: var(--c-text-mid);
-    border-radius: 6px;
+    border-radius: 0;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -913,7 +913,7 @@
     width: 100%;
     padding: 9px 12px;
     border: 1.5px solid var(--c-border);
-    border-radius: 8px;
+    border-radius: 0;
     font-size: 13.5px;
     color: var(--c-text);
     background: var(--c-surface);
@@ -927,7 +927,7 @@
 .cal-form-textarea:focus {
     outline: none;
     border-color: var(--c-accent);
-    box-shadow: 0 0 0 2px rgba(28, 92, 68, 0.1);
+    box-shadow: 0 0 0 2px rgba(23, 77, 57, 0.1);
 }
 
 .cal-form-input[readonly] {
@@ -970,29 +970,29 @@
 }
 
 .cal-doctor-note.success { color: var(--c-accent); }
-.cal-doctor-note.error   { color: #ef4444; }
-.cal-doctor-note.warning { color: #d97706; }
+.cal-doctor-note.error   { color: var(--dt-danger); }
+.cal-doctor-note.warning { color: var(--dt-warning); }
 .cal-doctor-note.loading { color: var(--c-text-soft); }
 
 /* ── Next available slot suggestion ─────────────────────────── */
 .cal-next-slot-chip {
     display: inline-flex; align-items: center; gap: 8px;
-    background: #f0fdf4; border: 1px solid #bbf7d0;
-    color: #15803d; border-radius: 8px; padding: 5px 10px;
+    background: var(--dt-success-bg); border: 1px solid var(--dt-success-line);
+    color: var(--dt-success); border-radius: 0; padding: 5px 10px;
     font-size: 12px; font-weight: 500;
 }
 .cal-use-slot-btn {
-    background: #15803d; color: #fff; border: none; border-radius: 6px;
+    background: var(--dt-success); color: #fff; border: none; border-radius: 0;
     padding: 3px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
     white-space: nowrap;
 }
-.cal-use-slot-btn:hover { background: #166534; }
+.cal-use-slot-btn:hover { background: var(--dt-success-hover); }
 
 /* ── Patient toggle ─────────────────────────────────────────── */
 .cal-patient-toggle {
     display: flex;
     background: var(--c-bg);
-    border-radius: 10px;
+    border-radius: 0;
     padding: 4px;
     margin-bottom: 16px;
     gap: 4px;
@@ -1009,7 +1009,7 @@
     align-items: center;
     justify-content: center;
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: 0;
     font-size: 13px;
     font-weight: 600;
     color: var(--c-text-mid);
@@ -1021,7 +1021,7 @@
 .cal-toggle-option input:checked + .cal-toggle-pill {
     background: white;
     color: var(--c-accent);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
 }
 
 /* ── Duration pills ─────────────────────────────────────────── */
@@ -1033,7 +1033,7 @@
 
 .cal-duration-pill {
     padding: 5px 12px;
-    border-radius: 20px;
+    border-radius: 0;
     border: 1.5px solid var(--c-border);
     background: var(--c-bg);
     color: var(--c-text-mid);
@@ -1061,7 +1061,7 @@
     width: 100%;
     padding: 9px 12px;
     border: 1.5px solid var(--c-border);
-    border-radius: 8px;
+    border-radius: 0;
     background: var(--c-bg);
     color: var(--c-text-mid);
     font-size: 13px;
@@ -1074,7 +1074,7 @@
     align-items: center;
     gap: 6px;
     padding: 8px 16px;
-    border-radius: 6px;
+    border-radius: 0;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -1134,6 +1134,6 @@
     .cal-doctor-pills { display: none; }
     .cal-period-label { font-size: 13px; }
     .cal-form-row { grid-template-columns: 1fr; }
-    .cal-modal-panel, .cal-create-panel { border-radius: 14px; }
+    .cal-modal-panel, .cal-create-panel { border-radius: 0; }
     .cal-detail-panel { width: min(280px, 90vw); }
 }

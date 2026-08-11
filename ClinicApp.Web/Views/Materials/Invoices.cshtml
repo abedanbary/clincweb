@@ -10,67 +10,67 @@
 <style>
 .inv-page   { padding: 1.5rem; max-width: 1100px; margin: 0 auto; }
 .inv-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-.inv-title  { font-size: 1.4rem; font-weight: 700; color: #0f172a; }
-.inv-sub    { font-size: .85rem; color: #64748b; margin-top: .2rem; }
+.inv-title  { font-size: 1.4rem; font-weight: 700; color: var(--dt-ink); }
+.inv-sub    { font-size: .85rem; color: var(--dt-text-muted); margin-top: .2rem; }
 
 /* Summary cards */
 .inv-stats  { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .inv-stat-card {
-    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+    background: #fff; border: 1px solid var(--dt-border); border-radius: 10px;
     padding: 1rem 1.2rem;
 }
-.inv-stat-label { font-size: .75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
-.inv-stat-value { font-size: 1.4rem; font-weight: 700; color: #0f172a; margin-top: .25rem; }
-.inv-stat-value.green { color: #059669; }
+.inv-stat-label { font-size: .75rem; font-weight: 600; color: var(--dt-text-muted); text-transform: uppercase; letter-spacing: .05em; }
+.inv-stat-value { font-size: 1.4rem; font-weight: 700; color: var(--dt-ink); margin-top: .25rem; }
+.inv-stat-value.green { color: var(--dt-success); }
 
 /* Filter bar */
 .inv-filter-bar {
     display: flex; gap: .75rem; align-items: center; flex-wrap: wrap;
-    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+    background: #fff; border: 1px solid var(--dt-border); border-radius: 10px;
     padding: .75rem 1rem; margin-bottom: 1.5rem;
 }
 .inv-filter-bar select, .inv-filter-bar input {
-    padding: .4rem .75rem; border: 1px solid #d1d5db; border-radius: 7px;
-    font-size: .85rem; color: #374151; background: #fff;
+    padding: .4rem .75rem; border: 1px solid var(--dt-border); border-radius: 7px;
+    font-size: .85rem; color: var(--dt-text-muted); background: #fff;
 }
-.inv-filter-bar label { font-size: .82rem; color: #64748b; white-space: nowrap; }
+.inv-filter-bar label { font-size: .82rem; color: var(--dt-text-muted); white-space: nowrap; }
 
 /* Table */
-.inv-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+.inv-card { background: #fff; border: 1px solid var(--dt-border); border-radius: 12px; overflow: hidden; }
 .inv-card-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: .85rem 1.2rem; border-bottom: 1px solid #e5e7eb;
+    padding: .85rem 1.2rem; border-bottom: 1px solid var(--dt-border);
 }
-.inv-card-title { font-size: .95rem; font-weight: 600; color: #111827; }
-.inv-count      { font-size: .82rem; color: #6b7280; }
+.inv-card-title { font-size: .95rem; font-weight: 600; color: var(--dt-ink); }
+.inv-count      { font-size: .82rem; color: var(--dt-text-muted); }
 
 .inv-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
 .inv-table th {
-    font-size: .72rem; font-weight: 600; color: #6b7280; text-transform: uppercase;
-    letter-spacing: .05em; padding: .65rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb;
-    background: #f9fafb;
+    font-size: .72rem; font-weight: 600; color: var(--dt-text-muted); text-transform: uppercase;
+    letter-spacing: .05em; padding: .65rem 1rem; text-align: left; border-bottom: 1px solid var(--dt-border);
+    background: var(--dt-surface-alt);
 }
-.inv-table td { padding: .75rem 1rem; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+.inv-table td { padding: .75rem 1rem; border-bottom: 1px solid var(--dt-surface-alt); vertical-align: middle; }
 .inv-table tr:last-child td { border-bottom: none; }
-.inv-table tr:hover td { background: #f9fafb; }
+.inv-table tr:hover td { background: var(--dt-surface-alt); }
 
-.inv-num    { font-family: monospace; font-size: .78rem; color: #6b7280; }
-.inv-material { font-weight: 500; color: #111827; }
-.inv-total  { font-weight: 600; color: #059669; }
+.inv-num    { font-family: monospace; font-size: .78rem; color: var(--dt-text-muted); }
+.inv-material { font-weight: 500; color: var(--dt-ink); }
+.inv-total  { font-weight: 600; color: var(--dt-success); }
 .inv-method-badge {
     display: inline-block; padding: .18rem .55rem; border-radius: 999px;
     font-size: .7rem; font-weight: 500;
-    background: #f1f5f9; color: #475569;
+    background: var(--dt-surface-alt); color: var(--dt-text-muted);
 }
 
-.empty-state { text-align: center; padding: 3rem 1rem; color: #9ca3af; font-size: .9rem; }
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--dt-text-faint); font-size: .9rem; }
 
 .btn-back {
     display: inline-flex; align-items: center; gap: .35rem;
-    color: #10b981; text-decoration: none; font-size: .83rem; font-weight: 500;
-    background: #f0fdf4; padding: .42rem .8rem; border-radius: 8px; border: 1px solid #bbf7d0;
+    color: var(--dt-success); text-decoration: none; font-size: .83rem; font-weight: 500;
+    background: var(--dt-success-bg); padding: .42rem .8rem; border-radius: 8px; border: 1px solid var(--dt-success-line);
 }
-.btn-back:hover { background: #dcfce7; }
+.btn-back:hover { background: var(--dt-success-line); }
 </style>
 
 <div class="inv-page">
@@ -123,7 +123,7 @@
             </select>
             @if (Model.FilterMaterialId.HasValue)
             {
-                <a href="/Materials/Invoices" style="color:#ef4444;font-size:.82rem;text-decoration:none;">Clear filter</a>
+                <a href="/Materials/Invoices" style="color:var(--dt-danger);font-size:.82rem;text-decoration:none;">Clear filter</a>
             }
         </form>
     </div>
@@ -168,15 +168,15 @@
                     {
                         <tr>
                             <td><span class="inv-num">@inv.InvoiceNumber</span></td>
-                            <td style="color:#6b7280;white-space:nowrap;">@inv.InvoiceDate.ToString("MMM dd, yyyy")</td>
+                            <td style="color:var(--dt-text-muted);white-space:nowrap;">@inv.InvoiceDate.ToString("MMM dd, yyyy")</td>
                             <td>
-                                <a asp-controller="Materials" asp-action="Invoices" asp-route-materialId="@inv.MaterialId" class="inv-material" style="text-decoration:none;color:#111827;">
+                                <a asp-controller="Materials" asp-action="Invoices" asp-route-materialId="@inv.MaterialId" class="inv-material" style="text-decoration:none;color:var(--dt-ink);">
                                     @inv.Material.Name
                                 </a>
                             </td>
-                            <td style="color:#6b7280;">@(inv.Supplier ?? "—")</td>
+                            <td style="color:var(--dt-text-muted);">@(inv.Supplier ?? "—")</td>
                             <td style="text-align:right;">@inv.Quantity @inv.Material.Unit</td>
-                            <td style="text-align:right; color:#374151;">@inv.UnitPrice.ToString("N2")</td>
+                            <td style="text-align:right; color:var(--dt-text-muted);">@inv.UnitPrice.ToString("N2")</td>
                             <td style="text-align:right;" class="inv-total">@inv.TotalAmount.ToString("N2")</td>
                             <td>
                                 <span class="inv-method-badge">
@@ -188,7 +188,7 @@
                                     })
                                 </span>
                             </td>
-                            <td style="color:#9ca3af;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@inv.Notes">
+                            <td style="color:var(--dt-text-faint);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@inv.Notes">
                                 @(inv.Notes ?? "—")
                             </td>
                             <td style="text-align:center;">
@@ -196,22 +196,22 @@
                                 {
                                     <a asp-controller="Materials" asp-action="InvoiceImage" asp-route-id="@inv.Id"
                                        target="_blank" title="View invoice image"
-                                       style="color:#1c5c44;text-decoration:none;font-size:.82rem;font-weight:500;">View</a>
+                                       style="color:var(--dt-green);text-decoration:none;font-size:.82rem;font-weight:500;">View</a>
                                 }
                                 else
                                 {
-                                    <span style="color:#e2e8f0;">—</span>
+                                    <span style="color:var(--dt-border);">—</span>
                                 }
                             </td>
                         </tr>
                     }
                 </tbody>
                 <tfoot>
-                    <tr style="background:#f9fafb;">
-                        <td colspan="6" style="padding:.65rem 1rem; font-weight:600; font-size:.82rem; color:#374151;">
+                    <tr style="background:var(--dt-surface-alt);">
+                        <td colspan="6" style="padding:.65rem 1rem; font-weight:600; font-size:.82rem; color:var(--dt-text-muted);">
                             @(Model.FilterMaterialId.HasValue ? "Filtered total" : "Shown total")
                         </td>
-                        <td style="text-align:right; padding:.65rem 1rem; font-weight:700; color:#059669;">
+                        <td style="text-align:right; padding:.65rem 1rem; font-weight:700; color:var(--dt-success);">
                             @Model.Invoices.Sum(i => i.TotalAmount).ToString("N2")
                         </td>
                         <td colspan="3"></td>

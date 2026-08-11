@@ -39,54 +39,59 @@
         }
     }
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Defines the --dt-* tokens this page's styles reference. -->
+    <link rel="stylesheet" href="~/css/dentaltrack.css" asp-append-version="true" />
     <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; }
+    html, body { height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: var(--dt-surface-alt); }
 
     .viewer-shell { display: flex; height: 100vh; }
 
     /* ── Side panel ── */
     .viewer-panel {
         width: 290px; flex-shrink: 0;
-        background: #ffffff; border-right: 1px solid #e2e8f0;
+        background: #ffffff; border-right: 1px solid var(--dt-border);
         display: flex; flex-direction: column;
         padding: 1.25rem; gap: 1.1rem; overflow-y: auto;
-        color: #1e293b;
+        color: var(--dt-ink);
     }
 
     .panel-back {
         display: inline-flex; align-items: center; gap: .4rem;
-        color: #10b981; text-decoration: none; font-size: .83rem; font-weight: 500;
-        background: #f0fdf4; padding: .45rem .8rem;
-        border-radius: 8px; border: 1px solid #bbf7d0;
+        color: var(--dt-success); text-decoration: none; font-size: .83rem; font-weight: 500;
+        background: var(--dt-success-bg); padding: .45rem .8rem;
+        border-radius: 8px; border: 1px solid var(--dt-success-line);
         transition: background .15s;
     }
-    .panel-back:hover { background: #dcfce7; }
+    .panel-back:hover { background: var(--dt-success-line); }
 
-    .panel-title { font-size: .93rem; font-weight: 600; color: #0f172a; word-break: break-all; line-height: 1.4; }
+    .panel-title { font-size: .93rem; font-weight: 600; color: var(--dt-ink); word-break: break-all; line-height: 1.4; }
 
     .panel-badge {
         display: inline-block; margin-top: .35rem;
         padding: .2rem .65rem; border-radius: 999px;
         font-size: .7rem; font-weight: 600; letter-spacing: .02em;
-        background: #f0fdf4; color: #059669; border: 1px solid #bbf7d0;
+        background: var(--dt-success-bg); color: var(--dt-success); border: 1px solid var(--dt-success-line);
     }
 
-    .panel-divider { height: 1px; background: #e2e8f0; }
+    .panel-divider { height: 1px; background: var(--dt-border); }
 
     .panel-meta { display: flex; flex-direction: column; gap: .45rem; }
     .meta-row { display: flex; justify-content: space-between; align-items: baseline; font-size: .8rem; gap: .5rem; }
-    .meta-label { color: #64748b; white-space: nowrap; }
-    .meta-value { color: #1e293b; font-weight: 500; text-align: right; }
+    .meta-label { color: var(--dt-text-muted); white-space: nowrap; }
+    .meta-value { color: var(--dt-ink); font-weight: 500; text-align: right; }
 
     .panel-notes {
-        font-size: .8rem; color: #475569; background: #f8fafc;
-        border-radius: 8px; padding: .65rem; border: 1px solid #e2e8f0; line-height: 1.5;
+        font-size: .8rem; color: var(--dt-text-muted); background: var(--dt-surface-alt);
+        border-radius: 8px; padding: .65rem; border: 1px solid var(--dt-border); line-height: 1.5;
     }
 
     /* ── Background color picker ── */
     .bg-picker-label {
-        font-size: .75rem; font-weight: 600; color: #64748b;
+        font-size: .75rem; font-weight: 600; color: var(--dt-text-muted);
         text-transform: uppercase; letter-spacing: .06em; margin-bottom: .45rem;
     }
     .bg-swatches {
@@ -99,7 +104,7 @@
         flex-shrink: 0;
     }
     .swatch:hover { transform: scale(1.15); }
-    .swatch.active { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.25); }
+    .swatch.active { border-color: var(--dt-success); box-shadow: 0 0 0 3px rgba(16,185,129,.25); }
 
     /* ── Action buttons ── */
     .panel-actions { display: flex; flex-direction: column; gap: .5rem; margin-top: auto; }
@@ -109,44 +114,44 @@
         display: block; transition: background .15s, color .15s;
     }
     .btn-reset {
-        background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
+        background: var(--dt-surface-alt); color: var(--dt-text-muted); border: 1px solid var(--dt-border);
     }
-    .btn-reset:hover { background: #e2e8f0; color: #1e293b; }
+    .btn-reset:hover { background: var(--dt-border); color: var(--dt-ink); }
     .btn-dl {
-        background: #10b981; color: #ffffff; border: 1px solid #059669;
+        background: var(--dt-success); color: #ffffff; border: 1px solid var(--dt-success);
     }
-    .btn-dl:hover { background: #059669; }
+    .btn-dl:hover { background: var(--dt-success-hover); }
 
     /* ── Viewer area ── */
     .viewer-area { flex: 1; position: relative; overflow: hidden; }
     #canvas-container { width: 100%; height: 100%; }
-    model-viewer { width: 100%; height: 100%; --mv-theme-primary: #10b981; }
+    model-viewer { width: 100%; height: 100%; --mv-theme-primary: var(--dt-success); }
 
     /* ── Loading overlay ── */
     .viewer-loading {
         position: absolute; inset: 0;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 1rem; pointer-events: none; transition: opacity .3s;
-        background: #0a0a0a; color: #94a3b8;
+        background: var(--dt-ink); color: var(--dt-text-faint);
     }
     .viewer-loading.hidden { opacity: 0; }
     .spinner {
         width: 44px; height: 44px; border: 3px solid rgba(16,185,129,.2);
-        border-top-color: #10b981; border-radius: 50%; animation: spin .8s linear infinite;
+        border-top-color: var(--dt-success); border-radius: 50%; animation: spin .8s linear infinite;
     }
     @@keyframes spin { to { transform: rotate(360deg); } }
 
     .viewer-error {
         position: absolute; inset: 0;
         display: none; flex-direction: column; align-items: center; justify-content: center;
-        color: #f87171; gap: .75rem; text-align: center; padding: 2rem; background: #0a0a0a;
+        color: var(--dt-danger-line); gap: .75rem; text-align: center; padding: 2rem; background: var(--dt-ink);
     }
     .viewer-error.visible { display: flex; }
-    .viewer-error a { color: #10b981; font-size: .85rem; }
+    .viewer-error a { color: var(--dt-success); font-size: .85rem; }
 
     .controls-hint {
         position: absolute; bottom: 1rem; right: 1rem;
-        background: rgba(0,0,0,.55); color: #cbd5e1; border-radius: 8px;
+        background: rgba(0,0,0,.55); color: var(--dt-text-faint); border-radius: 8px;
         padding: .45rem .7rem; font-size: .7rem; line-height: 1.7;
         pointer-events: none; backdrop-filter: blur(4px);
     }
@@ -203,8 +208,8 @@
                 <div class="swatch"        data-color="#334155" title="Slate Grey"      style="background:#334155;"></div>
                 <div class="swatch"        data-color="#78350f" title="Deep Amber"      style="background:#78350f;"></div>
                 <div class="swatch"        data-color="#064e3b" title="Forest Green"    style="background:#064e3b;"></div>
-                <div class="swatch"        data-color="#e2e8f0" title="Soft Silver"     style="background:#e2e8f0; border: 1px solid #cbd5e1;"></div>
-                <div class="swatch"        data-color="#ffffff" title="Pure White"      style="background:#ffffff; border: 1px solid #e2e8f0;"></div>
+                <div class="swatch"        data-color="#e2e8f0" title="Soft Silver"     style="background:#e2e8f0; border: 1px solid var(--dt-border);"></div>
+                <div class="swatch"        data-color="#ffffff" title="Pure White"      style="background:#ffffff; border: 1px solid var(--dt-border);"></div>
             </div>
         </div>
 
@@ -243,7 +248,7 @@
                 shadow-intensity="1"
                 environment-image="neutral"
                 exposure="1"
-                style="width:100%;height:100%;background:#0a0a0a;">
+                style="width:100%;height:100%;background:var(--dt-ink);">
                 <div slot="progress-bar"></div>
             </model-viewer>
         }
@@ -309,7 +314,7 @@ const overlay = document.getElementById('loadingOverlay');
 const errorOverlay = document.getElementById('errorOverlay');
 
 let camera, controls, renderer, scene, loadedObject;
-let currentBgHex = '#0a0a0a';
+let currentBgHex = 'var(--dt-ink)';
 
 function setBgColor(hex) {
     currentBgHex = hex;

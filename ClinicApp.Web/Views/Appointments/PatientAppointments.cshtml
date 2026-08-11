@@ -23,7 +23,7 @@
     <div class="pay-header">
         <div>
             <a asp-controller="Patients" asp-action="Profile" asp-route-id="@patient.Id"
-               style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#64748b;text-decoration:none;margin-bottom:6px;font-weight:500;">
+               style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dt-text-muted);text-decoration:none;margin-bottom:6px;font-weight:500;">
                 ← Back to Patient Profile
             </a>
             <h1 class="pay-title">@patient.FirstName @patient.LastName</h1>
@@ -45,8 +45,8 @@
                 <div class="pay-stat-label">Upcoming</div>
             </div>
         </div>
-        <div class="pay-stat-card" style="background:#f0f9ff;border-color:#bae6fd;">
-            <div class="pay-stat-icon" style="background:#0ea5e9;color:#fff;">✓</div>
+        <div class="pay-stat-card" style="background:var(--dt-info-bg);border-color:var(--dt-info-line);">
+            <div class="pay-stat-icon" style="background:var(--dt-info);color:#fff;">✓</div>
             <div>
                 <div class="pay-stat-value">@completed</div>
                 <div class="pay-stat-label">Completed</div>
@@ -59,8 +59,8 @@
                 <div class="pay-stat-label">Cancelled</div>
             </div>
         </div>
-        <div class="pay-stat-card" style="background:#f8fafc;border-color:#e2e8f0;">
-            <div class="pay-stat-icon" style="background:#64748b;color:#fff;">#</div>
+        <div class="pay-stat-card" style="background:var(--dt-surface-alt);border-color:var(--dt-border);">
+            <div class="pay-stat-icon" style="background:var(--dt-text-muted);color:#fff;">#</div>
             <div>
                 <div class="pay-stat-value">@appointments.Count</div>
                 <div class="pay-stat-label">Total</div>
@@ -111,7 +111,7 @@
                                     <td><span class="pay-invoice">#@a.Id</span></td>
                                     <td>
                                         <strong>@localStart.ToString("MMM dd, yyyy")</strong>
-                                        <span style="color:#6b7280;font-size:.85rem;margin-left:4px;">
+                                        <span style="color:var(--dt-text-muted);font-size:.85rem;margin-left:4px;">
                                             @localStart.ToString("HH:mm") – @localEnd.ToString("HH:mm")
                                         </span>
                                     </td>
@@ -122,7 +122,7 @@
                                     <td>
                                         <span class="pay-badge @statusClass">@a.Status</span>
                                     </td>
-                                    <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b7280;font-size:.85rem;">
+                                    <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dt-text-muted);font-size:.85rem;">
                                         @(string.IsNullOrWhiteSpace(a.Notes) ? "—" : a.Notes)
                                     </td>
                                 </tr>

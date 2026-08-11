@@ -161,7 +161,7 @@
                 </div>
 
                 <div class="users-field">
-                    <label class="users-label" asp-for="NewUser.Password">Password <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                    <label class="users-label" asp-for="NewUser.Password">Password <span style="font-weight:400;color:var(--dt-text-faint);">(optional)</span></label>
                     <input class="users-input" asp-for="NewUser.Password" type="password" placeholder="Leave blank for Google-only login" autocomplete="new-password" />
                     <span class="users-error" asp-validation-for="NewUser.Password"></span>
                 </div>

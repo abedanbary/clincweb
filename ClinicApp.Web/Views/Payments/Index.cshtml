@@ -21,7 +21,7 @@
             @if (isPatientContext)
             {
                 <a asp-controller="Patients" asp-action="Profile" asp-route-id="@Model.FilterPatientId"
-                   style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#64748b;text-decoration:none;margin-bottom:6px;font-weight:500;">
+                   style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dt-text-muted);text-decoration:none;margin-bottom:6px;font-weight:500;">
                     ← Back to Patient Profile
                 </a>
                 <h1 class="pay-title">@Model.FilterPatientName</h1>
@@ -124,7 +124,7 @@
                     <span class="pay-outstanding-title">Outstanding Balances</span>
                     <span class="pay-outstanding-badge">@Model.OutstandingBalances.Count patient(s)</span>
                 </div>
-                <span id="outstandingChevron" style="font-size:.85rem;color:#6b7280;">&#9660;</span>
+                <span id="outstandingChevron" style="font-size:.85rem;color:var(--dt-text-muted);">&#9660;</span>
             </div>
             <div id="outstandingBody">
                 <table class="pay-out-table">
@@ -142,9 +142,9 @@
                         {
                             <tr>
                                 <td class="pay-out-name">@b.PatientName</td>
-                                <td style="text-align:right;color:#6b7280;">$@b.TotalPaid.ToString("N2")</td>
-                                <td style="text-align:right;font-weight:700;color:#ea580c;">$@b.TotalPending.ToString("N2")</td>
-                                <td style="text-align:right;color:#6b7280;">@b.PendingCount</td>
+                                <td style="text-align:right;color:var(--dt-text-muted);">$@b.TotalPaid.ToString("N2")</td>
+                                <td style="text-align:right;font-weight:700;color:var(--dt-warning);">$@b.TotalPending.ToString("N2")</td>
+                                <td style="text-align:right;color:var(--dt-text-muted);">@b.PendingCount</td>
                                 <td style="text-align:right;">
                                     <a onclick="loadPatientTreatments(@b.PatientId)" href="#treatmentSection"
                                        class="pay-out-link" style="cursor:pointer;">View Treatments</a>
@@ -178,8 +178,8 @@
             </div>
 
             <div id="treatmentCards" class="pay-treatment-cards" style="display:none;"></div>
-            <div id="treatmentLoading" style="display:none;text-align:center;padding:24px;color:#9ca3af;font-size:.9rem;">Loading treatments...</div>
-            <div id="treatmentEmpty" style="display:none;text-align:center;padding:24px;color:#9ca3af;font-size:.9rem;">No treatments found for this patient.</div>
+            <div id="treatmentLoading" style="display:none;text-align:center;padding:24px;color:var(--dt-text-faint);font-size:.9rem;">Loading treatments...</div>
+            <div id="treatmentEmpty" style="display:none;text-align:center;padding:24px;color:var(--dt-text-faint);font-size:.9rem;">No treatments found for this patient.</div>
         </div>
     </div>
 
@@ -187,7 +187,7 @@
     <div class="pay-all-section">
         <div class="pay-all-header" onclick="toggleAllPayments()">
             <span class="pay-all-title">All Payment Records</span>
-            <span id="allPaymentsChevron" style="font-size:.85rem;color:#6b7280;">&#9660;</span>
+            <span id="allPaymentsChevron" style="font-size:.85rem;color:var(--dt-text-muted);">&#9660;</span>
         </div>
         <div id="allPaymentsBody">
             <!-- Filters -->
@@ -289,13 +289,13 @@
                                             @if (p.TreatmentId.HasValue)
                                             {
                                                 <a asp-action="Treatment" asp-route-id="@p.TreatmentId"
-                                                   style="color:#10b981;text-decoration:none;font-size:.83rem;">
+                                                   style="color:var(--dt-success);text-decoration:none;font-size:.83rem;">
                                                     @(p.Treatment?.Title ?? "Treatment")
                                                 </a>
                                             }
                                             else
                                             {
-                                                <span style="color:#9ca3af;">—</span>
+                                                <span style="color:var(--dt-text-faint);">—</span>
                                             }
                                         </td>
                                         <td><strong>$@p.Amount.ToString("N2")</strong></td>
@@ -306,7 +306,7 @@
                                             }
                                             else
                                             {
-                                                <span style="color:#9ca3af;">—</span>
+                                                <span style="color:var(--dt-text-faint);">—</span>
                                             }
                                         </td>
                                         <td><span class="pay-method">@p.Method</span></td>
@@ -380,7 +380,7 @@
                                     <option value="@d.Value">@d.Text</option>
                                 }
                             </select>
-                            <input type="text" id="createDoctorName" class="pay-form-input" placeholder="Auto-filled from appointment" readonly style="background:#f5f5f5;cursor:not-allowed;display:none;" />
+                            <input type="text" id="createDoctorName" class="pay-form-input" placeholder="Auto-filled from appointment" readonly style="background:var(--dt-surface-alt);cursor:not-allowed;display:none;" />
                         </div>
                     </div>
                     <div class="pay-form-group">
@@ -388,7 +388,7 @@
                         <select name="NewPayment.AppointmentId" id="createAppointmentId" class="pay-form-select" onchange="onAppointmentChange(this)">
                             <option value="">No specific appointment</option>
                         </select>
-                        <span id="createAlreadyPaidWarning" style="color:#c0392b;font-size:0.85em;display:none;">This appointment is already paid.</span>
+                        <span id="createAlreadyPaidWarning" style="color:var(--dt-danger);font-size:0.85em;display:none;">This appointment is already paid.</span>
                     </div>
                     <div class="pay-form-group">
                         <label class="pay-form-label">Treatment (optional)</label>
@@ -587,19 +587,19 @@
 
         function buildTreatmentCard(t) {
             const statusColor = {
-                'Planned': '#64748b', 'InProgress': '#854d0e',
-                'Completed': '#15803d', 'Cancelled': '#b91c1c'
-            }[t.status] || '#64748b';
+                'Planned': 'var(--dt-text-muted)', 'InProgress': 'var(--dt-warning)',
+                'Completed': 'var(--dt-success)', 'Cancelled': 'var(--dt-danger)'
+            }[t.status] || 'var(--dt-text-muted)';
             const statusBg = {
-                'Planned': '#f1f5f9', 'InProgress': '#fef9c3',
-                'Completed': '#dcfce7', 'Cancelled': '#fee2e2'
-            }[t.status] || '#f1f5f9';
+                'Planned': 'var(--dt-surface-alt)', 'InProgress': 'var(--dt-warning-bg)',
+                'Completed': 'var(--dt-success-bg)', 'Cancelled': 'var(--dt-danger-bg)'
+            }[t.status] || 'var(--dt-surface-alt)';
 
             const pct  = t.progressPct;
             const filled = pct >= 100;
-            const barColor = filled ? '#059669' : '#10b981';
+            const barColor = filled ? 'var(--dt-success)' : 'var(--dt-success)';
 
-            const remainColor  = t.remaining > 0 ? '#ea580c' : '#059669';
+            const remainColor  = t.remaining > 0 ? 'var(--dt-warning)' : 'var(--dt-success)';
             const isFullyPaid  = t.remaining <= 0 && t.totalCost > 0;
 
             const manageBtn = isFullyPaid
@@ -609,14 +609,14 @@
                     : `<a href="/Payments/Treatment/${t.treatmentId}" class="btn-ghost" style="font-size:.8rem;padding:7px 16px;">View Payments</a>`;
 
             const fullyPaidBadge = isFullyPaid
-                ? `<span class="pay-tx-badge" style="background:#dcfce7;color:#15803d;">Fully Paid</span>`
+                ? `<span class="pay-tx-badge" style="background:var(--dt-success-bg);color:var(--dt-success);">Fully Paid</span>`
                 : '';
 
             return `
             <div class="pay-tx-card">
                 <div class="pay-tx-card-top">
                     <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;">
-                        <span class="pay-tx-badge" style="background:#eff6ff;color:#1d4ed8;">${t.type}</span>
+                        <span class="pay-tx-badge" style="background:var(--dt-info-bg);color:var(--dt-info);">${t.type}</span>
                         <span class="pay-tx-badge" style="background:${statusBg};color:${statusColor};">${t.status}</span>
                         ${fullyPaidBadge}
                     </div>
@@ -630,7 +630,7 @@
                     </div>
                     <div class="pay-tx-fin-row">
                         <span class="pay-tx-fin-label">Paid</span>
-                        <span class="pay-tx-fin-value" style="color:#059669;">$${t.totalPaid.toFixed(2)}</span>
+                        <span class="pay-tx-fin-value" style="color:var(--dt-success);">$${t.totalPaid.toFixed(2)}</span>
                     </div>
                     <div class="pay-tx-fin-row">
                         <span class="pay-tx-fin-label">Remaining</span>
@@ -673,7 +673,7 @@
                         opt.dataset.doctorId   = a.doctorId;
                         opt.dataset.doctorName = a.doctorName;
                         opt.dataset.alreadyPaid = a.alreadyPaid;
-                        if (a.alreadyPaid) opt.style.color = '#c0392b';
+                        if (a.alreadyPaid) opt.style.color = 'var(--dt-danger)';
                         sel.appendChild(opt);
                     });
                 });

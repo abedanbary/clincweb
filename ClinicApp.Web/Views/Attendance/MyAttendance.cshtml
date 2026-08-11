@@ -58,11 +58,11 @@
                 <div class="att-today-sub">
                     @if (todayRec == null)
                     {
-                        <span style="color:#ea580c;font-weight:600;">Not marked yet</span>
+                        <span style="color:var(--dt-warning);font-weight:600;">Not marked yet</span>
                     }
                     else if (todayRec.Status == AttendanceStatus.Present)
                     {
-                        <span style="color:#15803d;font-weight:600;">
+                        <span style="color:var(--dt-success);font-weight:600;">
                             Present
                             @if (todayRec.CheckIn.HasValue)
                             {
@@ -84,7 +84,7 @@
                     }
                     else
                     {
-                        <span style="color:#6b7280;font-weight:600;">@todayRec.Status</span>
+                        <span style="color:var(--dt-text-muted);font-weight:600;">@todayRec.Status</span>
                     }
                 </div>
             </div>
@@ -246,7 +246,7 @@
         <div class="att-table-card">
             <div class="att-table-header">
                 <span class="att-table-title">All Records — @Model.MonthName</span>
-                <span style="font-size:12px;color:#6b7280;">@Model.Records.Count record(s)</span>
+                <span style="font-size:12px;color:var(--dt-text-muted);">@Model.Records.Count record(s)</span>
             </div>
             <table class="att-table">
                 <thead>
@@ -295,7 +295,7 @@
                                 @if (dayTx > 0) { <span class="att-tx-count">@dayTx</span> }
                                 else { <text>—</text> }
                             </td>
-                            <td style="color:#9ca3af;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(r.Notes ?? "—")</td>
+                            <td style="color:var(--dt-text-faint);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@(r.Notes ?? "—")</td>
                         </tr>
                     }
                 </tbody>
@@ -393,7 +393,7 @@
     .att-clockout-btn {
         padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
         font-size: 13px; font-weight: 600;
-        background: #f59e0b; color: #fff; transition: background .15s;
+        background: var(--dt-warning); color: #fff; transition: background .15s;
     }
-    .att-clockout-btn:hover { background: #d97706; }
+    .att-clockout-btn:hover { background: var(--dt-warning); }
 </style>

@@ -1,14 +1,14 @@
 /* ── Design tokens ──────────────────────────────────────────── */
 :root {
-    --color-bg:          #f7f7f5;
+    --color-bg:          var(--dt-surface-alt);
     --color-bg-soft:     #ffffff;
-    --color-sky:         #1c5c44;
-    --color-sky-soft:    #1c5c44;
-    --color-text:        #1a1a1a;
-    --color-text-muted:  #6b7280;
-    --color-border:      #e5e5e3;
+    --color-sky:         var(--dt-green);
+    --color-sky-soft:    var(--dt-green);
+    --color-text:        var(--dt-ink);
+    --color-text-muted:  var(--dt-text-muted);
+    --color-border:      var(--dt-border);
     --color-surface:     #ffffff;
-    --color-surface-alt: #f4f4f2;
+    --color-surface-alt: var(--dt-surface-alt);
 }
 
 /* ── Reset ──────────────────────────────────────────────────── */
@@ -21,11 +21,12 @@
 html, body { height: 100%; }
 
 body {
-    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: var(--color-bg);
     color: var(--color-text);
     font-size: 14px;
     line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
 }
 
 /* ── Shell ──────────────────────────────────────────────────── */
@@ -57,13 +58,14 @@ body {
 .brand-logo {
     width: 30px;
     height: 30px;
-    border-radius: 6px;
+    border-radius: 0;
     background: var(--color-sky);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
-    font-size: 13px;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: -.02em;
     color: #ffffff;
     flex-shrink: 0;
 }
@@ -75,13 +77,14 @@ body {
 
 .brand-title {
     font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    font-weight: 800;
+    letter-spacing: -.02em;
     color: var(--color-text);
 }
 
 .brand-subtitle {
     font-size: 11px;
+    font-weight: 600;
     color: var(--color-text-muted);
 }
 
@@ -101,22 +104,26 @@ body {
 
 .sidebar-section-title {
     font-size: 10px;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--color-text-muted);
+    color: var(--dt-text-faint);
     margin-bottom: 4px;
-    padding-left: 8px;
+    padding-left: 12px;
 }
 
 .sidebar-link {
     display: flex;
     align-items: center;
-    padding: 7px 10px;
-    border-radius: 6px;
+    padding: 8px 10px;
+    border-radius: 0;
+    /* Reserve the active marker's width so nothing shifts on selection. */
+    border-left: 2px solid transparent;
     font-size: 13px;
+    font-weight: 600;
     color: var(--color-text-muted);
     text-decoration: none;
-    transition: background-color 0.12s, color 0.12s;
+    transition: background-color 0.12s, color 0.12s, border-color 0.12s;
 }
 
 .sidebar-link:hover {
@@ -124,11 +131,12 @@ body {
     color: var(--color-text);
 }
 
+/* Active state echoes the sign-in page's 3px accent rule rather than a pill. */
 .sidebar-link.is-active {
-    background: rgba(28, 92, 68, 0.08);
+    background: transparent;
+    border-left-color: var(--color-sky);
     color: var(--color-sky);
-    border: 1px solid rgba(28, 92, 68, 0.15);
-    font-weight: 500;
+    font-weight: 700;
 }
 
 /* ── Main area ──────────────────────────────────────────────── */
@@ -178,7 +186,7 @@ body {
 .user-avatar {
     width: 28px;
     height: 28px;
-    border-radius: 6px;
+    border-radius: 0;
     background: var(--color-sky);
     display: flex;
     align-items: center;
@@ -205,10 +213,10 @@ body {
 }
 
 .topbar-button {
-    border-radius: 6px;
+    border-radius: 0;
     border: 1px solid var(--color-border);
-    padding: 5px 12px;
-    font-size: 13px;
+    padding: 6px 14px;
+    font: 600 12.5px Manrope, sans-serif;
     background: transparent;
     color: var(--color-text-muted);
     cursor: pointer;
@@ -216,10 +224,24 @@ body {
 }
 
 .topbar-button:hover {
-    border-color: #fca5a5;
-    color: #b91c1c;
-    background: #fef2f2;
+    border-color: var(--dt-danger-line);
+    color: var(--dt-danger);
+    background: var(--dt-danger-bg);
 }
+
+/* ── Language switcher ──────────────────────────────────────── */
+.lang-select {
+    border: 1px solid var(--color-border);
+    border-radius: 0;
+    background: #fff;
+    color: var(--color-text);
+    padding: 6px 8px;
+    font: 600 12.5px Manrope, sans-serif;
+    cursor: pointer;
+    outline: none;
+}
+
+.lang-select:focus { border-color: var(--color-sky); }
 
 /* ── Content ────────────────────────────────────────────────── */
 .manager-content {

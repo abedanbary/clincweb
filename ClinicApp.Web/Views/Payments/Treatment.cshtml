@@ -15,72 +15,72 @@
 
 <style>
 .tp-page      { padding: 24px; max-width: 1200px; display: flex; flex-direction: column; gap: 20px; }
-.tp-back      { display: inline-flex; align-items: center; gap: .4rem; color: #10b981; text-decoration: none;
-                font-size: .83rem; font-weight: 500; background: #f0fdf4; padding: .4rem .85rem;
-                border-radius: 8px; border: 1px solid #bbf7d0; }
-.tp-back:hover { background: #dcfce7; }
+.tp-back      { display: inline-flex; align-items: center; gap: .4rem; color: var(--dt-success); text-decoration: none;
+                font-size: .83rem; font-weight: 500; background: var(--dt-success-bg); padding: .4rem .85rem;
+                border-radius: 8px; border: 1px solid var(--dt-success-line); }
+.tp-back:hover { background: var(--dt-success-line); }
 
 .tp-title-row { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-.tp-title     { font-size: 1.5rem; font-weight: 700; color: #0f172a; }
-.tp-sub       { font-size: .88rem; color: #64748b; margin-top: 3px; }
+.tp-title     { font-size: 1.5rem; font-weight: 700; color: var(--dt-ink); }
+.tp-sub       { font-size: .88rem; color: var(--dt-text-muted); margin-top: 3px; }
 
 /* Type / Status badges */
 .tp-badge     { display: inline-block; padding: .2rem .65rem; border-radius: 20px; font-size: .72rem; font-weight: 600; }
-.tp-badge-type     { background: #eff6ff; color: #1d4ed8; }
-.tp-badge-planned  { background: #f1f5f9; color: #475569; }
-.tp-badge-inprogress { background: #fef9c3; color: #854d0e; }
-.tp-badge-completed  { background: #dcfce7; color: #15803d; }
-.tp-badge-cancelled  { background: #fee2e2; color: #b91c1c; }
+.tp-badge-type     { background: var(--dt-info-bg); color: var(--dt-info); }
+.tp-badge-planned  { background: var(--dt-surface-alt); color: var(--dt-text-muted); }
+.tp-badge-inprogress { background: var(--dt-warning-bg); color: var(--dt-warning); }
+.tp-badge-completed  { background: var(--dt-success-bg); color: var(--dt-success); }
+.tp-badge-cancelled  { background: var(--dt-danger-bg); color: var(--dt-danger); }
 
 /* Top cards grid */
 .tp-cards     { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @@media (max-width: 700px) { .tp-cards { grid-template-columns: 1fr; } }
 
-.tp-card      { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; }
-.tp-card-title { font-size: .75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 18px; }
+.tp-card      { background: #fff; border: 1px solid var(--dt-border); border-radius: 14px; padding: 24px; }
+.tp-card-title { font-size: .75rem; font-weight: 700; color: var(--dt-text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 18px; }
 
 /* Financial summary */
 .tp-fin-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .tp-fin-item  { }
-.tp-fin-label { font-size: .75rem; color: #9ca3af; margin-bottom: 3px; }
-.tp-fin-value { font-size: 1.35rem; font-weight: 700; color: #0f172a; }
-.tp-fin-value.green  { color: #059669; }
-.tp-fin-value.orange { color: #ea580c; }
+.tp-fin-label { font-size: .75rem; color: var(--dt-text-faint); margin-bottom: 3px; }
+.tp-fin-value { font-size: 1.35rem; font-weight: 700; color: var(--dt-ink); }
+.tp-fin-value.green  { color: var(--dt-success); }
+.tp-fin-value.orange { color: var(--dt-warning); }
 
 .tp-progress-bar-wrap { margin-top: 18px; }
-.tp-progress-label    { display: flex; justify-content: space-between; font-size: .78rem; color: #6b7280; margin-bottom: 6px; }
-.tp-progress-track    { height: 10px; background: #e5e7eb; border-radius: 99px; overflow: hidden; }
-.tp-progress-fill     { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #10b981, #059669);
+.tp-progress-label    { display: flex; justify-content: space-between; font-size: .78rem; color: var(--dt-text-muted); margin-bottom: 6px; }
+.tp-progress-track    { height: 10px; background: var(--dt-border); border-radius: 99px; overflow: hidden; }
+.tp-progress-fill     { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--dt-success), var(--dt-success));
                          transition: width .4s ease; }
 
 /* Detail card */
-.tp-detail-row  { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f3f4f6; font-size: .875rem; }
+.tp-detail-row  { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--dt-surface-alt); font-size: .875rem; }
 .tp-detail-row:last-child { border-bottom: none; }
-.tp-detail-label { width: 120px; color: #6b7280; flex-shrink: 0; }
-.tp-detail-value { color: #111827; font-weight: 500; }
+.tp-detail-label { width: 120px; color: var(--dt-text-muted); flex-shrink: 0; }
+.tp-detail-value { color: var(--dt-ink); font-weight: 500; }
 
 /* Payment history */
-.tp-history-card  { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
+.tp-history-card  { background: #fff; border: 1px solid var(--dt-border); border-radius: 14px; overflow: hidden; }
 .tp-history-header { display: flex; align-items: center; justify-content: space-between;
-                     padding: 16px 20px; border-bottom: 1px solid #e5e7eb; }
-.tp-history-title  { font-size: 1rem; font-weight: 600; color: #111827; }
+                     padding: 16px 20px; border-bottom: 1px solid var(--dt-border); }
+.tp-history-title  { font-size: 1rem; font-weight: 600; color: var(--dt-ink); }
 
 .tp-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-.tp-table th { padding: 11px 16px; text-align: left; font-size: .72rem; font-weight: 600; color: #6b7280;
-               text-transform: uppercase; letter-spacing: .04em; background: #f9fafb;
-               border-bottom: 1px solid #e5e7eb; }
-.tp-table td { padding: 13px 16px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+.tp-table th { padding: 11px 16px; text-align: left; font-size: .72rem; font-weight: 600; color: var(--dt-text-muted);
+               text-transform: uppercase; letter-spacing: .04em; background: var(--dt-surface-alt);
+               border-bottom: 1px solid var(--dt-border); }
+.tp-table td { padding: 13px 16px; border-bottom: 1px solid var(--dt-surface-alt); vertical-align: middle; }
 .tp-table tr:last-child td { border-bottom: none; }
-.tp-table tr:hover td { background: #fafafa; }
+.tp-table tr:hover td { background: var(--dt-surface-alt); }
 
-.tp-status-paid     { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; background: #dcfce7; color: #15803d; }
-.tp-status-pending  { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; background: #fff7ed; color: #c2410c; }
-.tp-status-overdue  { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; background: #fee2e2; color: #b91c1c; }
-.tp-status-refunded { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; background: #f1f5f9; color: #475569; }
+.tp-status-paid     { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; background: var(--dt-success-bg); color: var(--dt-success); }
+.tp-status-pending  { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; background: var(--dt-warning-bg); color: var(--dt-warning); }
+.tp-status-overdue  { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; background: var(--dt-danger-bg); color: var(--dt-danger); }
+.tp-status-refunded { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; background: var(--dt-surface-alt); color: var(--dt-text-muted); }
 
-.tp-method { font-size: .8rem; color: #6b7280; }
+.tp-method { font-size: .8rem; color: var(--dt-text-muted); }
 
-.tp-empty { text-align: center; padding: 40px 20px; color: #9ca3af; font-size: .9rem; }
+.tp-empty { text-align: center; padding: 40px 20px; color: var(--dt-text-faint); font-size: .9rem; }
 
 /* Modal form */
 .tp-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex;
@@ -88,23 +88,23 @@
 .tp-modal         { background: #fff; border-radius: 16px; width: 100%; max-width: 520px;
                     max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.15); }
 .tp-modal-header  { display: flex; justify-content: space-between; align-items: center;
-                    padding: 20px 24px 16px; border-bottom: 1px solid #e5e7eb; }
+                    padding: 20px 24px 16px; border-bottom: 1px solid var(--dt-border); }
 .tp-modal-title   { font-size: 1.1rem; font-weight: 700; }
-.tp-modal-close   { background: none; border: none; font-size: 22px; cursor: pointer; color: #6b7280; }
+.tp-modal-close   { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--dt-text-muted); }
 .tp-modal-body    { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
-.tp-modal-footer  { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px 20px; border-top: 1px solid #e5e7eb; }
+.tp-modal-footer  { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px 20px; border-top: 1px solid var(--dt-border); }
 
 .tp-form-row      { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .tp-form-group    { display: flex; flex-direction: column; gap: 5px; }
-.tp-form-label    { font-size: .82rem; font-weight: 600; color: #374151; }
+.tp-form-label    { font-size: .82rem; font-weight: 600; color: var(--dt-text-muted); }
 .tp-form-input, .tp-form-select, .tp-form-textarea {
-    padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 8px;
-    font-size: .875rem; color: #111827; background: #fff; outline: none;
+    padding: 9px 12px; border: 1px solid var(--dt-border); border-radius: 8px;
+    font-size: .875rem; color: var(--dt-ink); background: #fff; outline: none;
     transition: border-color .15s; width: 100%;
 }
-.tp-form-input:focus, .tp-form-select:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.1); }
-.tp-remaining-hint { font-size: .78rem; color: #6b7280; margin-top: 3px; }
-.tp-remaining-hint.warn { color: #ea580c; font-weight: 600; }
+.tp-form-input:focus, .tp-form-select:focus { border-color: var(--dt-success); box-shadow: 0 0 0 3px rgba(16,185,129,.1); }
+.tp-remaining-hint { font-size: .78rem; color: var(--dt-text-muted); margin-top: 3px; }
+.tp-remaining-hint.warn { color: var(--dt-warning); font-weight: 600; }
 </style>
 
 <div class="tp-page">
@@ -143,7 +143,7 @@
                 <span class="tp-badge tp-badge-@statusClass">@Model.Treatment.Status</span>
                 @if (Model.Treatment.ToothNumber.HasValue)
                 {
-                    <span class="tp-badge" style="background:#f0fdf4;color:#15803d;">Tooth #@Model.Treatment.ToothNumber</span>
+                    <span class="tp-badge" style="background:var(--dt-success-bg);color:var(--dt-success);">Tooth #@Model.Treatment.ToothNumber</span>
                 }
             </div>
             <h1 class="tp-title">@Model.Treatment.Title</h1>
@@ -158,7 +158,7 @@
             {
                 @if (Model.Remaining <= 0)
                 {
-                    <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#dcfce7;color:#15803d;border-radius:8px;font-size:.85rem;font-weight:600;border:1px solid #bbf7d0;">
+                    <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--dt-success-bg);color:var(--dt-success);border-radius:8px;font-size:.85rem;font-weight:600;border:1px solid var(--dt-success-line);">
                         Treatment Fully Paid
                     </span>
                 }
@@ -191,7 +191,7 @@
                 </div>
                 <div class="tp-fin-item">
                     <div class="tp-fin-label">Scheduled Pending</div>
-                    <div class="tp-fin-value" style="color:#6b7280;">$@Model.TotalPending.ToString("N2")</div>
+                    <div class="tp-fin-value" style="color:var(--dt-text-muted);">$@Model.TotalPending.ToString("N2")</div>
                 </div>
             </div>
             <div class="tp-progress-bar-wrap">
@@ -238,7 +238,7 @@
             {
                 <div class="tp-detail-row">
                     <span class="tp-detail-label">Notes</span>
-                    <span class="tp-detail-value" style="color:#4b5563;">@Model.Treatment.Description</span>
+                    <span class="tp-detail-value" style="color:var(--dt-text-muted);">@Model.Treatment.Description</span>
                 </div>
             }
             <div class="tp-detail-row">
@@ -255,7 +255,7 @@
     <div class="tp-history-card">
         <div class="tp-history-header">
             <span class="tp-history-title">Payment History</span>
-            <span style="font-size:.82rem;color:#6b7280;">@Model.Payments.Count record(s)</span>
+            <span style="font-size:.82rem;color:var(--dt-text-muted);">@Model.Payments.Count record(s)</span>
         </div>
 
         @if (!Model.Payments.Any())
@@ -293,13 +293,13 @@
                                           p.Status == PaymentStatus.Paid ? "paid" :
                                           p.Status == PaymentStatus.Refunded ? "refunded" : "pending";
                         <tr>
-                            <td style="color:#9ca3af;font-size:.78rem;">@(idx++)</td>
-                            <td style="white-space:nowrap;color:#374151;">@p.PaymentDate.ToLocalTime().ToString("MMM dd, yyyy")</td>
-                            <td style="text-align:right;font-weight:700;color:#0f172a;">$@p.Amount.ToString("N2")</td>
+                            <td style="color:var(--dt-text-faint);font-size:.78rem;">@(idx++)</td>
+                            <td style="white-space:nowrap;color:var(--dt-text-muted);">@p.PaymentDate.ToLocalTime().ToString("MMM dd, yyyy")</td>
+                            <td style="text-align:right;font-weight:700;color:var(--dt-ink);">$@p.Amount.ToString("N2")</td>
                             <td><span class="tp-method">@p.Method</span></td>
                             <td><span class="tp-status-@statusCss">@statusLabel</span></td>
-                            <td style="color:#4b5563;font-size:.83rem;">Dr. @p.Doctor.FirstName @p.Doctor.LastName</td>
-                            <td style="color:#9ca3af;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@p.Notes">
+                            <td style="color:var(--dt-text-muted);font-size:.83rem;">Dr. @p.Doctor.FirstName @p.Doctor.LastName</td>
+                            <td style="color:var(--dt-text-faint);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@p.Notes">
                                 @(p.Notes ?? "—")
                             </td>
                             @if (isStaff)
@@ -326,9 +326,9 @@
                     }
                 </tbody>
                 <tfoot>
-                    <tr style="background:#f9fafb;">
-                        <td colspan="2" style="padding:11px 16px;font-weight:600;font-size:.82rem;color:#374151;">Total paid</td>
-                        <td style="text-align:right;padding:11px 16px;font-weight:700;color:#059669;">$@Model.TotalPaid.ToString("N2")</td>
+                    <tr style="background:var(--dt-surface-alt);">
+                        <td colspan="2" style="padding:11px 16px;font-weight:600;font-size:.82rem;color:var(--dt-text-muted);">Total paid</td>
+                        <td style="text-align:right;padding:11px 16px;font-weight:700;color:var(--dt-success);">$@Model.TotalPaid.ToString("N2")</td>
                         <td colspan="@(isStaff ? 5 : 4)"></td>
                     </tr>
                 </tfoot>
